@@ -44,7 +44,7 @@ namespace Phantom
         /// </summary>
         void Start()
         {
-            Connect();
+            //Connect();
         }
 
         #endregion
