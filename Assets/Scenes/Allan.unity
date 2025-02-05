@@ -570,7 +570,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   debugVisual1: {fileID: 1699357281}
   debugVisual2: {fileID: 275852784}
-  minDistance: 1
+  minDistance: 3
 --- !u!4 &586715139
 Transform:
   m_ObjectHideFlags: 0

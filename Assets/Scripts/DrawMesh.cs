@@ -155,12 +155,12 @@ public class DrawMesh : MonoBehaviour
         Stack<Vector2> stack = new Stack<Vector2>();
 
 
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i <= index; i++)
         {
             v.Add(array[i]);
         }
 
-        for( int i = 4; i < array.Length; i++)
+        for( int i = index + 1; i < array.Length; i++)
         {
             if(i % 2 == 0)
             {
@@ -173,7 +173,7 @@ public class DrawMesh : MonoBehaviour
                     v.Add(array[i]);
                     break;
                 }
-                //stack.Push(array[i]);
+                stack.Push(array[i]);
                 print(array[i]);
             }
 
@@ -183,9 +183,7 @@ public class DrawMesh : MonoBehaviour
         for(int i = 0; i < stackCount; i++)
         {
             v.Add(stack.Pop());
-
         }
-
         v.Add(array[0]);
 
 
