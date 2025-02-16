@@ -1,7 +1,8 @@
+using Photon.Pun;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class Runner : MonoBehaviour
+public class Runner : MonoBehaviourPunCallbacks
 {
     private RunnerMovement _RunnerMovement;
     private Rigidbody2D rb;
@@ -27,6 +28,9 @@ public class Runner : MonoBehaviour
     private bool jump;
     private void Update()
     {
+        if (!photonView.IsMine)
+            return;
+        
         _RunnerMovement.Update();
 
         if (moveAction.ReadValue<Vector2>() != Vector2.zero)
