@@ -861,9 +861,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   drawMeshPrefab: {fileID: 4313003225536343305, guid: 4afaac7cd927afb429517c0ed5ad1f23, type: 3}
+  drawMaterial: {fileID: 2100000, guid: 6aee6f484a66206489f88aa8682ad516, type: 2}
   eraserMode: 0
   drawSize: 0
-  material: {fileID: 0}
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0

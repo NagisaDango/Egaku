@@ -15,23 +15,7 @@ public class DrawMesh : MonoBehaviour
     private Mesh mesh;
     private Vector3 lastMousePosition;
 
-    void Start()
-    {
-
-    }
-
-
-
-    private void Awake()
-    {
-
-
-
-
-
-    }
-
-    public void InitializedDrawProperty()
+    public void InitializedDrawProperty(Material mat, bool interactable)
     {
         mesh = new Mesh();
 
@@ -65,11 +49,20 @@ public class DrawMesh : MonoBehaviour
         mesh.triangles = triangles;
         mesh.MarkDynamic();
 
+        if (interactable)
+            InteractSetting();
+
 
         GetComponent<MeshFilter>().mesh = mesh;
+        GetComponent<MeshRenderer>().material = mat;
 
 
         lastMousePosition = GetMouseWorldPosition();
+    }
+
+    private void InteractSetting()
+    {
+        GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Dynamic;
     }
 
     void Update()

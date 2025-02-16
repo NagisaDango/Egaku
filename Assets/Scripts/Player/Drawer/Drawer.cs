@@ -7,10 +7,11 @@ public class Drawer : MonoBehaviour
     public DrawMesh drawMeshPrefab;
     private DrawMesh currentDrawer;
 
+    [SerializeField] private Material drawMaterial;
     [SerializeField] private bool eraserMode;
+    [SerializeField] private bool interactable;
 
     public float drawSize;
-    public Material material;
 
 
     void Update()
@@ -24,7 +25,7 @@ public class Drawer : MonoBehaviour
             else if (currentDrawer == null)
             {
                 currentDrawer = Instantiate(drawMeshPrefab);
-                currentDrawer.InitializedDrawProperty();
+                currentDrawer.InitializedDrawProperty(drawMaterial, interactable);
             }
         }
         if (Input.GetMouseButton(0) && currentDrawer != null)

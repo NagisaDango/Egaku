@@ -44,7 +44,8 @@ public class RunnerMovement
 
     public bool GroundDetect()
     {
-        hit = Physics2D.Raycast(rb.transform.position, Vector2.down, 1f, LayerMask.GetMask("Platform")); 
+        hit = Physics2D.Raycast(rb.transform.position, Vector2.down, 1f, LayerMask.GetMask("Platform", "Draw")); 
+        
         if (hit.collider == null)
         {
             rb.drag = 0;
