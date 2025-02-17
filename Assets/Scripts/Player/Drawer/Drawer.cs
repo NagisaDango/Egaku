@@ -29,17 +29,30 @@ public class Drawer : MonoBehaviourPun
             {
                 //currentDrawer = Instantiate(drawMeshPrefab);
                 currentDrawer = PhotonNetwork.Instantiate(drawMeshPrefab.name, this.transform.position, this.transform.rotation).GetComponent<DrawMesh>();
-                currentDrawer.InitializedDrawProperty(drawMaterial, interactable);
+                //currentDrawer.InitializedDrawProperty(drawMaterial, interactable);
+                //currentDrawer.photonView.RPC("RPC_InitializedDrawProperty", RpcTarget.AllBuffered, drawMaterial.color.r, drawMaterial.color.g, drawMaterial.color.b, interactable);
+                
+                //***Hard code Wood for now
+                currentDrawer.photonView.RPC("RPC_InitializedDrawProperty", RpcTarget.All, "Wood", interactable);
             }
         }
         if (Input.GetMouseButton(0) && currentDrawer != null)
         {
-            currentDrawer.StartDraw();
+            Vector3 mousePos = GetMouseWorldPosition();
+            currentDrawer.photonView.RPC("RPC_StartDraw", RpcTarget.All, mousePos);
+            //currentDrawer.StartDraw();
         }
         if (Input.GetMouseButtonUp(0))
         {
             currentDrawer = null;
         }
+    }
+
+    private Vector3 GetMouseWorldPosition()
+    {
+        Vector3 worldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        worldPosition.z = 0;
+        return worldPosition;
     }
 
     private void EraseDrawnObj()

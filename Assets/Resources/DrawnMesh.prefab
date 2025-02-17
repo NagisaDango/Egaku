@@ -136,9 +136,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1c7aa8e9f682a274283d1acad838fc92, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  debugVisual1: {fileID: 0}
-  debugVisual2: {fileID: 0}
   minDistance: 1
+  woodMaterial: {fileID: 0}
 --- !u!33 &2449231605852471263
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -260,11 +259,7 @@ PolygonCollider2D:
   m_AutoTiling: 0
   m_Points:
     m_Paths:
-    - - {x: 0, y: 1}
-      - {x: -0.95105654, y: 0.30901697}
-      - {x: -0.5877852, y: -0.80901706}
-      - {x: 0.58778536, y: -0.80901694}
-      - {x: 0.9510565, y: 0.30901712}
+    - []
   m_UseDelaunayMesh: 0
 --- !u!114 &-1527196873153206266
 MonoBehaviour:

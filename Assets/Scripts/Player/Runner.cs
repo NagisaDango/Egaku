@@ -31,8 +31,15 @@ public class Runner : MonoBehaviourPunCallbacks
 
     private void Start()
     {
-        InitInput();
         rb = GetComponent<Rigidbody2D>();
+        if (!photonView.IsMine)
+        {
+            Debug.Log("this player is not the runner, setting the rb to non physic");
+            rb.isKinematic = true;  // Stop physics interactions
+            rb.simulated = false;   // Turn off physics on non-owners
+        }
+
+        InitInput();
         _RunnerMovement = new RunnerMovement(rb, 10f, maxSpeed);
     }
 
@@ -45,9 +52,12 @@ public class Runner : MonoBehaviourPunCallbacks
     private bool jump;
     private void Update()
     {
+        //***need fix calling in update
         if (!photonView.IsMine)
+        {
             return;
-        
+        }
+
         _RunnerMovement.Update();
 
         if (moveAction.ReadValue<Vector2>() != Vector2.zero)
