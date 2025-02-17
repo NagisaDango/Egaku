@@ -33,7 +33,8 @@ public class Drawer : MonoBehaviourPun
                 //currentDrawer.photonView.RPC("RPC_InitializedDrawProperty", RpcTarget.AllBuffered, drawMaterial.color.r, drawMaterial.color.g, drawMaterial.color.b, interactable);
                 
                 //***Hard code Wood for now
-                currentDrawer.photonView.RPC("RPC_InitializedDrawProperty", RpcTarget.All, "Wood", interactable);
+                Vector3 mousePos = GetMouseWorldPosition();
+                currentDrawer.photonView.RPC("RPC_InitializedDrawProperty", RpcTarget.All, mousePos, "Wood", interactable);
             }
         }
         if (Input.GetMouseButton(0) && currentDrawer != null)

@@ -27,13 +27,14 @@ public class DrawMesh : MonoBehaviourPun
     }
 
     [PunRPC]
-    void RPC_InitializedDrawProperty(string materialName, bool interactable)//Material mat, bool interactable)
+    //Initialize the properties
+    void RPC_InitializedDrawProperty(Vector3 mousePos, string materialName, bool interactable)//Material mat, bool interactable)
     {
         InitDict();
 
         mesh = new Mesh();
 
-        Vector3 startPos = GetMouseWorldPosition();
+        Vector3 startPos = mousePos;
         lastMousePosition = startPos;
 
         Vector3[] vertices = new Vector3[4];
@@ -71,14 +72,16 @@ public class DrawMesh : MonoBehaviourPun
         GetComponent<MeshRenderer>().material = matDict[materialName];//mat;
 
 
-        lastMousePosition = GetMouseWorldPosition();
+        lastMousePosition = mousePos;
     }
 
+    //Set the generated body type rb2d to Dynamic 
     private void InteractSetting()
     {
         GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Dynamic;
     }
-
+    
+    //RPC: Draw mesh according to the mosuePos
     [PunRPC]
     void RPC_StartDraw(Vector3 mousePos)
     {
@@ -138,7 +141,8 @@ public class DrawMesh : MonoBehaviourPun
             col.points = GetEdge(v2);
         }
     }
-
+    
+    //Get the edges of the mesh
     private Vector2[] GetEdge(Vector2[] array)
     {
         List<Vector2> v = new List<Vector2>();
@@ -183,11 +187,13 @@ public class DrawMesh : MonoBehaviourPun
         return v.ToArray();
     }
 
+    /*
     private Vector3 GetMouseWorldPosition()
     {
         Vector3 worldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         worldPosition.z = 0;
         return worldPosition;
     }
+    */
 
 }
