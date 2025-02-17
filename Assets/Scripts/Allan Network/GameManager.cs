@@ -6,6 +6,8 @@ using UnityEngine.SceneManagement;
 
 using Photon.Pun;
 using Photon.Realtime;
+using Photon.Pun.Demo.PunBasics;
+using static PlayersManager;
 
 namespace Allan
 {
@@ -25,7 +27,12 @@ namespace Allan
         #endregion
 
         #region Public Field
-        public static GameManager Instance;
+        
+        public static GameManager Instance; 
+        [Tooltip("The prefab to use for representing the player")]
+        public GameObject runnerPrefab;
+        public GameObject drawerPrefab;
+        
         #endregion
 
         #region Public Methods
@@ -39,12 +46,53 @@ namespace Allan
 
         #region Private Methods
 
+        private void Awake()
+        {
+            
+        }
+
         void Start()
         {
+            if (runnerPrefab == null || drawerPrefab == null)
+            {
+                Debug.LogError("<Color=Red><a>Missing</a></Color> playerPrefab Reference. Please set it up in GameObject 'Game Manager'", this);
+            }
+            else
+            {
+                if (Runner.LocalPlayerInstance == null)
+                {
+                    Debug.LogFormat("We are Instantiating LocalPlayer from {0}", SceneManagerHelper.ActiveSceneName);
+                    // we're in a room. spawn a character for the local player. it gets synced by using PhotonNetwork.Instantiate
+                    //PhotonNetwork.Instantiate(this.playerPrefab.name, new Vector3(0f, 5f, 0f), Quaternion.identity, 0);
+                }
+                else
+                {
+                    Debug.LogFormat("Ignoring scene load for {0}", SceneManagerHelper.ActiveSceneName);
+                }
+            }
+            DontDestroyOnLoad(this.gameObject);
             Instance = this;
         }
 
-        void LoadArena()
+        void SpawnPlayer()
+        {
+            if (PhotonNetwork.LocalPlayer.CustomProperties.ContainsKey("Role"))
+            {
+                PlayerRole playerRole = (PlayerRole)(int)PhotonNetwork.LocalPlayer.CustomProperties["Role"];
+
+                Vector3 spawnPosition = (playerRole == PlayerRole.Runner) ? new Vector3(0, 5, 0) : new Vector3(0, 0, 0);
+
+                GameObject playerPrefab = (playerRole == PlayerRole.Runner) ? runnerPrefab : drawerPrefab;
+
+                PhotonNetwork.Instantiate(playerPrefab.name, spawnPosition, Quaternion.identity);
+            }
+            else
+            {
+                Debug.LogError("Role not assigned to player!");
+            }
+        }
+
+        public void LoadArena()
         {
             if (!PhotonNetwork.IsMasterClient)
             {
@@ -53,6 +101,7 @@ namespace Allan
             }
             Debug.LogFormat("PhotonNetwork : Loading Level to scene Allan : {0}", PhotonNetwork.CurrentRoom.PlayerCount);
             PhotonNetwork.LoadLevel("Allan");
+            //SpawnPlayer();
         }
 
         #endregion
@@ -69,7 +118,7 @@ namespace Allan
             {
                 Debug.LogFormat("OnPlayerEnteredRoom IsMasterClient {0}", PhotonNetwork.IsMasterClient); // called before OnPlayerLeftRoom
 
-                LoadArena();
+                //LoadArena();
             }
         }
 
@@ -81,8 +130,29 @@ namespace Allan
             {
                 Debug.LogFormat("OnPlayerLeftRoom IsMasterClient {0}", PhotonNetwork.IsMasterClient); // called before OnPlayerLeftRoom
 
-                LoadArena();
+                //LoadArena();
             }
+        }
+
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            if (scene.name == "Allan")
+            {
+                Debug.Log("Scene Allan loaded. Spawning player...");
+                SpawnPlayer();
+            }
+        }
+
+        public override void OnEnable()
+        {
+            base.OnEnable();
+            SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        public override void OnDisable()
+        {
+            base.OnDisable();
+            SceneManager.sceneLoaded -= OnSceneLoaded;
         }
 
         #endregion

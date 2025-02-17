@@ -1,3 +1,4 @@
+using Photon.Pun;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -5,7 +6,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
 
-public class DrawMesh : MonoBehaviour
+public class DrawMesh : MonoBehaviourPun
 {
     [SerializeField] private Transform debugVisual1;
     [SerializeField] private Transform debugVisual2;

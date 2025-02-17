@@ -1,8 +1,9 @@
+using Photon.Pun;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Drawer : MonoBehaviour
+public class Drawer : MonoBehaviourPun
 {
     public DrawMesh drawMeshPrefab;
     private DrawMesh currentDrawer;
@@ -13,9 +14,11 @@ public class Drawer : MonoBehaviour
 
     public float drawSize;
 
-
     void Update()
     {
+        if(!photonView.IsMine)
+            return;
+
         if (Input.GetMouseButtonDown(0))
         {
             if (eraserMode)
@@ -24,7 +27,8 @@ public class Drawer : MonoBehaviour
             }
             else if (currentDrawer == null)
             {
-                currentDrawer = Instantiate(drawMeshPrefab);
+                //currentDrawer = Instantiate(drawMeshPrefab);
+                currentDrawer = PhotonNetwork.Instantiate(drawMeshPrefab.name, this.transform.position, this.transform.rotation).GetComponent<DrawMesh>();
                 currentDrawer.InitializedDrawProperty(drawMaterial, interactable);
             }
         }
