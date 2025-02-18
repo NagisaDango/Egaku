@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement;
 using Photon.Pun;
 using Photon.Realtime;
 using Photon.Pun.Demo.PunBasics;
-using static PlayersManager;
+using static RolesManager;
 
 namespace Allan
 {

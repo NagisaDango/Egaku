@@ -6,16 +6,18 @@ using ExitGames.Client.Photon;
 using TMPro;
 using Allan; // Required for Hashtable
 
-public class PlayersManager : MonoBehaviourPunCallbacks
+public class RolesManager : MonoBehaviourPunCallbacks
 {
     public TMP_Text selectedRoleText;
     public Button drawerButton;
     public Button runnerButton;
     public Button confirmButton;
-    public TMP_Text statusText; // Shows messages to players
-    public Button startGameButton; // Disabled until valid selections
+    public TMP_Text statusText; 
+    public Button startGameButton;
+    public GameObject playerDisplay;
 
-    private PlayerRole selectedRole = PlayerRole.Drawer; // Default
+    private GameObject thisPlayerDisplay;
+    private PlayerRole selectedRole = PlayerRole.None; // Default
 
     public enum PlayerRole { None = -1, Drawer, Runner }
 
@@ -28,6 +30,9 @@ public class PlayersManager : MonoBehaviourPunCallbacks
 
         startGameButton.onClick.AddListener(() => GameManager.Instance.LoadArena());
         startGameButton.interactable = false; // Disable until valid selections
+
+        thisPlayerDisplay =
+            PhotonNetwork.Instantiate(playerDisplay.name, new Vector3(0,0,0), this.transform.rotation);
     }
 
 
@@ -43,8 +48,22 @@ public class PlayersManager : MonoBehaviourPunCallbacks
         selectedRole = role;
         selectedRoleText.text = "Selected Role: " + role.ToString();
         statusText.text = "Press Confirm to lock your role.";
+        photonView.RPC("RPC_SwitchDisplayPos", RpcTarget.AllBuffered, selectedRole);
     }
 
+    [PunRPC]
+    void RPC_SwitchDisplayPos(PlayerRole role)
+    {
+        if (role == PlayerRole.None)
+            thisPlayerDisplay.transform.SetParent(this.transform);
+        else if (role == PlayerRole.Drawer)
+            thisPlayerDisplay.transform.SetParent(drawerButton.gameObject.transform);
+        else if (role == PlayerRole.Runner)
+            thisPlayerDisplay.transform.SetParent(runnerButton.gameObject.transform);
+
+        thisPlayerDisplay.transform.localPosition = Vector3.zero;
+    }
+    
     void ConfirmSelection()
     {
         if (selectedRole == PlayerRole.None)
@@ -64,7 +83,7 @@ public class PlayersManager : MonoBehaviourPunCallbacks
         PhotonNetwork.LocalPlayer.SetCustomProperties(playerProperties);
 
         confirmButton.interactable = false; // Prevent multiple selections
-
+        
         CheckStartGameCondition();
     }
 
