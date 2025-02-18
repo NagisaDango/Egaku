@@ -42,6 +42,11 @@ MonoBehaviour:
   - RPC_SetMeshMaterial
   - RPC_StartDraw
   - RPC_InitializedDrawProperty
+  - RPC_SwitchDisplayPos
+  - RPC_SetButtonStatus
+  - RPC_CheckStartGameCondition
+  - Set_Name
+  - RPC_Set_Name
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1
