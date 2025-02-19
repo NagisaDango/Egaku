@@ -15,6 +15,8 @@ public class RolesManager : MonoBehaviourPunCallbacks
     public Button startGameButton;
     public GameObject playerDisplay;
 
+    private Transform drawerTrans;
+    private Transform runnerTrans;
     private GameObject thisPlayerDisplay;
     private int displayID;
     private PlayerRole selectedRole = PlayerRole.None; // Default
@@ -31,6 +33,9 @@ public class RolesManager : MonoBehaviourPunCallbacks
         startGameButton.interactable = false; // Disable until valid selections
         thisPlayerDisplay =
             PhotonNetwork.Instantiate(playerDisplay.name, new Vector3(0,0,0), this.transform.rotation);
+
+        drawerTrans = drawerButton.transform.parent;
+        runnerTrans = runnerButton.transform.parent;
 
         thisPlayerDisplay.transform.GetChild(0).GetComponent<Button>().onClick.AddListener(() => SelectRole(PlayerRole.None));
         //thisPlayerDisplay.transform.GetChild(1).GetComponent<TMP_Text>().text = PhotonNetwork.NickName;
@@ -70,9 +75,9 @@ public class RolesManager : MonoBehaviourPunCallbacks
         if (role == PlayerRole.None)
             targetDisplay.transform.SetParent(this.transform);
         else if (role == PlayerRole.Drawer)
-            targetDisplay.transform.SetParent(drawerButton.gameObject.transform);
+            targetDisplay.transform.SetParent(drawerTrans);
         else if (role == PlayerRole.Runner)
-            targetDisplay.transform.SetParent(runnerButton.gameObject.transform);
+            targetDisplay.transform.SetParent(runnerTrans);
 
         // Store player's role in Photon Custom Properties (Async Update)
         Hashtable playerProperties = new Hashtable { { "Role_" + playerActorNumber, (int)role } };
@@ -81,8 +86,10 @@ public class RolesManager : MonoBehaviourPunCallbacks
         // UI Management for ALL Players
         if (role == PlayerRole.Drawer)
         {
-            drawerButton.interactable = false; // Disable Drawer button for all
-            runnerButton.interactable = PhotonNetwork.LocalPlayer.ActorNumber != playerActorNumber;
+            drawerButton.gameObject.SetActive(false);
+            runnerButton.gameObject.SetActive(PhotonNetwork.LocalPlayer.ActorNumber != playerActorNumber);
+            //drawerButton.interactable = false; // Disable Drawer button for all
+            //runnerButton.interactable = PhotonNetwork.LocalPlayer.ActorNumber != playerActorNumber;
 
             if (PhotonNetwork.LocalPlayer.ActorNumber == playerActorNumber)
                 noRoleButton.SetActive(true);
@@ -91,8 +98,10 @@ public class RolesManager : MonoBehaviourPunCallbacks
         }
         else if (role == PlayerRole.Runner)
         {
-            runnerButton.interactable = false; // Disable Runner button for all
-            drawerButton.interactable = PhotonNetwork.LocalPlayer.ActorNumber != playerActorNumber;
+            runnerButton.gameObject.SetActive(false);
+            drawerButton.gameObject.SetActive(PhotonNetwork.LocalPlayer.ActorNumber != playerActorNumber);
+            //runnerButton.interactable = false; // Disable Runner button for all
+            //drawerButton.interactable = PhotonNetwork.LocalPlayer.ActorNumber != playerActorNumber;
 
             if (PhotonNetwork.LocalPlayer.ActorNumber == playerActorNumber)
                 noRoleButton.SetActive(true);
@@ -175,8 +184,10 @@ public class RolesManager : MonoBehaviourPunCallbacks
         photonView.RPC("RPC_CheckStartGameCondition", RpcTarget.All, roleList.ToArray());
 
         // Refresh button interactability
-        drawerButton.interactable = !IsRoleTaken(PlayerRole.Drawer);
-        runnerButton.interactable = !IsRoleTaken(PlayerRole.Runner);
+        drawerButton.gameObject.SetActive(!IsRoleTaken(PlayerRole.Drawer));
+        runnerButton.gameObject.SetActive(!IsRoleTaken(PlayerRole.Runner));
+        //drawerButton.interactable = !IsRoleTaken(PlayerRole.Drawer);
+        //runnerButton.interactable = !IsRoleTaken(PlayerRole.Runner);
     }
 
 
