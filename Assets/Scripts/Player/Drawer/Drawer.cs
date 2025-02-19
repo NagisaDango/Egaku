@@ -64,7 +64,7 @@ public class Drawer : MonoBehaviourPun
         if (hit.collider != null && hit.collider.gameObject.layer == LayerMask.NameToLayer("Draw"))
         {
             Debug.Log("Hit: " + hit.collider.gameObject.name);
-            Destroy(hit.collider.gameObject);
+            PhotonNetwork.Destroy(hit.collider.gameObject);
         }
     }
 }
