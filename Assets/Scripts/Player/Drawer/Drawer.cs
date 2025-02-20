@@ -2,6 +2,7 @@ using System;
 using Photon.Pun;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.EventSystems;
 using UnityEngine;
 
 public class Drawer : MonoBehaviourPun
@@ -26,7 +27,7 @@ public class Drawer : MonoBehaviourPun
         if(!photonView.IsMine)
             return;
 
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
         {
             if (eraserMode)
             {
@@ -58,7 +59,15 @@ public class Drawer : MonoBehaviourPun
 
     private void SetPenProperties(Pen.PenType penType)
     {
-        currentPenType = penType;
+        if (penType == Pen.PenType.Eraser)
+        {
+            eraserMode = true;
+        }
+        else
+        {
+            currentPenType = penType;
+            eraserMode = false;
+        }
     }
     
     private Vector3 GetMouseWorldPosition()

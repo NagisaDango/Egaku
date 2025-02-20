@@ -7,6 +7,7 @@ using DG.Tweening;
 public class Pen : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler
 {
     [SerializeField] private DrawerUICOntrol drawerUI;
+    [SerializeField] private Texture2D cursorTexture;
     public PenType penType;
     public enum PenType
     {
@@ -24,6 +25,7 @@ public class Pen : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPo
         {
             drawerUI.ToggleDrawerPanel();
             Drawer.OnPenSelect.Invoke(penType);
+            Cursor.SetCursor(cursorTexture, Vector2.zero, CursorMode.Auto);
         }
     }
 

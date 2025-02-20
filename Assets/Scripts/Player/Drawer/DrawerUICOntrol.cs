@@ -1,3 +1,4 @@
+using System;
 using DG.Tweening;
 using System.Collections;
 using System.Collections.Generic;
@@ -10,6 +11,27 @@ public class DrawerUICOntrol : MonoBehaviour
     private void Start()
     {
         OpenDrawerPanel();
+    }
+
+    private void Update()
+    {
+        if (Input.GetMouseButtonDown(0)) // Left-click detection
+        {
+            if (!IsClickInsidePanel(drawerPanel))
+            {
+                CloseDrawerPanel();
+            }
+        }
+
+        if (Input.GetKeyDown(KeyCode.Tab))
+        {
+            ToggleDrawerPanel();
+        }
+    }
+    
+    private bool IsClickInsidePanel(RectTransform panel)
+    {
+        return RectTransformUtility.RectangleContainsScreenPoint(panel, Input.mousePosition, null);
     }
 
     public void ToggleDrawerPanel()
