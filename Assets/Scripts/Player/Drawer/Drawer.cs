@@ -1,3 +1,4 @@
+using System;
 using Photon.Pun;
 using System.Collections;
 using System.Collections.Generic;
@@ -14,6 +15,8 @@ public class Drawer : MonoBehaviourPun
     [SerializeField] private bool eraserMode;
     [SerializeField] private bool interactable;
 
+    public static Action<Pen.PenType> OnPenSelect;
+    private Pen.PenType currentPenType;
     public float drawSize;
     private int drawStrokeLimit = 300;
     private int drawStrokeTotal = 300;
@@ -24,6 +27,10 @@ public class Drawer : MonoBehaviourPun
         inkSlider = GameObject.Find("Canvas/Slider").GetComponent<Slider>();
     }
 
+    private void Start()
+    {
+        OnPenSelect += SetPenProperties;
+    }
     void Update()
     {
         if(!photonView.IsMine)
@@ -47,7 +54,7 @@ public class Drawer : MonoBehaviourPun
                 
                 //***Hard code Wood for now
                 Vector3 mousePos = GetMouseWorldPosition();
-                currentDrawer.photonView.RPC("RPC_InitializedDrawProperty", RpcTarget.All, mousePos, "Wood", interactable);
+                currentDrawer.photonView.RPC("RPC_InitializedDrawProperty", RpcTarget.All, mousePos, currentPenType.ToString(), interactable);
             }
         }
         if (Input.GetMouseButton(0) && currentDrawer != null)
@@ -75,6 +82,11 @@ public class Drawer : MonoBehaviourPun
         }
     }
 
+    private void SetPenProperties(Pen.PenType penType)
+    {
+        currentPenType = penType;
+    }
+    
     private Vector3 GetMouseWorldPosition()
     {
         Vector3 worldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
