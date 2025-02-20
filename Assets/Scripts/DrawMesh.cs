@@ -69,7 +69,8 @@ public class DrawMesh : MonoBehaviourPun
 
 
         GetComponent<MeshFilter>().mesh = mesh;
-        GetComponent<MeshRenderer>().material = matDict[materialName];//mat;
+        if(matDict.ContainsKey(materialName))
+            GetComponent<MeshRenderer>().material = matDict[materialName];//mat;
 
 
         lastMousePosition = mousePos;
