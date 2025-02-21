@@ -15,6 +15,7 @@ public class Drawer : MonoBehaviourPun
     [SerializeField] private Material drawMaterial;
     [SerializeField] private bool eraserMode;
     [SerializeField] private bool interactable;
+    [SerializeField] private GameObject drawerPanelPrefab;
 
     public static Action<Pen.PenType> OnPenSelect;
     private Pen.PenType currentPenType;
@@ -30,8 +31,14 @@ public class Drawer : MonoBehaviourPun
 
     private void Start()
     {
-        OnPenSelect += SetPenProperties;
+        if (photonView.IsMine)
+        {
+            print("This is the draweer spawning UI");
+            OnPenSelect += SetPenProperties;
+            Instantiate(drawerPanelPrefab);
+        }
     }
+
     void Update()
     {
         if(!photonView.IsMine)
@@ -59,8 +66,7 @@ public class Drawer : MonoBehaviourPun
         if (Input.GetMouseButton(0) && currentDrawer != null)
         {
             int djj = drawStrokeTotal - currentDrawer.drawStrokes;
-            inkSlider.value = djj * 1.0f / drawStrokeLimit;
-
+            photonView.RPC("UpdateSlider", RpcTarget.All, djj * 1.0f / drawStrokeLimit);
             if (djj <= 0)
             {
                 print("stop drawing");
@@ -101,6 +107,12 @@ public class Drawer : MonoBehaviourPun
         return worldPosition;
     }
 
+    [PunRPC]
+    private void UpdateSlider(float val)
+    {
+        inkSlider.value = val;
+    }
+
     private void EraseDrawnObj()
     {
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -110,7 +122,8 @@ public class Drawer : MonoBehaviourPun
         {
             Debug.Log("Hit: " + hit.collider.gameObject.name);
             drawStrokeTotal += hit.collider.gameObject.GetComponent<DrawMesh>().drawStrokes;
-            inkSlider.value = drawStrokeTotal * 1.0f / drawStrokeLimit;
+            photonView.RPC("UpdateSlider", RpcTarget.All, drawStrokeTotal * 1.0f / drawStrokeLimit);
+            //inkSlider.value = drawStrokeTotal * 1.0f / drawStrokeLimit;
             PhotonNetwork.Destroy(hit.collider.gameObject);
         }
     }

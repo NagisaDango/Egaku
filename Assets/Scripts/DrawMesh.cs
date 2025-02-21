@@ -108,7 +108,7 @@ public class DrawMesh : MonoBehaviourPun
             int vIndex3 = vIndex + 3;
 
             Vector3 mouseForwardVector = (mousePos - lastMousePosition).normalized;
-            Vector3 normal2D = new Vector3(0, 0, -5f);
+            Vector3 normal2D = new Vector3(0, 0, -1f);
             float lineThickness = 1f;
             Vector3 newVertexUp = mousePos + Vector3.Cross(mouseForwardVector, normal2D) * lineThickness;
             Vector3 newVertexDown = mousePos + Vector3.Cross(mouseForwardVector, normal2D * -1f) * lineThickness;

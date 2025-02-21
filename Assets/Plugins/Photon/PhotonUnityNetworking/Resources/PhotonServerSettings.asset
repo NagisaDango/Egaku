@@ -47,6 +47,7 @@ MonoBehaviour:
   - RPC_CheckStartGameCondition
   - Set_Name
   - RPC_Set_Name
+  - UpdateSlider
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1
