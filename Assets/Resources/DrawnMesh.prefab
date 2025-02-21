@@ -138,6 +138,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minDistance: 1
   woodMaterial: {fileID: 0}
+  drawtime: 0
+  drawStrokes: 0
 --- !u!33 &2449231605852471263
 MeshFilter:
   m_ObjectHideFlags: 0

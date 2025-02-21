@@ -101,7 +101,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &8439793229549411747
 Transform:
   m_ObjectHideFlags: 0
@@ -134,7 +134,9 @@ MonoBehaviour:
   drawMaterial: {fileID: 2100000, guid: 6aee6f484a66206489f88aa8682ad516, type: 2}
   eraserMode: 0
   interactable: 0
+  drawerPanelPrefab: {fileID: 8702785834451653974, guid: e8f1197e6f8defb4cae72e54989399da, type: 3}
   drawSize: 0
+  inkSlider: {fileID: 0}
 --- !u!114 &1436348200338379537
 MonoBehaviour:
   m_ObjectHideFlags: 0
