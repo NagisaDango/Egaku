@@ -38,11 +38,7 @@ public class Drawer : MonoBehaviourPun
             Instantiate(drawerPanelPrefab);
         }
     }
-
-    private void Start()
-    {
-        OnPenSelect += SetPenProperties;
-    }
+    
     void Update()
     {
         if(!photonView.IsMine)
@@ -130,7 +126,6 @@ public class Drawer : MonoBehaviourPun
             //inkSlider.value = drawStrokeTotal * 1.0f / drawStrokeLimit;
             PhotonNetwork.Destroy(hit.collider.gameObject);
             ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", mousePos, Quaternion.identity).GetComponent<ParticleAttractor>();
-            eraseEffect.target = inkSlider.transform;
         }
     }
 }
