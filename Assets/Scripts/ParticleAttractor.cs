@@ -28,7 +28,7 @@ public class ParticleAttractor : MonoBehaviour
             particles[i].velocity += direction * Time.deltaTime * 10f;
 
             // Check if the particle is close enough to disappear
-            if (Vector3.Distance(particles[i].position, djj) < disappearDistance)
+            if(Mathf.Abs(particles[i].position.x - djj.x) < 1 && Mathf.Abs(particles[i].position.y - djj.y) < 10)
             {
                 particles[i].remainingLifetime = 0;
             }

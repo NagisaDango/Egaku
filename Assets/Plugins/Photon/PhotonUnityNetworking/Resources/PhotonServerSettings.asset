@@ -48,6 +48,8 @@ MonoBehaviour:
   - Set_Name
   - RPC_Set_Name
   - UpdateSlider
+  - RPC_SetTaregt
+  - RPC_SetTarget
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1
