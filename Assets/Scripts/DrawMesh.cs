@@ -17,6 +17,8 @@ public class DrawMesh : MonoBehaviourPun
     private static Dictionary<string, Material> matDict = new();
     private Mesh mesh;
     private Vector3 lastMousePosition;
+    public float drawtime;
+    public int drawStrokes = 0;
 
     private void InitDict()
     {
@@ -80,7 +82,7 @@ public class DrawMesh : MonoBehaviourPun
     {
         GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Dynamic;
     }
-    
+
     //RPC: Draw mesh according to the mosuePos
     [PunRPC]
     void RPC_StartDraw(Vector3 mousePos)
@@ -88,6 +90,8 @@ public class DrawMesh : MonoBehaviourPun
         //GetMouseWorldPosition();
         if (Vector3.Distance(mousePos, lastMousePosition) > minDistance)
         {
+            drawStrokes++;
+            //Debug.Log("draw times:" + i);
             Vector3[] vertices = new Vector3[mesh.vertices.Length + 2];
             Vector2[] uv = new Vector2[mesh.uv.Length + 2];
             int[] triangles = new int[mesh.triangles.Length + 6];
@@ -103,7 +107,7 @@ public class DrawMesh : MonoBehaviourPun
             int vIndex3 = vIndex + 3;
 
             Vector3 mouseForwardVector = (mousePos - lastMousePosition).normalized;
-            Vector3 normal2D = new Vector3(0, 0, -1f);
+            Vector3 normal2D = new Vector3(0, 0, -5f);
             float lineThickness = 1f;
             Vector3 newVertexUp = mousePos + Vector3.Cross(mouseForwardVector, normal2D) * lineThickness;
             Vector3 newVertexDown = mousePos + Vector3.Cross(mouseForwardVector, normal2D * -1f) * lineThickness;

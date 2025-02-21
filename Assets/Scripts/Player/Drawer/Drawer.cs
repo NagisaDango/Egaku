@@ -2,6 +2,8 @@ using Photon.Pun;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEditor;
+using UnityEngine.UI;
 
 public class Drawer : MonoBehaviourPun
 {
@@ -13,14 +15,25 @@ public class Drawer : MonoBehaviourPun
     [SerializeField] private bool interactable;
 
     public float drawSize;
+    private int drawStrokeLimit = 300;
+    private int drawStrokeTotal = 300;
+    [SerializeField] private Slider inkSlider;
+
+    private void Awake()
+    {
+        inkSlider = GameObject.Find("Canvas/Slider").GetComponent<Slider>();
+    }
 
     void Update()
     {
         if(!photonView.IsMine)
             return;
 
+        
+
         if (Input.GetMouseButtonDown(0))
         {
+
             if (eraserMode)
             {
                 EraseDrawnObj();
@@ -39,12 +52,25 @@ public class Drawer : MonoBehaviourPun
         }
         if (Input.GetMouseButton(0) && currentDrawer != null)
         {
-            Vector3 mousePos = GetMouseWorldPosition();
-            currentDrawer.photonView.RPC("RPC_StartDraw", RpcTarget.All, mousePos);
-            //currentDrawer.StartDraw();
+            int djj = drawStrokeTotal - currentDrawer.drawStrokes;
+            inkSlider.value = djj * 1.0f / drawStrokeLimit;
+
+            if (djj <= 0)
+            {
+                print("stop drawing");
+                drawStrokeTotal -= currentDrawer.drawStrokes;
+                currentDrawer = null;
+            }
+            else
+            {
+                Vector3 mousePos = GetMouseWorldPosition();
+                currentDrawer.photonView.RPC("RPC_StartDraw", RpcTarget.All, mousePos);
+                //currentDrawer.StartDraw();
+            }
         }
         if (Input.GetMouseButtonUp(0))
         {
+            if(currentDrawer) drawStrokeTotal -= currentDrawer.drawStrokes;
             currentDrawer = null;
         }
     }
@@ -64,6 +90,8 @@ public class Drawer : MonoBehaviourPun
         if (hit.collider != null && hit.collider.gameObject.layer == LayerMask.NameToLayer("Draw"))
         {
             Debug.Log("Hit: " + hit.collider.gameObject.name);
+            drawStrokeTotal += hit.collider.gameObject.GetComponent<DrawMesh>().drawStrokes;
+            inkSlider.value = drawStrokeTotal * 1.0f / drawStrokeLimit;
             PhotonNetwork.Destroy(hit.collider.gameObject);
         }
     }

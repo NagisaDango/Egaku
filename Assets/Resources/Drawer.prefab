@@ -101,7 +101,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &8439793229549411747
 Transform:
   m_ObjectHideFlags: 0
@@ -135,6 +135,7 @@ MonoBehaviour:
   eraserMode: 0
   interactable: 0
   drawSize: 0
+  inkSlider: {fileID: 0}
 --- !u!114 &1436348200338379537
 MonoBehaviour:
   m_ObjectHideFlags: 0
