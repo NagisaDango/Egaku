@@ -113,6 +113,7 @@ public class Drawer : MonoBehaviourPun
         inkSlider.value = val;
     }
 
+    public float time = 3;
     private void EraseDrawnObj()
     {
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -122,10 +123,26 @@ public class Drawer : MonoBehaviourPun
         {
             Debug.Log("Hit: " + hit.collider.gameObject.name);
             drawStrokeTotal += hit.collider.gameObject.GetComponent<DrawMesh>().drawStrokes;
-            photonView.RPC("UpdateSlider", RpcTarget.All, drawStrokeTotal * 1.0f / drawStrokeLimit);
+            float value = drawStrokeTotal * 1.0f / drawStrokeLimit;
+            StartCoroutine(AddSliderValue(value, time));
+
+            //photonView.RPC("UpdateSlider", RpcTarget.All, value);
             //inkSlider.value = drawStrokeTotal * 1.0f / drawStrokeLimit;
             PhotonNetwork.Destroy(hit.collider.gameObject);
             ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", mousePos, Quaternion.identity).GetComponent<ParticleAttractor>();
         }
+    }
+
+    IEnumerator AddSliderValue(float target, float time)
+    {
+        float currentValue = inkSlider.value;
+        float increment = (target- currentValue) / time / 50;
+        while (currentValue <= target) {
+            currentValue += increment;
+            print("value:" + currentValue);
+            photonView.RPC("UpdateSlider", RpcTarget.All, currentValue);
+            yield return new WaitForSeconds(0.02f);
+        }
+
     }
 }

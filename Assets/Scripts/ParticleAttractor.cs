@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class ParticleAttractor : MonoBehaviour
 {
@@ -22,15 +23,21 @@ public class ParticleAttractor : MonoBehaviour
     {
         print($"Setting Target cause: djj not set: {djj == Vector3.zero} or target not set: {target == null}" );
         target = GameObject.Find("Canvas/Slider").transform;
-        djj = Camera.main.ScreenToWorldPoint(target.position);
-    }
+        //Vector3 xjj = Camera.main.ScreenToWorldPoint(target.position);
+        float h = target.GetComponent<RectTransform>().rect.height;
+        Vector3 xjj = target.position - new Vector3(0, h/2,0) + target.gameObject.GetComponent<UnityEngine.UI.Slider>().value * new Vector3(0, h, 0);
+        djj = Camera.main.ScreenToWorldPoint(xjj);
 
+        print(xjj +"-----"+djj);
+        //djj = Camera.main.ScreenToWorldPoint(target.position);
+    }
     void LateUpdate()
     {
         if (djj == Vector3.zero || target == null)
         {
-            SetTarget();
+            //SetTarget();
         }
+        SetTarget();
 
         int numParticlesAlive = ps.GetParticles(particles);
 
@@ -38,10 +45,10 @@ public class ParticleAttractor : MonoBehaviour
         {
             // Calculate direction to move the particle
             Vector3 direction = (djj - particles[i].position).normalized;
-            particles[i].velocity += direction * Time.deltaTime * 15f;
+            particles[i].velocity = direction * 30f;
 
             // Check if the particle is close enough to disappear
-            if(Mathf.Abs(particles[i].position.x - djj.x) < 1 && Mathf.Abs(particles[i].position.y - djj.y) < 10)
+            if(Mathf.Abs(particles[i].position.x - djj.x) < 0.01)
             {
                 particles[i].remainingLifetime = 0;
             }
