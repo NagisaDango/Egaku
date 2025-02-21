@@ -125,6 +125,8 @@ public class Drawer : MonoBehaviourPun
             photonView.RPC("UpdateSlider", RpcTarget.All, drawStrokeTotal * 1.0f / drawStrokeLimit);
             //inkSlider.value = drawStrokeTotal * 1.0f / drawStrokeLimit;
             PhotonNetwork.Destroy(hit.collider.gameObject);
+            ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", mousePos, Quaternion.identity).GetComponent<ParticleAttractor>();
+            eraseEffect.target = inkSlider.transform;
         }
     }
 }
