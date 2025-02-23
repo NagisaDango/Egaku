@@ -9,30 +9,50 @@ using UnityEngine.UI;
 
 public class Drawer : MonoBehaviourPun
 {
+    public static Drawer Instance;
     public DrawMesh drawMeshPrefab;
     private DrawMesh currentDrawer;
 
-    [SerializeField] private Material drawMaterial;
     [SerializeField] private bool eraserMode;
     [SerializeField] private bool interactable;
     [SerializeField] private GameObject drawerPanelPrefab;
 
-    public static Action<Pen.PenType> OnPenSelect;
-    private Pen.PenType currentPenType;
+    public static Action<PenUI.PenType> OnPenSelect;
+    private PenUI.PenType currentPenType;
     public float drawSize;
     private int drawStrokeLimit = 300;
     private int drawStrokeTotal = 300;
     [SerializeField] private Slider inkSlider;
+    public float time = 3;
 
+    private int actorNum;
+    
+    [Header("Pen")]
+    [SerializeField] public PenProperty woodPen;
+    [SerializeField] public PenProperty cloudPen;
+    [SerializeField] public PenProperty steelPen;
+    [SerializeField] public PenProperty electricPen;
+    
     private void Awake()
     {
         inkSlider = GameObject.Find("Canvas/Slider").GetComponent<Slider>();
+        DontDestroyOnLoad(this.gameObject);
     }
 
     private void Start()
     {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Debug.LogWarning("Drawer is already active and set, destroying this drawer.");
+            Destroy(this.gameObject);
+        }
         if (photonView.IsMine)
         {
+            actorNum = PhotonNetwork.LocalPlayer.ActorNumber;
             print("This is the draweer spawning UI");
             OnPenSelect += SetPenProperties;
             Instantiate(drawerPanelPrefab);
@@ -46,19 +66,16 @@ public class Drawer : MonoBehaviourPun
 
         if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
         {
-
             if (eraserMode)
             {
-                EraseDrawnObj();
+                photonView.RPC("EraseDrawnObj", RpcTarget.AllBuffered, Camera.main.ScreenToWorldPoint(Input.mousePosition));
+                //EraseDrawnObj();
             }
             else if (currentDrawer == null)
             {
                 //currentDrawer = Instantiate(drawMeshPrefab);
                 currentDrawer = PhotonNetwork.Instantiate(drawMeshPrefab.name, this.transform.position, this.transform.rotation).GetComponent<DrawMesh>();
-                //currentDrawer.InitializedDrawProperty(drawMaterial, interactable);
-                //currentDrawer.photonView.RPC("RPC_InitializedDrawProperty", RpcTarget.AllBuffered, drawMaterial.color.r, drawMaterial.color.g, drawMaterial.color.b, interactable);
                 
-                //***Hard code Wood for now
                 Vector3 mousePos = GetMouseWorldPosition();
                 currentDrawer.photonView.RPC("RPC_InitializedDrawProperty", RpcTarget.All, mousePos, currentPenType.ToString(), interactable);
             }
@@ -82,14 +99,19 @@ public class Drawer : MonoBehaviourPun
         }
         if (Input.GetMouseButtonUp(0))
         {
-            if(currentDrawer) drawStrokeTotal -= currentDrawer.drawStrokes;
+            if (currentDrawer)
+            {
+                drawStrokeTotal -= currentDrawer.drawStrokes;
+                currentDrawer.photonView.RPC("RPC_FinishDraw", RpcTarget.All);
+                currentDrawer.rb2d.bodyType = RigidbodyType2D.Kinematic;
+            }
             currentDrawer = null;
         }
     }
 
-    private void SetPenProperties(Pen.PenType penType)
+    private void SetPenProperties(PenUI.PenType penType)
     {
-        if (penType == Pen.PenType.Eraser)
+        if (penType == PenUI.PenType.Eraser)
         {
             eraserMode = true;
         }
@@ -112,24 +134,24 @@ public class Drawer : MonoBehaviourPun
     {
         inkSlider.value = val;
     }
-
-    public float time = 3;
-    private void EraseDrawnObj()
+    
+    [PunRPC]
+    private void EraseDrawnObj(Vector3 mousePos)
     {
-        Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        //Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero); // Small downward ray
 
         if (hit.collider != null && hit.collider.gameObject.layer == LayerMask.NameToLayer("Draw"))
         {
             Debug.Log("Hit: " + hit.collider.gameObject.name);
-            drawStrokeTotal += hit.collider.gameObject.GetComponent<DrawMesh>().drawStrokes;
+            //hit.collider.gameObject.GetComponent<DrawMesh>().photonView.TransferOwnership(actorNum);
+            DrawMesh erasingMesh = hit.collider.gameObject.GetComponent<DrawMesh>();
+            drawStrokeTotal += erasingMesh.drawStrokes;
             float value = drawStrokeTotal * 1.0f / drawStrokeLimit;
             StartCoroutine(AddSliderValue(value, time));
-
-            //photonView.RPC("UpdateSlider", RpcTarget.All, value);
-            //inkSlider.value = drawStrokeTotal * 1.0f / drawStrokeLimit;
+            erasingMesh.earsingSelf = true;
             PhotonNetwork.Destroy(hit.collider.gameObject);
-            ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", mousePos, Quaternion.identity).GetComponent<ParticleAttractor>();
+            ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", new Vector3(mousePos.x, mousePos.y, 0), Quaternion.identity).GetComponent<ParticleAttractor>();
         }
     }
 
@@ -145,4 +167,15 @@ public class Drawer : MonoBehaviourPun
         }
 
     }
+}
+
+[System.Serializable]
+public struct PenProperty
+{
+    public bool gravity;
+    public bool trigger;
+    public int mass;
+    public float size;
+    public int maxStrokes;
+    public Material material;
 }

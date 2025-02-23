@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using DG.Tweening;
 
-public class Pen : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler
+public class PenUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler
 {
     [SerializeField] private DrawerUICOntrol drawerUI;
     [SerializeField] private Texture2D cursorTexture;

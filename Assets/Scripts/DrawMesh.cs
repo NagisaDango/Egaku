@@ -1,41 +1,37 @@
 using Photon.Pun;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using Unity.VisualScripting;
+using Photon.Realtime;
 using UnityEngine;
-using UnityEngine.AI;
 
-public class DrawMesh : MonoBehaviourPun
+public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
 {
-    //[SerializeField] private Transform debugVisual1;
-    //[SerializeField] private Transform debugVisual2;
-
-
     [SerializeField] float minDistance = .1f;
-    [SerializeField] Material woodMaterial;
-    private static Dictionary<string, Material> matDict = new();
-    private Mesh mesh;
+    
+    
     private Vector3 lastMousePosition;
-    public float drawtime;
     public int drawStrokes = 0;
+    private PenProperty currProperty;
+    
+    [Header("Properties set through Drawer PenProperty")]
+    [SerializeField] public Rigidbody2D rb2d;
+    [SerializeField] public Collider2D col2d;
+    private Mesh mesh;
+    private float drawSize = 1;
+    private int maxStrokes;
+    public bool earsingSelf;
 
-    private void InitDict()
-    {
-        if(matDict.Count == 0)
-        {
-            matDict["Wood"] = woodMaterial;
-        }
-    }
 
     [PunRPC]
     //Initialize the properties
-    void RPC_InitializedDrawProperty(Vector3 mousePos, string materialName, bool interactable)//Material mat, bool interactable)
+    void RPC_InitializedDrawProperty(Vector3 mousePos, string penType, bool interactable)//Material mat, bool interactable)
     {
-        InitDict();
-
         mesh = new Mesh();
-
+        SetPenProperty(penType);
+        
+        GetComponent<MeshRenderer>().material = currProperty.material;
+        drawSize = currProperty.size;
+        maxStrokes = currProperty.maxStrokes;
+        
         Vector3 startPos = mousePos;
         lastMousePosition = startPos;
 
@@ -71,13 +67,26 @@ public class DrawMesh : MonoBehaviourPun
 
 
         GetComponent<MeshFilter>().mesh = mesh;
-        if(matDict.ContainsKey(materialName))
-            GetComponent<MeshRenderer>().material = matDict[materialName];//mat;
-
-
         lastMousePosition = mousePos;
     }
 
+    private void SetPenProperty(string penName)
+    {
+        switch (penName)
+        {
+            case "Wood":
+                currProperty = Drawer.Instance.woodPen; break;
+            case "Steel":
+                currProperty = Drawer.Instance.steelPen; break;
+            case "Cloud":
+                currProperty = Drawer.Instance.cloudPen; break;
+            case "Electric":
+                currProperty = Drawer.Instance.electricPen; break;
+            default:
+                Debug.LogWarning(penName + " is not set in the drawer pen list"); break;
+        }
+    }
+    
     //Set the generated body type rb2d to Dynamic 
     private void InteractSetting()
     {
@@ -89,7 +98,7 @@ public class DrawMesh : MonoBehaviourPun
     void RPC_StartDraw(Vector3 mousePos)
     {
         //GetMouseWorldPosition();
-        if (Vector3.Distance(mousePos, lastMousePosition) > minDistance)
+        if (Vector3.Distance(mousePos, lastMousePosition) > minDistance && ((drawStrokes < maxStrokes) || maxStrokes <= 0))
         {
             drawStrokes++;
             //Debug.Log("draw times:" + i);
@@ -108,7 +117,7 @@ public class DrawMesh : MonoBehaviourPun
             int vIndex3 = vIndex + 3;
 
             Vector3 mouseForwardVector = (mousePos - lastMousePosition).normalized;
-            Vector3 normal2D = new Vector3(0, 0, -1f);
+            Vector3 normal2D = new Vector3(0, 0, -drawSize);
             float lineThickness = 1f;
             Vector3 newVertexUp = mousePos + Vector3.Cross(mouseForwardVector, normal2D) * lineThickness;
             Vector3 newVertexDown = mousePos + Vector3.Cross(mouseForwardVector, normal2D * -1f) * lineThickness;
@@ -145,6 +154,15 @@ public class DrawMesh : MonoBehaviourPun
             Vector2[] v2 = System.Array.ConvertAll(mesh.vertices, v3 => new Vector2(v3.x, v3.y));
             col.points = GetEdge(v2);
         }
+    }
+
+    [PunRPC]
+    private void RPC_FinishDraw()
+    {
+        if(currProperty.gravity == true) rb2d.bodyType = RigidbodyType2D.Dynamic;
+        if(currProperty.mass > 0) rb2d.mass = currProperty.mass;
+        if(currProperty.trigger) col2d.isTrigger = true;
+        photonView.TransferOwnership(Runner.Instance.actorNum);
     }
     
     //Get the edges of the mesh
@@ -191,14 +209,14 @@ public class DrawMesh : MonoBehaviourPun
 
         return v.ToArray();
     }
-
-    /*
-    private Vector3 GetMouseWorldPosition()
+    
+    public void OnOwnerChange(Player newOwner, Player previousOwner)
     {
-        Vector3 worldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        worldPosition.z = 0;
-        return worldPosition;
+        if (earsingSelf)
+        {
+            PhotonNetwork.Destroy(this.gameObject);
+        }
     }
-    */
-
 }
+
+

@@ -28,7 +28,7 @@ public class ParticleAttractor : MonoBehaviour
         Vector3 xjj = target.position - new Vector3(0, h/2,0) + target.gameObject.GetComponent<UnityEngine.UI.Slider>().value * new Vector3(0, h, 0);
         djj = Camera.main.ScreenToWorldPoint(xjj);
 
-        print(xjj +"-----"+djj);
+        //print(xjj +"-----"+djj);
         //djj = Camera.main.ScreenToWorldPoint(target.position);
     }
     void LateUpdate()

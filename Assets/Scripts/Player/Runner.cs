@@ -5,6 +5,8 @@ using UnityEngine.InputSystem;
 
 public class Runner : MonoBehaviourPunCallbacks
 {
+    public static Runner Instance;
+    public int actorNum;
     private RunnerMovement _RunnerMovement;
     private Rigidbody2D rb;
     public InputActionAsset _ActionMap;
@@ -18,11 +20,22 @@ public class Runner : MonoBehaviourPunCallbacks
 
     private void Awake()
     {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Debug.LogWarning("Drawer is already active and set, destroying this runner.");
+            Destroy(this.gameObject);
+        }
+        
         // #Important
         // used in GameManager.cs: we keep track of the localPlayer instance to prevent instantiation when levels are synchronized
         if (photonView.IsMine)
         {
             PlayerManager.LocalPlayerInstance = this.gameObject;
+            actorNum = PhotonNetwork.LocalPlayer.ActorNumber;
         }
         // #Critical
         // we flag as don't destroy on load so that instance survives level synchronization, thus giving a seamless experience when levels load.
