@@ -85,14 +85,17 @@ namespace Phantom
             if (PhotonNetwork.IsConnected)
             {
                 // #Critical we need at this point to attempt joining a Random Room. If it fails, we'll get notified in OnJoinRandomFailed() and we'll create one.
-                PhotonNetwork.JoinRandomRoom();
+                //PhotonNetwork.JoinRandomRoom();
+                Debug.Log("Launcher: Join Lobby After Cliking Connect Button");
+                PhotonNetwork.JoinLobby();
             }
             else
             {
+                Debug.Log("Launcher: Connecting");
                 // #Critical, we must first and foremost connect to Photon Online Server.
                 // keep track of the will to join a room, because when we come back from the game we will get a callback that we are connected, so we need to know what to do then
                 isConnecting = PhotonNetwork.ConnectUsingSettings();
-                PhotonNetwork.GameVersion = gameVersion;
+                //PhotonNetwork.GameVersion = gameVersion;
             }
 
         }
@@ -113,8 +116,16 @@ namespace Phantom
             if (isConnecting)
             {
                 // #Critical: The first we try to do is to join a potential existing room. If there is, good, else, we'll be called back with OnJoinRandomFailed()
-                PhotonNetwork.JoinRandomRoom();
-                isConnecting = false;
+                //PhotonNetwork.JoinRandomRoom();
+                PhotonNetwork.JoinLobby();
+                //isConnecting = false;
+            }
+            else
+            {
+                // #Critical, we must first and foremost connect to Photon Online Server.
+                // keep track of the will to join a room, because when we come back from the game we will get a callback that we are connected, so we need to know what to do then
+                isConnecting = PhotonNetwork.ConnectUsingSettings();
+                //PhotonNetwork.GameVersion = gameVersion;
             }
 
         }
@@ -133,6 +144,11 @@ namespace Phantom
 
             // #Critical: we failed to join a random room, maybe none exists or they are all full. No worries, we create a new room.
             PhotonNetwork.CreateRoom(null, new RoomOptions { MaxPlayers = maxPlayersPerRoom });
+        }
+
+        public override void OnJoinedLobby()
+        {
+            PhotonNetwork.LoadLevel("RoomSelection");
         }
 
         public override void OnJoinedRoom()

@@ -40,6 +40,7 @@ namespace Allan
         public void LeaveRoom()
         {
             PhotonNetwork.LeaveRoom();
+            PhotonNetwork.JoinLobby();
         }
 
         #endregion
