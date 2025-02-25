@@ -90,11 +90,12 @@ public class RoomListManager : MonoBehaviourPunCallbacks
 
         foreach (RoomInfo room in roomList)
         {
-            GameObject newRoom = Instantiate(roomItemPrefab, gridLayout.position, Quaternion.identity);
+            //GameObject newRoom = Instantiate(roomItemPrefab, gridLayout.position, Quaternion.identity);
+            GameObject newRoom = Instantiate(roomItemPrefab, gridLayout.transform);
+            
             newRoom.GetComponentInChildren<TMP_Text>().text = room.Name;// + "(" + room.PlayerCount +")";
             newRoom.GetComponentInChildren<Button>().onClick.AddListener(() => JoinButton(room.Name));
-            newRoom.transform.SetParent(gridLayout);
-
+            //newRoom.transform.SetParent(gridLayout);
         }
     }
 
