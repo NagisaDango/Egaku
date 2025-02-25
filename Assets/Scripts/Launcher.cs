@@ -62,6 +62,8 @@ namespace Phantom
         /// </summary>
         void Start()
         {
+            PhotonNetwork.SendRate = 30;
+            PhotonNetwork.SerializationRate = 15;
             //Connect();
             progressLabel.SetActive(false);
             controlPanel.SetActive(true);

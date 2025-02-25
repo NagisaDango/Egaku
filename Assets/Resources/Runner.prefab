@@ -154,6 +154,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eef48383683e8024f8cc3412fbf86592, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  actorNum: 0
   _ActionMap: {fileID: -944628639613478452, guid: e867bc50cb3156e42a79d69fa37878ad, type: 3}
   jumpForce: 20
   maxSpeed: 8

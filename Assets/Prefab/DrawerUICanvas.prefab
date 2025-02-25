@@ -88,7 +88,7 @@ GameObject:
   - component: {fileID: 5749733014415659488}
   - component: {fileID: 1857733129508703080}
   m_Layer: 5
-  m_Name: Image (1)
+  m_Name: Electric
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -134,7 +134,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 0.92048055, b: 0.028301716, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -164,8 +164,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   drawerUI: {fileID: 5395485768978898893}
-  cursorTexture: {fileID: 2800000, guid: 13548d8d0fcb5c44b8044ce08a99c697, type: 3}
-  penType: 0
+  cursorTexture: {fileID: 2800000, guid: dffef66376be4fa480fb02b19edbe903, type: 3}
+  penType: 2
 --- !u!1 &1261927296574635752
 GameObject:
   m_ObjectHideFlags: 0
@@ -581,7 +581,7 @@ GameObject:
   - component: {fileID: 5608905568841633653}
   - component: {fileID: 6526272161058942084}
   m_Layer: 5
-  m_Name: Image
+  m_Name: Wood
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -627,7 +627,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.9056604, g: 0.675973, b: 0.4585261, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -657,7 +657,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   drawerUI: {fileID: 5395485768978898893}
-  cursorTexture: {fileID: 2800000, guid: 72708a25103c3fe4f9074f7296e86b7a, type: 3}
+  cursorTexture: {fileID: 2800000, guid: 13548d8d0fcb5c44b8044ce08a99c697, type: 3}
   penType: 0
 --- !u!1 &5392858943415988755
 GameObject:
@@ -733,7 +733,7 @@ GameObject:
   - component: {fileID: 7287591642198897184}
   - component: {fileID: 6426001608470440380}
   m_Layer: 5
-  m_Name: Image (2)
+  m_Name: Cloud
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -809,8 +809,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   drawerUI: {fileID: 5395485768978898893}
-  cursorTexture: {fileID: 2800000, guid: 13154691f37c1884c865b54d8bd29d6e, type: 3}
-  penType: 0
+  cursorTexture: {fileID: 2800000, guid: 34b19bc20b665b240af9c0fc9d0086f6, type: 3}
+  penType: 1
 --- !u!1 &6449356373899085796
 GameObject:
   m_ObjectHideFlags: 0
@@ -895,7 +895,7 @@ GameObject:
   - component: {fileID: 7538720636509877785}
   - component: {fileID: 2567212847707878534}
   m_Layer: 5
-  m_Name: Image (3)
+  m_Name: Steel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -941,7 +941,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.70440245, g: 0.70440245, b: 0.70440245, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -972,7 +972,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   drawerUI: {fileID: 5395485768978898893}
   cursorTexture: {fileID: 2800000, guid: ab6d288fac925ae48bbeb5e02d83dce3, type: 3}
-  penType: 0
+  penType: 3
 --- !u!1 &8702785834451653974
 GameObject:
   m_ObjectHideFlags: 0
