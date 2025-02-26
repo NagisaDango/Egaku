@@ -11,6 +11,7 @@ using ExitGames.Client.Photon;
 using UnityEditor;
 using Unity.VisualScripting;
 using ExitGames.Client.Photon.StructWrapping;
+using Hashtable = ExitGames.Client.Photon.Hashtable;
 
 public class RoomListManager : MonoBehaviourPunCallbacks
 {
@@ -71,75 +72,87 @@ public class RoomListManager : MonoBehaviourPunCallbacks
 
         if (PhotonNetwork.IsConnectedAndReady && PhotonNetwork.InLobby)
         {
-            PhotonNetwork.CreateRoom(nameField.text, new RoomOptions { MaxPlayers = 2 });
-            //PhotonNetwork.JoinRoom(name);
-
+            PhotonNetwork.CreateRoom(nameField.text, new RoomOptions { MaxPlayers = 2, CustomRoomPropertiesForLobby = new string[] {"p1","p2" } });
+            
+            //photonView.RPC("UpdateRoomPlayerList", RpcTarget.All);
+            //UpdateRoomPlayerList();
         }
     }
 
     public void JoinButton(string name )
     {
         PhotonNetwork.JoinRoom(name);
+        //UpdateRoomPlayerList();
+        //photonView.RPC("UpdateRoomPlayerList", RpcTarget.All);
     }
 
 
     string test = "";
-    [PunRPC]
+    
     void UpdateRoomPlayerList()
     {
         // Get current room properties
-        //ExitGames.Client.Photon.Hashtable roomProperties = PhotonNetwork.CurrentRoom.CustomProperties;
+        Hashtable roomProperties = PhotonNetwork.CurrentRoom.CustomProperties;
 
         // Get existing player list or create a new one
         //string playerList = roomProperties.ContainsKey("PlayerList") ? (string)roomProperties["PlayerList"] : "";
 
         string playerList;
-        Debug.Log($"RoomName: {PhotonNetwork.CurrentRoom.Name}");
-        // Add the new player name (avoid duplicates)
-        //if (!rooms.ContainsKey(PhotonNetwork.CurrentRoom.Name))
-        //{
-        //    rooms.Add(PhotonNetwork.CurrentRoom.Name, (nameField.text, ""));
-        //}
-        //else
-        //{
-        //    var players = rooms[PhotonNetwork.CurrentRoom.Name];
-        //    if (players.Item1 != "")
-        //    {
-        //        players = (nameField.text, players.Item2);
-        //    }
-        //    else
-        //    {
-        //        players = (players.Item1, nameField.text);
-        //    }
-        //    rooms[PhotonNetwork.CurrentRoom.Name] = players;
-        //}
-
-        if(!rooms.ContainsKey(PhotonNetwork.CurrentRoom.Name))
+        Debug.Log($"RoomName: {PhotonNetwork.CurrentRoom.Name},{PhotonNetwork.NickName}");
+        //Add the new player name(avoid duplicates)
+        if (roomProperties["p1"] == null && roomProperties["p2"] == null)
         {
-            rooms.Add(PhotonNetwork.CurrentRoom.Name, nameField.text+ ",");
+            roomProperties["p1"] = "wo ce nima";
+            //roomProperties["p1"] = nameField.text;
+            //rooms.Add(PhotonNetwork.CurrentRoom.Name, (nameField.text, ""));
         }
         else
         {
-            var players = rooms[PhotonNetwork.CurrentRoom.Name].Split(",");
-            string rnames;
-            if (players[0] == "")
+            //var players = rooms[PhotonNetwork.CurrentRoom.Name];
+
+            if (roomProperties["p1"] == null)
             {
-                rnames = (nameField.text + "," + players[1]);
+                //nameField.text = roomProperties["p1"];
+                //roomProperties["p1"] = nameField.text;
+                roomProperties["p1"] = "wo ce nima";
+                //players = (nameField.text, players.Item2);
             }
             else
             {
-                rnames = players[0] + "," + nameField.text;
+                //nameField.text = roomProperties["p2"];
+                //roomProperties["p2"] = nameField.text;
+                roomProperties["p2"] = "wo ce nima";
+                //players = (players.Item1, nameField.text);
             }
-            rooms[PhotonNetwork.CurrentRoom.Name] = rnames;
+            //rooms[PhotonNetwork.CurrentRoom.Name] = players;
         }
+
+        //if(!rooms.ContainsKey(PhotonNetwork.CurrentRoom.Name))
+        //{
+        //    rooms.Add(PhotonNetwork.CurrentRoom.Name, nameField.text+ ",");
+        //}
+        //else
+        //{
+        //    var players = rooms[PhotonNetwork.CurrentRoom.Name].Split(",");
+        //    string rnames;
+        //    if (players[0] == "")
+        //    {
+        //        rnames = (nameField.text + "," + players[1]);
+        //    }
+        //    else
+        //    {
+        //        rnames = players[0] + "," + nameField.text;
+        //    }
+        //    rooms[PhotonNetwork.CurrentRoom.Name] = rnames;
+        //}
 
 
         test = PhotonNetwork.CurrentRoom.Name;
-        SendPlayerData(new Dictionary<string, string> { });
+        //SendPlayerData(new Dictionary<string, string> { });
         //// Save back to room properties
         //roomProperties["PlayerList"] = playerList;
         //Debug.Log($"Update Players: {playerList}");
-        //PhotonNetwork.CurrentRoom.SetCustomProperties(roomProperties);
+        PhotonNetwork.CurrentRoom.SetCustomProperties(roomProperties);
 
         //string players = (string)PhotonNetwork.CurrentRoom.CustomProperties["PlayerList"];
         //Debug.Log($"Update Players: {players}");
@@ -193,9 +206,12 @@ public class RoomListManager : MonoBehaviourPunCallbacks
 
     public override void OnJoinedRoom()
     {
-        Debug.Log("Room successfully created! Now joining the room...");
-
+        //Hard code for now
+        //Hashtable roomProperties = PhotonNetwork.CurrentRoom.CustomProperties;
+        //roomProperties["p1"] = "wo ce nima";
+        Debug.Log($"Room successfully created! Now joining the room...");
         UpdateRoomPlayerList();
+        //UpdateRoomPlayerList();
         //photonView.RPC("UpdateRoomPlayerList", RpcTarget.All);
         print("Room X" +  PhotonNetwork.CurrentRoom.Name);
         //PhotonNetwork.JoinRoom(nameField.text);
@@ -204,7 +220,7 @@ public class RoomListManager : MonoBehaviourPunCallbacks
         // #Critical: We only load if we are the first player, else we rely on `PhotonNetwork.AutomaticallySyncScene` to sync our instance scene.
         if (PhotonNetwork.CurrentRoom.PlayerCount == 1)
         {
-            Debug.Log("We load the RoleSelection");
+            Debug.Log("We load the RoleSelection with host: " );
 
             //UpdateRoomPlayerList();
             // #Critical
@@ -236,7 +252,23 @@ public class RoomListManager : MonoBehaviourPunCallbacks
             //GameObject newRoom = Instantiate(roomItemPrefab, gridLayout.position, Quaternion.identity);
             Transform newRoom = Instantiate(roomItemPrefab, gridLayout.transform).transform;
             //newRoom.transform.SetParent(gridLayout);
-
+            object hostName;
+            if (room.CustomProperties.TryGetValue("p1", out hostName))
+            {
+                Debug.Log("HostName: " + hostName);
+            }
+            else
+            {
+                Debug.Log("?");
+            }
+            if (room.CustomProperties.TryGetValue("p2", out hostName))
+            {
+                Debug.Log("2HostName: " + hostName);
+            }
+            else
+            {
+                Debug.Log("?");
+            }
             string playerList;
             Debug.Log($"Rooms: {rooms.Keys},{rooms.ContainsKey(room.Name)},{test}, {room.Name}");
             if (rooms.ContainsKey(room.Name))
@@ -252,13 +284,22 @@ public class RoomListManager : MonoBehaviourPunCallbacks
                 Debug.Log($"Room: {room.Name}, PlayerList not found in CustomProperties.");
             }
 
-
+            
             newRoom.transform.Find("RoomName").GetComponent<TMP_Text>().text = room.Name;// + "(" + room.PlayerCount +")";
             newRoom.GetComponentInChildren<Button>().onClick.AddListener(() => JoinButton(room.Name));
 
         }
     }
 
+
+    public override void OnRoomPropertiesUpdate(Hashtable propertiesThatChanged)
+    {
+        foreach( var key in propertiesThatChanged.Keys)
+        {
+            Debug.Log($"Room Properly changed:{key} ->{propertiesThatChanged[key]}, ROOM:{PhotonNetwork.CurrentRoom.Name}");
+
+        }
+    }
 
     #endregion
 }
