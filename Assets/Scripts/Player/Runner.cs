@@ -1,5 +1,7 @@
+using System;
 using Photon.Pun;
 using Photon.Pun.Demo.PunBasics;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -92,5 +94,10 @@ public class Runner : MonoBehaviourPunCallbacks
             _RunnerMovement.Jump(jumpForce);
             jump = false;
         }
+    }
+
+    private void OnTriggerStay2D(Collider2D other)
+    {
+        throw new NotImplementedException();
     }
 }
