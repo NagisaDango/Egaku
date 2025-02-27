@@ -121,16 +121,60 @@ namespace Allan
             roomSelection.SetActive(true);
             roleSelection.SetActive(false);
 
-            if (!PhotonNetwork.InLobby)
-            {
-                PhotonNetwork.JoinLobby();
-            }
+            //Hashtable roomProperties = currentRoom.CustomProperties;
 
+            //if (roomProperties["p1"] == PhotonNetwork.NickName)
+            //    roomProperties["p1"] = "";
+            //if (roomProperties["p2"] == PhotonNetwork.NickName)
+            //    roomProperties["p2"] = "";
+
+            //currentRoom.SetCustomProperties(roomProperties);
+
+            //PhotonNetwork.LeaveLobby();
+            //PhotonNetwork.JoinLobby();
+
+            //Invoke("JoinLobbyAfterDelay", 0.5f);
 
         }
+        private Room currentRoom;
+
+        void JoinLobbyAfterDelay()
+        {
+            Debug.Log("Waiting for room cleanup...");
+            PhotonNetwork.JoinLobby();
+        }
+
         public void LeaveRoom()
         {
+            currentRoom = PhotonNetwork.CurrentRoom;
+
+            Hashtable roomProperties = PhotonNetwork.CurrentRoom.CustomProperties;
+
+            Debug.Log($"Cleaning {roomProperties["p1"]}， {roomProperties["p2"]}， {PhotonNetwork.NickName}");
+
+            if ((string)roomProperties["p1"] == PhotonNetwork.NickName)
+            {
+                Debug.Log("Cleaning p1");
+                roomProperties["p1"] = "";
+            }
+            if ((string)roomProperties["p2"] == PhotonNetwork.NickName)
+            {
+                Debug.Log("Cleaning p2");
+                roomProperties["p2"] = "";
+            }
+            PhotonNetwork.CurrentRoom.SetCustomProperties(roomProperties);
+
             PhotonNetwork.LeaveRoom();
+            //PhotonNetwork.LeaveLobby();
+            //PhotonNetwork.JoinLobby();
+            //PhotonNetwork.JoinLobby();
+        }
+
+        public override void OnConnectedToMaster()
+        {
+            Debug.Log("Enter Callback OnConnectedToMaster");
+            JoinLobbyAfterDelay();
+            //PhotonNetwork.LeaveLobby();
             //PhotonNetwork.JoinLobby();
         }
 
@@ -186,7 +230,7 @@ namespace Allan
                     { "p2", "" }
                 };
 
-                PhotonNetwork.CreateRoom(nameField.text, new RoomOptions { MaxPlayers = 2, CustomRoomProperties = customProperties, CustomRoomPropertiesForLobby = new string[] { "p1", "p2" } });
+                PhotonNetwork.CreateRoom(nameField.text, new RoomOptions {   MaxPlayers = 2, CleanupCacheOnLeave = true, EmptyRoomTtl = 0,  CustomRoomProperties = customProperties, CustomRoomPropertiesForLobby = new string[] { "p1", "p2" } });
                 //roomSelection.SetActive(false);
                 //roleSelection.SetActive(true);
 
@@ -221,13 +265,13 @@ namespace Allan
             string playerList;
             Debug.Log($"RoomName: {PhotonNetwork.CurrentRoom.Name},{PhotonNetwork.NickName}");
             //Add the new player name(avoid duplicates)
-            if (roomProperties["p1"] == "" && roomProperties["p2"] == "")
+            if ((string)roomProperties["p1"] == "" && (string)roomProperties["p2"] == "")
             {
                 roomProperties["p1"] = PhotonNetwork.NickName;
             }
             else
             {
-                if (roomProperties["p1"] == "")
+                if ((string)roomProperties["p1"] == "")
                 {
                     roomProperties["p1"] = PhotonNetwork.NickName;
                 }
@@ -238,15 +282,19 @@ namespace Allan
             }
 
             PhotonNetwork.CurrentRoom.SetCustomProperties(roomProperties);
-
         }
 
         void UpdateRoomPlayerList(Dictionary<int, Player> players)
         {
             Hashtable roomProperties = PhotonNetwork.CurrentRoom.CustomProperties;
-            Debug.Log("Keys:" + string.Join(", ", players.Keys));
-            roomProperties["p1"] = players.ContainsKey(1) ? players[1].NickName : "";
-            roomProperties["p2"] = players.ContainsKey(2) ? players[2].NickName : "";
+            int jj = 1;
+            foreach (int i in players.Keys)
+            {
+                roomProperties["p" + jj] = players[i].NickName;
+                jj++;
+            }
+            //roomProperties["p1"] = players.ContainsKey(1) ? players[1].NickName : "";
+            //roomProperties["p2"] = players.ContainsKey(2) ? players[2].NickName : "";
 
 
             PhotonNetwork.CurrentRoom.SetCustomProperties(roomProperties);
@@ -275,11 +323,6 @@ namespace Allan
         }
 
 
-
-
-
-
-
         public override void OnJoinedRoom()
         {
 
@@ -287,7 +330,6 @@ namespace Allan
             Debug.Log($"Room successfully created! Now joining the room...");
             roomSelection.SetActive(false);
             roleSelection.SetActive(true);
-
 
             UpdateRoomPlayerList(PhotonNetwork.CurrentRoom.Players);
 
@@ -307,61 +349,87 @@ namespace Allan
 
         }
 
-
-
-
         public override void OnRoomListUpdate(List<RoomInfo> roomList)
         {
             Debug.Log("Enter Callback OnRoomListUpdate");
-
-            for (int i = 0; i < gridLayout.childCount; i++)
+            List<string> roomNames = new List<string>();
+            foreach (RoomInfo room in roomList)
             {
-                if (gridLayout.GetChild(i).GetComponentInChildren<TMP_Text>().text == roomList[i].Name)
+                print("PRINT: " + room.Name);
+                roomNames.Add(room.Name);
+            }
+
+            List<Transform> toRemove = new List<Transform>();
+
+            foreach (Transform child in gridLayout)
+            {
+                string roomName = child.GetComponentInChildren<TMP_Text>().text;
+                if (roomNames.Contains(roomName))
                 {
-                    Destroy(gridLayout.GetChild(i).gameObject);
-                    gridLayout.GetChild(i).GetComponentInChildren<Button>().onClick.RemoveListener(() => JoinButton(roomList[i].Name));
-
-                    if (roomList[i].PlayerCount == 0)
-                    {
-                        roomList.Remove(roomList[i]);
-                    }
-
+                    child.GetComponentInChildren<Button>().onClick.RemoveListener(() => JoinButton(roomName));
+                    toRemove.Add(child);
                 }
             }
 
+            foreach (Transform child in toRemove)
+            {
+                Destroy(child.gameObject);
+            }
 
+            roomList.RemoveAll(room => room.PlayerCount == 0);
+
+            print("__");
             foreach (RoomInfo room in roomList)
             {
+                print(room.Name + room.PlayerCount);
                 //GameObject newRoom = Instantiate(roomItemPrefab, gridLayout.position, Quaternion.identity);
-                Transform newRoom = Instantiate(roomItemPrefab, gridLayout.transform).transform;
+                Transform newRoom = null;
+                if ((string)room.CustomProperties["p1"] != "" || (string)room.CustomProperties["p2"] != "")
+                {
+                    newRoom = Instantiate(roomItemPrefab, gridLayout.transform).transform;
+                }
                 //newRoom.transform.SetParent(gridLayout);
                 string playerList;
 
-
-                if(room.CustomProperties["p1"] != "" && room.CustomProperties["p2"] != "")
+                if (newRoom != null)
                 {
-                    newRoom.GetComponentInChildren<Button>().interactable = false;
-                }
-                else if (room.CustomProperties["p1"] == "" || room.CustomProperties["p2"] == "")
-                {
-                    //playerList = (string)room.CustomProperties["PlayerList"];
-                    string player1 = room.CustomProperties["p1"] != "" ? (string)room.CustomProperties["p1"] : " ----";
-                    string player2 = room.CustomProperties["p2"] != "" ? (string)room.CustomProperties["p2"] : " ----";
+                    if (room.PlayerCount == 2)//(string)room.CustomProperties["p1"] != "" && (string)room.CustomProperties["p2"] != "")
+                    {
+                        newRoom.GetComponentInChildren<Button>().interactable = false;
+                    }
+                    else
+                    {
+                        newRoom.GetComponentInChildren<Button>().interactable = true;
 
+                    }
+
+                    string player1 = (string)room.CustomProperties["p1"] != "" ? (string)room.CustomProperties["p1"] : " ----";
+                    string player2 = (string)room.CustomProperties["p2"] != "" ? (string)room.CustomProperties["p2"] : " ----";
                     string players = player1 + " X " + player2;
                     newRoom.transform.Find("PlayerName").GetComponent<TMP_Text>().text = players;
                     Debug.Log($"Room: {room.Name}, Players: {players}");
+
+
+                    //else if (room.CustomProperties["p1"] == "" || room.CustomProperties["p2"] == "")
+                    //{
+                    //    //playerList = (string)room.CustomProperties["PlayerList"];
+                    //    string player1 = room.CustomProperties["p1"] != "" ? (string)room.CustomProperties["p1"] : " ----";
+                    //    string player2 = room.CustomProperties["p2"] != "" ? (string)room.CustomProperties["p2"] : " ----";
+
+                    //    string players = player1 + " X " + player2;
+                    //    newRoom.transform.Find("PlayerName").GetComponent<TMP_Text>().text = players;
+                    //    Debug.Log($"Room: {room.Name}, Players: {players}");
+                    //}
+                    //else
+                    //{
+                    //    Debug.Log($"Room: {room.Name}, PlayerList not found in CustomProperties.");
+                    //}
+
+
+                    newRoom.transform.Find("RoomName").GetComponent<TMP_Text>().text = room.Name;// + "(" + room.PlayerCount +")";
+                    newRoom.GetComponentInChildren<Button>().onClick.AddListener(() => JoinButton(room.Name));
                 }
-                else
-                {
-                    Debug.Log($"Room: {room.Name}, PlayerList not found in CustomProperties.");
-                }
 
-
-                newRoom.transform.Find("RoomName").GetComponent<TMP_Text>().text = room.Name;// + "(" + room.PlayerCount +")";
-                newRoom.GetComponentInChildren<Button>().onClick.AddListener(() => JoinButton(room.Name));
-
-                
             }
         }
 

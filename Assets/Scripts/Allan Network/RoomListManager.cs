@@ -286,71 +286,75 @@ public class RoomListManager : MonoBehaviourPunCallbacks
 
     public override void OnRoomListUpdate(List<RoomInfo> roomList)
     {
-        Debug.Log("Enter Callback OnRoomListUpdate");
+        //Debug.Log("Enter Callback OnRoomListUpdate");
 
-        for (int i = 0; i < gridLayout.childCount; i++) { 
-            if(gridLayout.GetChild(i).GetComponentInChildren<TMP_Text>().text == roomList[i].Name)
-            {
-                Destroy(gridLayout.GetChild(i).gameObject);
-                gridLayout.GetChild(i).GetComponentInChildren<Button>().onClick.RemoveListener(() => JoinButton(roomList[i].Name));
+        //for (int i = 0; i < gridLayout.childCount; i++) { 
+        //    if(gridLayout.GetChild(i).GetComponentInChildren<TMP_Text>().text == roomList[i].Name)
+        //    {
+        //        Destroy(gridLayout.GetChild(i).gameObject);
+        //        gridLayout.GetChild(i).GetComponentInChildren<Button>().onClick.RemoveListener(() => JoinButton(roomList[i].Name));
 
-                if (roomList[i].PlayerCount == 0)
-                {
-                    rooms.Remove(roomList[i].Name);
-                    roomList.Remove(roomList[i]);
-                }
+        //        if (roomList[i].PlayerCount == 0)
+        //        {
+        //            rooms.Remove(roomList[i].Name);
+        //            roomList.Remove(roomList[i]);
+        //        }
 
-            }
-        }
+        //        //gridLayout.GetChild(i).GetComponentInChildren<Button>().onClick.RemoveListener(() => JoinButton(roomList[i].Name));
+        //        //Destroy(gridLayout.GetChild(i).gameObject);
+        //        //i--;
+
+        //    }
+        //}
 
 
-        foreach (RoomInfo room in roomList)
-        {
-            //GameObject newRoom = Instantiate(roomItemPrefab, gridLayout.position, Quaternion.identity);
-            Transform newRoom = Instantiate(roomItemPrefab, gridLayout.transform).transform;
-            //newRoom.transform.SetParent(gridLayout);
-            object hostName;
-            if (room.CustomProperties.TryGetValue("p1", out hostName))
-            {
-                Debug.Log("HostName: " + hostName);
-            }
-            else
-            {
-                Debug.Log("?");
-            }
-            if (room.CustomProperties.TryGetValue("p2", out hostName))
-            {
-                Debug.Log("2HostName: " + hostName);
-            }
-            else
-            {
-                Debug.Log("?");
-            }
-            string playerList;
-            Debug.Log($"Rooms: {rooms.Keys},{rooms.ContainsKey(room.Name)},{test}, {room.Name}");
-            Debug.Log($"Enter Callback  {room.CustomProperties["p1"]}, {room.CustomProperties["p2"]}");
+        //foreach (RoomInfo room in roomList)
+        //{
+        //    //GameObject newRoom = Instantiate(roomItemPrefab, gridLayout.position, Quaternion.identity);
+        //    Transform newRoom = Instantiate(roomItemPrefab, gridLayout.transform).transform;
+        //    //newRoom.transform.SetParent(gridLayout);
+        //    object hostName;
+        //    if (room.CustomProperties.TryGetValue("p1", out hostName))
+        //    {
+        //        Debug.Log("HostName: " + hostName);
+        //    }
+        //    else
+        //    {
+        //        Debug.Log("?");
+        //    }
+        //    if (room.CustomProperties.TryGetValue("p2", out hostName))
+        //    {
+        //        Debug.Log("2HostName: " + hostName);
+        //    }
+        //    else
+        //    {
+        //        Debug.Log("?");
+        //    }
+        //    string playerList;
+        //    Debug.Log($"Rooms: {rooms.Keys},{rooms.ContainsKey(room.Name)},{test}, {room.Name}");
+        //    Debug.Log($"Enter Callback  {room.CustomProperties["p1"]}, {room.CustomProperties["p2"]}");
 
-            if (room.CustomProperties.ContainsKey("p1")|| room.CustomProperties.ContainsKey("p2"))
-            {
-                //playerList = (string)room.CustomProperties["PlayerList"];
-                string player1 = room.CustomProperties["p1"] != "" ? (string)room.CustomProperties["p1"] : " ----";
-                string player2 = room.CustomProperties["p2"] != "" ? (string)room.CustomProperties["p2"] : " ----";
+        //    if (room.CustomProperties.ContainsKey("p1")|| room.CustomProperties.ContainsKey("p2"))
+        //    {
+        //        //playerList = (string)room.CustomProperties["PlayerList"];
+        //        string player1 = room.CustomProperties["p1"] != "" ? (string)room.CustomProperties["p1"] : " ----";
+        //        string player2 = room.CustomProperties["p2"] != "" ? (string)room.CustomProperties["p2"] : " ----";
 
-                string players = player1 + " X " + player2;
-                //newRoom.transform.Find("PlayerName").GetComponent<TMP_Text>().text = players.Item1 = " x " + players.Item2;
-                newRoom.transform.Find("PlayerName").GetComponent<TMP_Text>().text = players;
-                Debug.Log($"Room: {room.Name}, Players: {players}");
-            }
-            else
-            {
-                Debug.Log($"Room: {room.Name}, PlayerList not found in CustomProperties.");
-            }
+        //        string players = player1 + " X " + player2;
+        //        //newRoom.transform.Find("PlayerName").GetComponent<TMP_Text>().text = players.Item1 = " x " + players.Item2;
+        //        newRoom.transform.Find("PlayerName").GetComponent<TMP_Text>().text = players;
+        //        Debug.Log($"Room: {room.Name}, Players: {players}");
+        //    }
+        //    else
+        //    {
+        //        Debug.Log($"Room: {room.Name}, PlayerList not found in CustomProperties.");
+        //    }
 
             
-            newRoom.transform.Find("RoomName").GetComponent<TMP_Text>().text = room.Name;// + "(" + room.PlayerCount +")";
-            newRoom.GetComponentInChildren<Button>().onClick.AddListener(() => JoinButton(room.Name));
+        //    newRoom.transform.Find("RoomName").GetComponent<TMP_Text>().text = room.Name;// + "(" + room.PlayerCount +")";
+        //    newRoom.GetComponentInChildren<Button>().onClick.AddListener(() => JoinButton(room.Name));
 
-        }
+        //}
     }
 
 
