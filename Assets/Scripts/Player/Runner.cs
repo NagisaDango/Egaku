@@ -14,6 +14,7 @@ public class Runner : MonoBehaviourPunCallbacks
     private InputAction jumpAction;
     public int jumpForce;
     public int maxSpeed;
+    private GameObject runnerMouse;
 
     [Tooltip("The local player instance. Use this to know if the local player is represented in the Scene")]
     public static GameObject LocalPlayerInstance;
@@ -51,6 +52,10 @@ public class Runner : MonoBehaviourPunCallbacks
             rb.isKinematic = true;  // Stop physics interactions
             rb.simulated = false;   // Turn off physics on non-owners
         }
+        else
+        {
+            runnerMouse = PhotonNetwork.Instantiate("RunnerMouse", Camera.main.ScreenToWorldPoint(Input.mousePosition), Quaternion.identity);
+        }
 
         InitInput();
         _RunnerMovement = new RunnerMovement(rb, 10f, maxSpeed);
@@ -72,7 +77,7 @@ public class Runner : MonoBehaviourPunCallbacks
         }
 
         _RunnerMovement.Update();
-
+        RunnerMouseUpdate();
         if (moveAction.ReadValue<Vector2>() != Vector2.zero)
         {
             Vector2 movement = moveAction.ReadValue<Vector2>();
@@ -83,6 +88,13 @@ public class Runner : MonoBehaviourPunCallbacks
         {
             jump = true;
         }
+    }
+
+    private void RunnerMouseUpdate()
+    {
+        Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        mousePos.z = 0;
+        runnerMouse.transform.position = mousePos;
     }
 
     private void FixedUpdate()
