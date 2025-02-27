@@ -53,6 +53,7 @@ MonoBehaviour:
   - RPC_FinishDraw
   - EraseDrawnObj
   - RPC_SetupSpline
+  - RPC_SetParent
   DisableAutoOpenWizard: 1
   ShowSettings: 0
   DevRegionSetOnce: 1

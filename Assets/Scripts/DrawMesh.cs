@@ -1,5 +1,6 @@
 using Photon.Pun;
 using System.Collections.Generic;
+using System.Linq;
 using Photon.Realtime;
 using UnityEngine;
 using UnityEngine.Splines;
@@ -190,11 +191,12 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
         PhotonView splinePhotonView = PhotonView.Find(splineViewID);
         if (splinePhotonView != null)
         {
+            ElectricSpline listHolder = splinePhotonView.GetComponent<ElectricSpline>();
             SplineContainer container = splinePhotonView.GetComponent<SplineContainer>();
             if (container != null)
             {
                 Spline spline = new Spline(); 
-                container.Spline = spline;
+                container.AddSpline(spline);
                 foreach (Vector3 point in pointList)
                 {
                     spline.Add(new BezierKnot(point));
