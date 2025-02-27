@@ -167,7 +167,8 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
     {
         if (currProperty.gravity) rb2d.bodyType = RigidbodyType2D.Dynamic;
         if (currProperty.mass > 0) rb2d.mass = currProperty.mass;
-        if (currProperty.trigger) col2d.isTrigger = true;
+        //***!!! if currproperty is trigger just remove the collider for now.
+        if (currProperty.trigger)  Destroy(col2d);
 
         photonView.TransferOwnership(Runner.Instance.actorNum); 
 

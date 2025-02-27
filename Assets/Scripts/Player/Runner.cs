@@ -4,6 +4,7 @@ using Photon.Pun.Demo.PunBasics;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Splines;
 
 public class Runner : MonoBehaviourPunCallbacks
 {
@@ -108,8 +109,35 @@ public class Runner : MonoBehaviourPunCallbacks
         }
     }
 
-    private void OnTriggerStay2D(Collider2D other)
+    private void OnTriggerEnter2D(Collider2D other)
     {
-        throw new NotImplementedException();
+        if (other.tag.StartsWith("Electric"))
+        {
+            if (true)//Input.GetKeyDown(KeyCode.E))
+            {
+                print("start electric");
+                SplineAnimate splineAnimate = other.transform.parent.GetChild(0).GetComponent<SplineAnimate>();
+                this.transform.SetParent(splineAnimate.gameObject.transform, false);
+                if (splineAnimate == null) { Debug.LogWarning("No apline anim"); return; }
+
+                SplineContainer splineContainer = splineAnimate.Container;
+                if (splineContainer == null || splineContainer.Splines.Count == 0)
+                {
+                    Debug.LogWarning("No splines found in the container.");
+                    return;
+                }
+
+                if (other.tag.EndsWith("Begin"))
+                {
+                    this.rb.simulated = false;
+                    splineAnimate.Container.Spline = splineAnimate.Container.Splines[0];
+                }
+                else
+                {
+                    splineAnimate.Container.Spline = splineAnimate.Container.Splines[1];
+                }
+                splineAnimate.Play();
+            }
+        }
     }
 }
