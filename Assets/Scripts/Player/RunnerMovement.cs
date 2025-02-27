@@ -24,13 +24,13 @@ public class RunnerMovement
     public void Move(Vector2 inputVector)
     {
         Vector2 axis = GetMoveAxis().normalized * inputVector;
-        rb.velocity = new Vector2(axis.x * speed, axis.y * speed + rb.velocity.y);
+        rb.linearVelocity = new Vector2(axis.x * speed, axis.y * speed + rb.linearVelocity.y);
     }
 
     public void Jump(int jumpForce)
     {
         if(GroundDetect())
-            rb.velocity= new Vector2(rb.velocity.x, jumpForce);
+            rb.linearVelocity= new Vector2(rb.linearVelocity.x, jumpForce);
     }
 
     private Vector2 GetMoveAxis()
@@ -48,11 +48,11 @@ public class RunnerMovement
         
         if (hit.collider == null)
         {
-            rb.drag = 0;
+            rb.linearDamping = 0;
             return false;
         }
 
-        rb.drag = 5;
+        rb.linearDamping = 5;
         return true;
     }
 }
