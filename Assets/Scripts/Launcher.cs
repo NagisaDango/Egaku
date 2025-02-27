@@ -150,21 +150,21 @@ namespace Phantom
 
         public override void OnJoinedLobby()
         {
-            PhotonNetwork.LoadLevel("RoomSelection");
+            PhotonNetwork.LoadLevel("RoleSelection");
         }
 
         public override void OnJoinedRoom()
         {
-            Debug.Log("PUN Basics Tutorial/Launcher: OnJoinedRoom() called by PUN. Now this client is in a room.");
-            // #Critical: We only load if we are the first player, else we rely on `PhotonNetwork.AutomaticallySyncScene` to sync our instance scene.
-            if (PhotonNetwork.CurrentRoom.PlayerCount == 1)
-            {
-                Debug.Log("We load the RoleSelection");
+            //Debug.Log("PUN Basics Tutorial/Launcher: OnJoinedRoom() called by PUN. Now this client is in a room.");
+            //// #Critical: We only load if we are the first player, else we rely on `PhotonNetwork.AutomaticallySyncScene` to sync our instance scene.
+            //if (PhotonNetwork.CurrentRoom.PlayerCount == 1)
+            //{
+            //    Debug.Log("We load the RoleSelection");
 
-                // #Critical
-                // Load the Room Level.
-                PhotonNetwork.LoadLevel("RoleSelection");
-            }
+            //    // #Critical
+            //    // Load the Room Level.
+            //    PhotonNetwork.LoadLevel("RoleSelection");
+            //}
         }
 
         #endregion

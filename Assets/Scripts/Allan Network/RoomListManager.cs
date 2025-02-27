@@ -20,7 +20,6 @@ public class RoomListManager : MonoBehaviourPunCallbacks
 
     public TMP_InputField nameField;
 
-    //struct Room {  public string[] playerNames; }
 
     public Dictionary<string,  string> rooms = new Dictionary<string, string>();
 
@@ -29,23 +28,44 @@ public class RoomListManager : MonoBehaviourPunCallbacks
 
     private void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-            PhotonNetwork.AddCallbackTarget(this); // Listen for events
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
+        
     }
     private void OnDestroy()
     {
         PhotonNetwork.RemoveCallbackTarget(this); // Remove listener
     }
 
+    private void OnEnable()
+    {
+        Debug.Log("dingzheng");
+        if (Instance == null)
+        {
+            Instance = this;;
+            PhotonNetwork.AddCallbackTarget(this); // Listen for events
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+
+    }
+
     void Start()
     {
+
+        //Debug.Log("dingzheng");
+        //if (Instance == null)
+        //{
+        //    Instance = this;
+        //    PhotonNetwork.AddCallbackTarget(this); // Listen for events
+        //    DontDestroyOnLoad(gameObject);
+        //}
+        //else
+        //{
+        //    Destroy(gameObject);
+        //}
+
         if (!PhotonNetwork.IsConnected)
         {
             // Connect to the Photon Master Server
@@ -218,14 +238,19 @@ public class RoomListManager : MonoBehaviourPunCallbacks
     }
     public override void OnPlayerEnteredRoom(Player newPlayer)
     {
+        Debug.Log("Enter Callback OnPlayerEnteredRoom");
         //UpdateRoomPlayerList(); 
         //PhotonView photonView = PhotonView.Get(this);
         //photonView.RPC("UpdateRoomPlayerList", RpcTarget.All);
-        
+
     }
+
+
+
 
     public override void OnJoinedRoom()
     {
+
         Debug.Log("Enter Callback OnJoinedRoom");
 
         //Hard code for now
@@ -235,6 +260,7 @@ public class RoomListManager : MonoBehaviourPunCallbacks
         //PhotonNetwork.CurrentRoom.Players.Clear();
         //UpdateRoomPlayerList();
         UpdateRoomPlayerList(PhotonNetwork.CurrentRoom.Players);
+
 
         //UpdateRoomPlayerList();
         //photonView.RPC("UpdateRoomPlayerList", RpcTarget.All);
@@ -252,7 +278,11 @@ public class RoomListManager : MonoBehaviourPunCallbacks
             // Load the Room Level.
             PhotonNetwork.LoadLevel("RoleSelection");
         }
+
     }
+
+
+
 
     public override void OnRoomListUpdate(List<RoomInfo> roomList)
     {
