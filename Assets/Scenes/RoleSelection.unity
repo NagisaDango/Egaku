@@ -239,6 +239,10 @@ PrefabInstance:
       propertyPath: roomItemPrefab
       value: 
       objectReference: {fileID: 933874831032086738, guid: b2e063235eee34d4ab5ba2e937b10bde, type: 3}
+    - target: {fileID: 6385152489850710683, guid: a1bc6ab01b35cc144b9557a7bc598dcf, type: 3}
+      propertyPath: sceneViewId
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 8722705766776074390, guid: a1bc6ab01b35cc144b9557a7bc598dcf, type: 3}
       propertyPath: m_Name
       value: AllanGameManager

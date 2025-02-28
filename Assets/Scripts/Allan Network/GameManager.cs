@@ -39,6 +39,8 @@ namespace Allan
         public Transform gridLayout;
         public TMP_InputField nameField;
 
+        private HashSet<string> roomInfoSet = new();
+
         private void Awake()
         {
             roomSelection.SetActive(true);
@@ -149,7 +151,7 @@ namespace Allan
             currentRoom = PhotonNetwork.CurrentRoom;
 
             Hashtable roomProperties = PhotonNetwork.CurrentRoom.CustomProperties;
-
+            photonView.RPC("RPC_RemoveRoomInfoSet", RpcTarget.All, PhotonNetwork.CurrentRoom.Name);
             Debug.Log($"Cleaning {roomProperties["p1"]}， {roomProperties["p2"]}， {PhotonNetwork.NickName}");
 
             if ((string)roomProperties["p1"] == PhotonNetwork.NickName)
@@ -335,6 +337,7 @@ namespace Allan
 
 
             print("Room X" + PhotonNetwork.CurrentRoom.Name);
+            photonView.RPC("RPC_AddRoomInfoSet", RpcTarget.All, PhotonNetwork.CurrentRoom.Name);
             Debug.Log("PUN Basics Tutorial/Launcher: OnJoinedRoom() called by PUN. Now this client is in a room.");
             // #Critical: We only load if we are the first player, else we rely on `PhotonNetwork.AutomaticallySyncScene` to sync our instance scene.
             if (PhotonNetwork.CurrentRoom.PlayerCount == 1)
@@ -344,21 +347,41 @@ namespace Allan
                 //PhotonNetwork.LoadLevel("RoleSelection");
                 roomSelection.SetActive(false);
                 roleSelection.SetActive(true);
-
             }
-
         }
 
+        [PunRPC]
+        public void RPC_AddRoomInfoSet(string roomName)
+        {
+            roomInfoSet.Add(roomName);
+            print("Adding Room: " + roomName);
+        }
+        [PunRPC]
+        public void RPC_RemoveRoomInfoSet(string roomName)
+        {
+            roomInfoSet.Remove(roomName);
+            print("Removing Room: " + roomName);
+        }
+
+        //RPCs only get call in rooms
+        //Only get call in lobby
         public override void OnRoomListUpdate(List<RoomInfo> roomList)
         {
+
             Debug.Log("Enter Callback OnRoomListUpdate");
             List<string> roomNames = new List<string>();
             foreach (RoomInfo room in roomList)
             {
                 print("PRINT: " + room.Name);
                 roomNames.Add(room.Name);
+              
             }
 
+            foreach (string n in roomInfoSet)
+            {
+                print("asdasd: " + n);
+            }
+            
             List<Transform> toRemove = new List<Transform>();
 
             foreach (Transform child in gridLayout)
@@ -369,6 +392,7 @@ namespace Allan
                     child.GetComponentInChildren<Button>().onClick.RemoveListener(() => JoinButton(roomName));
                     toRemove.Add(child);
                 }
+
             }
 
             foreach (Transform child in toRemove)
@@ -381,7 +405,7 @@ namespace Allan
             print("__");
             foreach (RoomInfo room in roomList)
             {
-                print(room.Name + room.PlayerCount);
+                print("Cleaning"+ room.Name + room.PlayerCount + (string)room.CustomProperties["p1"] + (string)room.CustomProperties["p2"]);
                 //GameObject newRoom = Instantiate(roomItemPrefab, gridLayout.position, Quaternion.identity);
                 Transform newRoom = null;
                 if ((string)room.CustomProperties["p1"] != "" || (string)room.CustomProperties["p2"] != "")
@@ -431,6 +455,7 @@ namespace Allan
                 }
 
             }
+            
         }
 
 
