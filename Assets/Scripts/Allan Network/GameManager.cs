@@ -134,7 +134,7 @@ namespace Allan
 
             //PhotonNetwork.LeaveLobby();
             //PhotonNetwork.JoinLobby();
-
+            //JoinLobbyAfterDelay();
             //Invoke("JoinLobbyAfterDelay", 0.5f);
 
         }
@@ -269,6 +269,16 @@ namespace Allan
         public override void OnJoinedLobby()
         {
             Debug.Log("ding zhengasds");
+            List<Transform> childs = new List<Transform>();
+            foreach(Transform child in gridLayout)
+            {
+                childs.Add(child);
+            }
+
+            foreach(Transform child in childs)
+            {
+                DestroyImmediate(child.gameObject);
+            }
         }
 
         string test = "";
@@ -424,11 +434,12 @@ namespace Allan
         private List<RoomInfo> roomInfoList = new List<RoomInfo>();
         public override void OnRoomListUpdate(List<RoomInfo> roomList)
         {
-
             Debug.Log("Enter Callback OnRoomListUpdate");
-            List<string> roomNames = new List<string>();
+            List<string> activeRooms = new List<string>();
+            List<string> removingRooms = new List<string>();
             foreach (RoomInfo room in roomList)
             {
+<<<<<<< Updated upstream
                 print("PRINT: " + room.Name);
                 roomNames.Add(room.Name);
 
@@ -444,18 +455,35 @@ namespace Allan
             {
                 print("asdasd: " + n);
             }
+=======
+                if(room.RemovedFromList)
+                {
+                    print("Removing room: " + room.Name);
+                    removingRooms.Add(room.Name);
+                }
+                else
+                {
+                    print("Active room: " + room.Name);
+                    activeRooms.Add(room.Name);
+                }
+            }
+
+            roomList.RemoveAll(room => room.RemovedFromList);
+>>>>>>> Stashed changes
 
             List<Transform> toRemove = new List<Transform>();
-
             foreach (Transform child in gridLayout)
             {
-                string roomName = child.GetComponentInChildren<TMP_Text>().text;
-                if (roomNames.Contains(roomName))
+                if(removingRooms.Contains(child.name) || activeRooms.Contains(child.name))
                 {
+<<<<<<< Updated upstream
                     //child.GetComponentInChildren<Button>().onClick.RemoveListener(() => JoinButton(roomName));
+=======
+>>>>>>> Stashed changes
                     toRemove.Add(child);
 
                 }
+<<<<<<< Updated upstream
                 child.GetComponentInChildren<Button>().onClick.RemoveListener(() => JoinButton(roomName));
                 DestroyImmediate(child.gameObject);
 
@@ -465,8 +493,14 @@ namespace Allan
             //{
             //    Destroy(child.gameObject);
             //}
+=======
+            }
 
-            roomList.RemoveAll(room => room.PlayerCount == 0);
+            foreach (Transform child in toRemove)
+            {
+                DestroyImmediate(child.gameObject);
+            }
+>>>>>>> Stashed changes
 
             print("__");
             foreach (RoomInfo room in roomList)
@@ -482,13 +516,12 @@ namespace Allan
                 if ((string)room.CustomProperties["p1"] != "" || (string)room.CustomProperties["p2"] != "")
                 {
                     newRoom = Instantiate(roomItemPrefab, gridLayout.transform).transform;
+                    newRoom.name = room.Name;
                 }
-                //newRoom.transform.SetParent(gridLayout);
-                string playerList;
 
                 if (newRoom != null)
                 {
-                    if (room.PlayerCount == 2)//(string)room.CustomProperties["p1"] != "" && (string)room.CustomProperties["p2"] != "")
+                    if (room.PlayerCount == 2)
                     {
                         newRoom.GetComponentInChildren<Button>().interactable = false;
                     }
@@ -503,23 +536,6 @@ namespace Allan
                     string players = player1 + " X " + player2;
                     newRoom.transform.Find("PlayerName").GetComponent<TMP_Text>().text = players;
                     Debug.Log($"Room: {room.Name}, Players: {players}");
-
-
-                    //else if (room.CustomProperties["p1"] == "" || room.CustomProperties["p2"] == "")
-                    //{
-                    //    //playerList = (string)room.CustomProperties["PlayerList"];
-                    //    string player1 = room.CustomProperties["p1"] != "" ? (string)room.CustomProperties["p1"] : " ----";
-                    //    string player2 = room.CustomProperties["p2"] != "" ? (string)room.CustomProperties["p2"] : " ----";
-
-                    //    string players = player1 + " X " + player2;
-                    //    newRoom.transform.Find("PlayerName").GetComponent<TMP_Text>().text = players;
-                    //    Debug.Log($"Room: {room.Name}, Players: {players}");
-                    //}
-                    //else
-                    //{
-                    //    Debug.Log($"Room: {room.Name}, PlayerList not found in CustomProperties.");
-                    //}
-
 
                     newRoom.transform.Find("RoomName").GetComponent<TMP_Text>().text = room.Name;// + "(" + room.PlayerCount +")";
                     newRoom.GetComponentInChildren<Button>().onClick.AddListener(() => JoinButton(room.Name));
@@ -541,6 +557,8 @@ namespace Allan
 
             }
         }
+
+        
 
     }
 }
