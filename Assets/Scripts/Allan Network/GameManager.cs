@@ -164,8 +164,19 @@ namespace Allan
                 Debug.Log("Cleaning p2");
                 roomProperties["p2"] = "";
             }
-            PhotonNetwork.CurrentRoom.SetCustomProperties(roomProperties);
 
+            if((string) roomProperties["p1"] == "" && (string)roomProperties["p2"] == "")
+            {
+                roomProperties["show"] = false;
+            }
+            else
+            {
+                roomProperties["show"] = true;
+            }
+
+
+            PhotonNetwork.CurrentRoom.SetCustomProperties(roomProperties);
+            //RefreshRoomList();
             PhotonNetwork.LeaveRoom();
             //PhotonNetwork.LeaveLobby();
             //PhotonNetwork.JoinLobby();
@@ -176,6 +187,8 @@ namespace Allan
         {
             Debug.Log("Enter Callback OnConnectedToMaster");
             JoinLobbyAfterDelay();
+            //RefreshRoomList();
+
             //PhotonNetwork.LeaveLobby();
             //PhotonNetwork.JoinLobby();
         }
@@ -229,10 +242,11 @@ namespace Allan
                 Hashtable customProperties = new Hashtable
                 {
                     { "p1", "" },
-                    { "p2", "" }
+                    { "p2", "" },
+                    { "show", false}
                 };
 
-                PhotonNetwork.CreateRoom(nameField.text, new RoomOptions {   MaxPlayers = 2, CleanupCacheOnLeave = true, EmptyRoomTtl = 0,  CustomRoomProperties = customProperties, CustomRoomPropertiesForLobby = new string[] { "p1", "p2" } });
+                PhotonNetwork.CreateRoom(nameField.text, new RoomOptions {   MaxPlayers = 2, CleanupCacheOnLeave = true, EmptyRoomTtl = 0,  CustomRoomProperties = customProperties, CustomRoomPropertiesForLobby = new string[] { "p1", "p2", "show" } });
                 //roomSelection.SetActive(false);
                 //roleSelection.SetActive(true);
 
@@ -295,12 +309,23 @@ namespace Allan
                 roomProperties["p" + jj] = players[i].NickName;
                 jj++;
             }
+
+            if ((string)roomProperties["p1"] == "" && (string)roomProperties["p2"] == "")
+            {
+                roomProperties["show"] = false;
+            }
+            else
+            {
+                roomProperties["show"] = true;
+            }
+
+
+
             //roomProperties["p1"] = players.ContainsKey(1) ? players[1].NickName : "";
             //roomProperties["p2"] = players.ContainsKey(2) ? players[2].NickName : "";
 
 
             PhotonNetwork.CurrentRoom.SetCustomProperties(roomProperties);
-
         }
 
         // 发送变量到所有玩家
@@ -348,6 +373,8 @@ namespace Allan
                 roomSelection.SetActive(false);
                 roleSelection.SetActive(true);
             }
+            //RefreshRoomList();
+
         }
 
         [PunRPC]
@@ -365,6 +392,36 @@ namespace Allan
 
         //RPCs only get call in rooms
         //Only get call in lobby
+
+        public void RefreshRoomList()
+        {
+            foreach (Transform child in gridLayout)
+            {
+                child.GetComponentInChildren<Button>().onClick.RemoveListener(() => JoinButton(child.GetComponentInChildren<TMP_Text>().text));
+                Destroy(child.gameObject);
+            }
+
+            foreach(RoomInfo room in roomInfoList)
+            {
+                if ((bool)room.CustomProperties["show"])
+                {
+                    Transform newRoom = Instantiate(roomItemPrefab, gridLayout.transform).transform;
+
+                    string player1 = (string)room.CustomProperties["p1"] != "" ? (string)room.CustomProperties["p1"] : " ----";
+                    string player2 = (string)room.CustomProperties["p2"] != "" ? (string)room.CustomProperties["p2"] : " ----";
+                    string players = player1 + " X " + player2;
+                    newRoom.transform.Find("PlayerName").GetComponent<TMP_Text>().text = players;
+                    newRoom.transform.Find("RoomName").GetComponent<TMP_Text>().text = room.Name;// + "(" + room.PlayerCount +")";
+                    newRoom.GetComponentInChildren<Button>().onClick.AddListener(() => JoinButton(room.Name));
+                }
+
+
+            }
+
+        }
+
+
+        private List<RoomInfo> roomInfoList = new List<RoomInfo>();
         public override void OnRoomListUpdate(List<RoomInfo> roomList)
         {
 
@@ -374,14 +431,20 @@ namespace Allan
             {
                 print("PRINT: " + room.Name);
                 roomNames.Add(room.Name);
-              
+
+                if (!roomInfoList.Contains(room))
+                {
+                    roomInfoList.Add(room);
+                }
+
+
             }
 
             foreach (string n in roomInfoSet)
             {
                 print("asdasd: " + n);
             }
-            
+
             List<Transform> toRemove = new List<Transform>();
 
             foreach (Transform child in gridLayout)
@@ -389,23 +452,31 @@ namespace Allan
                 string roomName = child.GetComponentInChildren<TMP_Text>().text;
                 if (roomNames.Contains(roomName))
                 {
-                    child.GetComponentInChildren<Button>().onClick.RemoveListener(() => JoinButton(roomName));
+                    //child.GetComponentInChildren<Button>().onClick.RemoveListener(() => JoinButton(roomName));
                     toRemove.Add(child);
+
                 }
+                child.GetComponentInChildren<Button>().onClick.RemoveListener(() => JoinButton(roomName));
+                DestroyImmediate(child.gameObject);
 
             }
 
-            foreach (Transform child in toRemove)
-            {
-                Destroy(child.gameObject);
-            }
+            //foreach (Transform child in toRemove)
+            //{
+            //    Destroy(child.gameObject);
+            //}
 
             roomList.RemoveAll(room => room.PlayerCount == 0);
 
             print("__");
             foreach (RoomInfo room in roomList)
             {
-                print("Cleaning"+ room.Name + room.PlayerCount + (string)room.CustomProperties["p1"] + (string)room.CustomProperties["p2"]);
+
+                if(room.RemovedFromList)
+                {
+                    continue;
+                }
+                print("Cleaning" + room.Name + room.PlayerCount + (string)room.CustomProperties["p1"] + (string)room.CustomProperties["p2"]);
                 //GameObject newRoom = Instantiate(roomItemPrefab, gridLayout.position, Quaternion.identity);
                 Transform newRoom = null;
                 if ((string)room.CustomProperties["p1"] != "" || (string)room.CustomProperties["p2"] != "")
@@ -455,7 +526,7 @@ namespace Allan
                 }
 
             }
-            
+
         }
 
 
