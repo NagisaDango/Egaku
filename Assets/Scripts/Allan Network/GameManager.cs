@@ -439,23 +439,6 @@ namespace Allan
             List<string> removingRooms = new List<string>();
             foreach (RoomInfo room in roomList)
             {
-<<<<<<< Updated upstream
-                print("PRINT: " + room.Name);
-                roomNames.Add(room.Name);
-
-                if (!roomInfoList.Contains(room))
-                {
-                    roomInfoList.Add(room);
-                }
-
-
-            }
-
-            foreach (string n in roomInfoSet)
-            {
-                print("asdasd: " + n);
-            }
-=======
                 if(room.RemovedFromList)
                 {
                     print("Removing room: " + room.Name);
@@ -469,38 +452,21 @@ namespace Allan
             }
 
             roomList.RemoveAll(room => room.RemovedFromList);
->>>>>>> Stashed changes
 
             List<Transform> toRemove = new List<Transform>();
             foreach (Transform child in gridLayout)
             {
                 if(removingRooms.Contains(child.name) || activeRooms.Contains(child.name))
                 {
-<<<<<<< Updated upstream
-                    //child.GetComponentInChildren<Button>().onClick.RemoveListener(() => JoinButton(roomName));
-=======
->>>>>>> Stashed changes
                     toRemove.Add(child);
 
                 }
-<<<<<<< Updated upstream
-                child.GetComponentInChildren<Button>().onClick.RemoveListener(() => JoinButton(roomName));
-                DestroyImmediate(child.gameObject);
-
-            }
-
-            //foreach (Transform child in toRemove)
-            //{
-            //    Destroy(child.gameObject);
-            //}
-=======
             }
 
             foreach (Transform child in toRemove)
             {
                 DestroyImmediate(child.gameObject);
             }
->>>>>>> Stashed changes
 
             print("__");
             foreach (RoomInfo room in roomList)
