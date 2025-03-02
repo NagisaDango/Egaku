@@ -40,6 +40,7 @@ namespace Allan
         public TMP_InputField nameField;
 
         private HashSet<string> roomInfoSet = new();
+        private bool devSpawn = false;
 
         private void Awake()
         {
@@ -80,6 +81,12 @@ namespace Allan
             }
             DontDestroyOnLoad(this.gameObject);
             Instance = this;
+        }
+
+        public void DevSpawnPlayers()
+        {
+            devSpawn = true;
+            LoadArena();
         }
 
         void SpawnPlayer()
@@ -224,7 +231,12 @@ namespace Allan
             if (scene.name == "Allan")
             {
                 Debug.Log("Scene Allan loaded. Spawning player...");
-                SpawnPlayer();
+                if (devSpawn)
+                {
+                    PhotonNetwork.Instantiate(drawerPrefab.name, new Vector3(0, 0, 0), Quaternion.identity);
+                    PhotonNetwork.Instantiate(runnerPrefab.name, new Vector3(0, 5, 0), Quaternion.identity);
+                }
+                else SpawnPlayer();
             }
         }
 
