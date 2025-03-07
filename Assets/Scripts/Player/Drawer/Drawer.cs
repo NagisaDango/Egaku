@@ -103,7 +103,7 @@ public class Drawer : MonoBehaviourPun
             {
                 drawStrokeTotal -= currentDrawer.drawStrokes;
                 currentDrawer.photonView.RPC("RPC_FinishDraw", RpcTarget.All);
-                currentDrawer.rb2d.bodyType = RigidbodyType2D.Kinematic;
+                //currentDrawer.rb2d.bodyType = RigidbodyType2D.Kinematic;
             }
             currentDrawer = null;
         }

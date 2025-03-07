@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3447918020043104696}
   - component: {fileID: 5547718730598762755}
+  - component: {fileID: 6385152489850710683}
   m_Layer: 0
   m_Name: AllanGameManager
   m_TagString: Untagged
@@ -46,3 +47,30 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   runnerPrefab: {fileID: 6516697053591408558, guid: 94b68db16d0aab8439a00ce709f6f726, type: 3}
   drawerPrefab: {fileID: 6901375230963659509, guid: 413acfecd82a2264db92c158a6dd7fb6, type: 3}
+  roomSelection: {fileID: 0}
+  roleSelection: {fileID: 0}
+  roomItemPrefab: {fileID: 0}
+  gridLayout: {fileID: 0}
+  nameField: {fileID: 0}
+--- !u!114 &6385152489850710683
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8722705766776074390}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa584fbee541324448dd18d8409c7a41, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ObservedComponentsFoldoutOpen: 1
+  Group: 0
+  prefixField: -1
+  Synchronization: 3
+  OwnershipTransfer: 0
+  observableSearch: 2
+  ObservedComponents: []
+  sceneViewId: 0
+  InstantiationId: 0
+  isRuntimeInstantiated: 0

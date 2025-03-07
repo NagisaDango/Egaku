@@ -52,8 +52,10 @@ MonoBehaviour:
   - RPC_SetTarget
   - RPC_FinishDraw
   - EraseDrawnObj
-  - RPC_SetupSpline
-  - RPC_SetParent
+  - UpdateRoomPlayerList
+  - RPC_AddRoomInfoSet
+  - RPC_RemoveoomInfoSet
+  - RPC_RemoveRoomInfoSet
   DisableAutoOpenWizard: 1
-  ShowSettings: 0
+  ShowSettings: 1
   DevRegionSetOnce: 1

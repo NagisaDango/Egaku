@@ -87,14 +87,17 @@ namespace Phantom
             if (PhotonNetwork.IsConnected)
             {
                 // #Critical we need at this point to attempt joining a Random Room. If it fails, we'll get notified in OnJoinRandomFailed() and we'll create one.
-                PhotonNetwork.JoinRandomRoom();
+                //PhotonNetwork.JoinRandomRoom();
+                Debug.Log("Launcher: Join Lobby After Cliking Connect Button");
+                PhotonNetwork.JoinLobby();
             }
             else
             {
+                Debug.Log("Launcher: Connecting");
                 // #Critical, we must first and foremost connect to Photon Online Server.
                 // keep track of the will to join a room, because when we come back from the game we will get a callback that we are connected, so we need to know what to do then
                 isConnecting = PhotonNetwork.ConnectUsingSettings();
-                PhotonNetwork.GameVersion = gameVersion;
+                //PhotonNetwork.GameVersion = gameVersion;
             }
 
         }
@@ -115,8 +118,16 @@ namespace Phantom
             if (isConnecting)
             {
                 // #Critical: The first we try to do is to join a potential existing room. If there is, good, else, we'll be called back with OnJoinRandomFailed()
-                PhotonNetwork.JoinRandomRoom();
-                isConnecting = false;
+                //PhotonNetwork.JoinRandomRoom();
+                PhotonNetwork.JoinLobby();
+                //isConnecting = false;
+            }
+            else
+            {
+                // #Critical, we must first and foremost connect to Photon Online Server.
+                // keep track of the will to join a room, because when we come back from the game we will get a callback that we are connected, so we need to know what to do then
+                isConnecting = PhotonNetwork.ConnectUsingSettings();
+                //PhotonNetwork.GameVersion = gameVersion;
             }
 
         }
@@ -137,18 +148,23 @@ namespace Phantom
             PhotonNetwork.CreateRoom(null, new RoomOptions { MaxPlayers = maxPlayersPerRoom });
         }
 
+        public override void OnJoinedLobby()
+        {
+            PhotonNetwork.LoadLevel("RoleSelection");
+        }
+
         public override void OnJoinedRoom()
         {
-            Debug.Log("PUN Basics Tutorial/Launcher: OnJoinedRoom() called by PUN. Now this client is in a room.");
-            // #Critical: We only load if we are the first player, else we rely on `PhotonNetwork.AutomaticallySyncScene` to sync our instance scene.
-            if (PhotonNetwork.CurrentRoom.PlayerCount == 1)
-            {
-                Debug.Log("We load the RoleSelection");
+            //Debug.Log("PUN Basics Tutorial/Launcher: OnJoinedRoom() called by PUN. Now this client is in a room.");
+            //// #Critical: We only load if we are the first player, else we rely on `PhotonNetwork.AutomaticallySyncScene` to sync our instance scene.
+            //if (PhotonNetwork.CurrentRoom.PlayerCount == 1)
+            //{
+            //    Debug.Log("We load the RoleSelection");
 
-                // #Critical
-                // Load the Room Level.
-                PhotonNetwork.LoadLevel("RoleSelection");
-            }
+            //    // #Critical
+            //    // Load the Room Level.
+            //    PhotonNetwork.LoadLevel("RoleSelection");
+            //}
         }
 
         #endregion
