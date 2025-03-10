@@ -6,6 +6,7 @@ TagManager:
   tags:
   - ElectricEnd
   - ElectricBegin
+  - Holder
   layers:
   - Default
   - TransparentFX
