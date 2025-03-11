@@ -21,8 +21,8 @@ public class PlatformEditMode : MonoBehaviour, IMode
             point.transform.localPosition = controller.spline.GetPosition(i);
             //*** Using GetComponent here, change it to use LevelEditor to handle general event
             point.GetComponent<SplinePoint>().SetAssociateObj(this);
-            
         }
+        
     }
 
     public void ModeUpdate()

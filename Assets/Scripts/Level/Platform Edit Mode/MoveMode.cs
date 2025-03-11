@@ -23,7 +23,6 @@ public class MoveMode : MonoBehaviour, IMode, IDragHandler
     {
         if (active)
         {
-            print("Moving mode dragging");
             this.transform.position += (Vector3)eventData.delta * 0.01f;
         }
     }
