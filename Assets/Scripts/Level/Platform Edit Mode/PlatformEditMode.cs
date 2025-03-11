@@ -49,6 +49,7 @@ public class PlatformEditMode : MonoBehaviour, IMode
     
     /// <summary>
     /// Insert a new point to the spline
+    /// ***Still BUG, choosing the wrong segment to add
     /// </summary>
     private void AddNewSplinePoint()
     {

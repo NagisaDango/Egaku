@@ -64,8 +64,8 @@ public class EditableObj : MonoBehaviour, IPointerDownHandler
 
     public void BackToDefault()
     {
-        print("Back to default");
-        currentMode.Dispose();
+        if(currentMode != null)
+            currentMode.Dispose();
         currentMode = null;
     }
     
