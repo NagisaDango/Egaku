@@ -99,7 +99,8 @@ namespace Allan
 
                 GameObject playerPrefab = (playerRole == PlayerRole.Runner) ? runnerPrefab : drawerPrefab;
 
-                PhotonNetwork.Instantiate(playerPrefab.name, spawnPosition, Quaternion.identity);
+                var r = PhotonNetwork.Instantiate(playerPrefab.name, spawnPosition, Quaternion.identity);
+                r.name = playerPrefab.name;
             }
             else
             {
@@ -233,8 +234,11 @@ namespace Allan
                 Debug.Log("Scene Allan loaded. Spawning player...");
                 if (devSpawn)
                 {
-                    PhotonNetwork.Instantiate(drawerPrefab.name, new Vector3(0, 0, 0), Quaternion.identity);
-                    PhotonNetwork.Instantiate(runnerPrefab.name, new Vector3(0, 5, 0), Quaternion.identity);
+                    var d = PhotonNetwork.Instantiate(drawerPrefab.name, new Vector3(0, 0, 0), Quaternion.identity);
+                    d.name = drawerPrefab.name;
+                    var r = PhotonNetwork.Instantiate(runnerPrefab.name, new Vector3(0, 5, 0), Quaternion.identity);
+                    r.name = runnerPrefab.name;
+
                 }
                 else SpawnPlayer();
             }
