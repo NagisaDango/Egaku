@@ -51,6 +51,10 @@ public class Runner : MonoBehaviourPunCallbacks
             rb.isKinematic = true;  // Stop physics interactions
             rb.simulated = false;   // Turn off physics on non-owners
         }
+        else
+        {
+            GameObject.Find("FogCanvas/Fog").gameObject.SetActive(false);
+        }
 
         InitInput();
         _RunnerMovement = new RunnerMovement(rb, 10f, maxSpeed);

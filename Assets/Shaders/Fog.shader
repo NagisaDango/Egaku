@@ -4,6 +4,8 @@ Shader "Hidden/Fog"
     {
         _MainTex ("Main Texture", 2D) = "white" {}
         _SecondaryTex("Secendary Texture", 2D) = "white" {}
+        _BGTex("Background Texture", 2D) = "white" {}
+
 
     }
     SubShader
@@ -45,6 +47,8 @@ Shader "Hidden/Fog"
 
             sampler2D _MainTex;
             sampler2D _SecondaryTex;
+            sampler2D _BGTex;
+
 
             fixed4 frag (v2f i) : SV_Target
             {
@@ -52,11 +56,27 @@ Shader "Hidden/Fog"
                 // red - 1, blue - 1, we want alpha 0
                 // red - 1, blue - 0, we want alpha 0.5
                 // red - 0, blue - 0, we want alpha 1
-                col.a = 2.0f - col.r * 1.5f - col.b * 0.5f;
+                //col.a = 2.0f - col.r * 1.5f - col.b * 0.5f;
+
+                // red - 1, blue - 1, we want alpha 0 and bg null
+                // red - 1, blue - 0, we want alpha 0 and bg null
+                // red - 0, blue - 0, we want alpha 1 and bg exist with dark
+
+                col.a = col.r > 0 ? 0 : 1;
+                if (col.a == 1) {
+                    col = tex2D(_BGTex, i.uv) * 0.5f;
+                    col.a = 1;
+                }
+                else {
+                    col = fixed4(0, 0, 0, 0);
+                }
+                //col = col.a == 1 ? tex2D(_BGTex, i.uv) : fixed4(0, 0, 0, 0);
+                //col = col.a == 1 ? col.rgb * 0.5f : fixed4(0, 0, 0, 0);
 
 
+                return col;
 
-                return fixed4(0,0,0, col.a);
+                //return fixed4(0,0,0, col.a);
             }
             ENDCG
         }
