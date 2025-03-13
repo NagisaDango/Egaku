@@ -76,7 +76,7 @@ Shader "Hidden/Fog"
 
                 // return col;
 
-                return fixed4(0.3,0.3,0.3, col.a);
+                return fixed4(0,0,0, col.a);
             }
             ENDCG
         }
