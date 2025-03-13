@@ -4,6 +4,9 @@
 TagManager:
   serializedVersion: 3
   tags: []
+  - ElectricEnd
+  - ElectricBegin
+  - Holder
   layers:
   - Default
   - TransparentFX
@@ -14,6 +17,8 @@ TagManager:
   - Draw
   - FogMain
   - FogSec
+  - Editing
+  - 
   - 
   - 
   - 
@@ -41,8 +46,11 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+<<<<<<< HEAD
   - name: Fog
     uniqueID: 2014065691
     locked: 0
+=======
+>>>>>>> Allan
   m_RenderingLayers:
   - Default
