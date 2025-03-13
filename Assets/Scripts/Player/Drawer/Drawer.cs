@@ -64,9 +64,9 @@ public class Drawer : MonoBehaviourPun
         if(!photonView.IsMine)
             return;
 
-        if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
+        if (Input.GetMouseButtonDown(0))//&& !EventSystem.current.IsPointerOverGameObject())
         {
-            if (eraserMode)
+            if (eraserMode && EventSystem.current.IsPointerOverGameObject())
             {
                 photonView.RPC("EraseDrawnObj", RpcTarget.AllBuffered, Camera.main.ScreenToWorldPoint(Input.mousePosition));
                 //EraseDrawnObj();
