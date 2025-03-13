@@ -3,7 +3,10 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 3
-  tags: []
+  tags:
+  - ElectricEnd
+  - ElectricBegin
+  - Holder
   layers:
   - Default
   - TransparentFX
@@ -12,6 +15,7 @@ TagManager:
   - Water
   - UI
   - Draw
+  - Editing
   - FogMain
   - FogSec
   - 
