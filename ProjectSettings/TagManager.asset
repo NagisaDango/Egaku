@@ -3,7 +3,10 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 3
-  tags: []
+  tags:
+  - ElectricEnd
+  - ElectricBegin
+  - Holder
   layers:
   - Default
   - TransparentFX
@@ -12,6 +15,7 @@ TagManager:
   - Water
   - UI
   - Draw
+  - Editing
   - FogMain
   - FogSec
   - 
@@ -40,9 +44,6 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
-    locked: 0
-  - name: Fog
-    uniqueID: 2014065691
     locked: 0
   m_RenderingLayers:
   - Default
