@@ -66,9 +66,6 @@ public class Runner : MonoBehaviourPunCallbacks
         {
             runnerMouse = PhotonNetwork.Instantiate("RunnerMouse", Camera.main.ScreenToWorldPoint(Input.mousePosition),
                 Quaternion.identity);
-        }
-        else
-        {
             GameObject.Find("FogCanvas/Fog").gameObject.SetActive(false);
         }
 
