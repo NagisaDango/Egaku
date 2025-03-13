@@ -8,12 +8,12 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Cloud
-  m_Shader: {fileID: 4800000, guid: aff26bbd97ac7f144b66c9b29110c941, type: 3}
+  m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
-  m_InvalidKeywords:
+  m_ValidKeywords:
   - _EMISSION
+  m_InvalidKeywords: []
   m_LightmapFlags: 2
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -88,7 +88,7 @@ Material:
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
-    - _OutlineColor: {r: 0.5904343, g: 0.8867924, b: 0.42108688, a: 1}
+    - _OutlineColor: {r: 0.6039216, g: 1, b: 0.36792436, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
