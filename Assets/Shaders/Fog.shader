@@ -63,20 +63,20 @@ Shader "Hidden/Fog"
                 // red - 0, blue - 0, we want alpha 1 and bg exist with dark
 
                 col.a = col.r > 0 ? 0 : 1;
-                if (col.a == 1) {
-                    col = tex2D(_BGTex, i.uv) * 0.5f;
-                    col.a = 1;
-                }
-                else {
-                    col = fixed4(0, 0, 0, 0);
-                }
-                //col = col.a == 1 ? tex2D(_BGTex, i.uv) : fixed4(0, 0, 0, 0);
-                //col = col.a == 1 ? col.rgb * 0.5f : fixed4(0, 0, 0, 0);
+                // if (col.a == 1) {
+                //     col = tex2D(_BGTex, i.uv) * 0.5f;
+                //     col.a = 1;
+                // }
+                // else {
+                //     col = fixed4(0, 0, 0, 0);
+                // }
+                // //col = col.a == 1 ? tex2D(_BGTex, i.uv) : fixed4(0, 0, 0, 0);
+                // //col = col.a == 1 ? col.rgb * 0.5f : fixed4(0, 0, 0, 0);
 
 
-                return col;
+                // return col;
 
-                //return fixed4(0,0,0, col.a);
+                return fixed4(0.3,0.3,0.3, col.a);
             }
             ENDCG
         }
