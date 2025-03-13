@@ -90,7 +90,8 @@ public class Runner : MonoBehaviourPunCallbacks
         }
 
         _RunnerMovement.Update();
-        RunnerMouseUpdate();
+        if(runnerMouse)
+            RunnerMouseUpdate();
         if (moveAction.ReadValue<Vector2>() != Vector2.zero)
         {
             Vector2 movement = moveAction.ReadValue<Vector2>();
