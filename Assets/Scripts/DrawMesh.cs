@@ -1,14 +1,12 @@
 using Photon.Pun;
 using System.Collections.Generic;
-using System.Linq;
 using Photon.Realtime;
 using UnityEngine;
-using UnityEngine.Splines;
 
 public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
 {
     [SerializeField] float minDistance = .1f;
-    [SerializeField] GameObject splinePrefab;
+    
     
     private Vector3 lastMousePosition;
     public int drawStrokes = 0;
@@ -21,26 +19,22 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
     private float drawSize = 1;
     private int maxStrokes;
     public bool earsingSelf;
-    private List<Vector3> pointList;
-    
+
+
     [PunRPC]
     //Initialize the properties
     void RPC_InitializedDrawProperty(Vector3 mousePos, string penType, bool interactable)//Material mat, bool interactable)
     {
         mesh = new Mesh();
         SetPenProperty(penType);
-        if (penType == "Electric")
-        {
-            pointList = new List<Vector3>();
-            pointList.Add(new Vector3(mousePos.x, mousePos.y, 0));
-        }
+        
         GetComponent<MeshRenderer>().material = currProperty.material;
         drawSize = currProperty.size;
         maxStrokes = currProperty.maxStrokes;
         
         Vector3 startPos = mousePos;
         lastMousePosition = startPos;
-        
+
         Vector3[] vertices = new Vector3[4];
         Vector2[] uv = new Vector2[4];
         int[] triangles = new int[6];
@@ -107,12 +101,11 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
         if (Vector3.Distance(mousePos, lastMousePosition) > minDistance && ((drawStrokes < maxStrokes) || maxStrokes <= 0))
         {
             drawStrokes++;
-            if(pointList != null) pointList.Add(mousePos);
             //Debug.Log("draw times:" + i);
             Vector3[] vertices = new Vector3[mesh.vertices.Length + 2];
             Vector2[] uv = new Vector2[mesh.uv.Length + 2];
             int[] triangles = new int[mesh.triangles.Length + 6];
-            
+
             mesh.vertices.CopyTo(vertices, 0);
             mesh.uv.CopyTo(uv, 0);
             mesh.triangles.CopyTo(triangles, 0);
@@ -166,43 +159,10 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
     [PunRPC]
     private void RPC_FinishDraw()
     {
-        if (currProperty.gravity) rb2d.bodyType = RigidbodyType2D.Dynamic;
-        if (currProperty.mass > 0) rb2d.mass = currProperty.mass;
-        //***!!! if currproperty is trigger just remove the collider for now.
-        if (currProperty.trigger)  Destroy(col2d);
-
-        photonView.TransferOwnership(Runner.Instance.actorNum); 
-
-        if (pointList != null)
-        {
-            if (PhotonNetwork.IsMasterClient)
-            {
-                GameObject splineInstance = PhotonNetwork.Instantiate(splinePrefab.name, Vector3.zero, Quaternion.identity);
-                splineInstance.transform.GetChild(1).transform.position = pointList[0];
-                splineInstance.transform.GetChild(2).transform.position = pointList[pointList.Count - 1];
-                photonView.RPC("RPC_SetupSpline", RpcTarget.AllBuffered, splineInstance.GetComponent<PhotonView>().ViewID);
-            }
-        }
-    }
-
-    [PunRPC]
-    private void RPC_SetupSpline(int splineViewID)
-    {
-        PhotonView splinePhotonView = PhotonView.Find(splineViewID);
-        if (splinePhotonView != null)
-        {
-            ElectricSpline listHolder = splinePhotonView.GetComponent<ElectricSpline>();
-            SplineContainer container = splinePhotonView.GetComponent<SplineContainer>();
-            if (container != null)
-            {
-                Spline spline = new Spline(); 
-                container.AddSpline(spline);
-                foreach (Vector3 point in pointList)
-                {
-                    spline.Add(new BezierKnot(point));
-                }
-            }
-        }
+        if(currProperty.gravity == true) rb2d.bodyType = RigidbodyType2D.Dynamic;
+        if(currProperty.mass > 0) rb2d.mass = currProperty.mass;
+        if(currProperty.trigger) col2d.isTrigger = true;
+        photonView.TransferOwnership(Runner.Instance.actorNum);
     }
     
     //Get the edges of the mesh
