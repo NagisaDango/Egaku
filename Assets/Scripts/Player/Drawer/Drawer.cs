@@ -37,6 +37,11 @@ public class Drawer : MonoBehaviourPun
     {
         inkSlider = GameObject.Find("Canvas/Slider").GetComponent<Slider>();
         DontDestroyOnLoad(this.gameObject);
+
+        if (photonView.IsMine)
+        {
+            Instantiate(drawerPanelPrefab);
+        }
     }
 
     private void Start()
@@ -55,7 +60,6 @@ public class Drawer : MonoBehaviourPun
             actorNum = PhotonNetwork.LocalPlayer.ActorNumber;
             print("This is the draweer spawning UI");
             OnPenSelect += SetPenProperties;
-            Instantiate(drawerPanelPrefab);
         }
     }
     

@@ -118,7 +118,7 @@ namespace Allan
             Debug.LogFormat("PhotonNetwork : Loading Level to scene Allan : {0}", PhotonNetwork.CurrentRoom.PlayerCount);
             
             //PhotonNetwork.IsMessageQueueRunning = false; // ✅ 暂停消息队列，防止 Photon 处理不完整的 ViewID
-            PhotonNetwork.LoadLevel("Allan");
+            PhotonNetwork.LoadLevel("Allan 1");
             //SpawnPlayer();
         }
 
@@ -229,7 +229,7 @@ namespace Allan
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (scene.name == "Allan")
+            if (scene.name == "Allan" || scene.name == "Allan 1")
             {
                 Debug.Log("Scene Allan loaded. Spawning player...");
                 if (devSpawn)

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using Photon.Pun;
 using Photon.Pun.Demo.PunBasics;
@@ -23,6 +24,7 @@ public class Runner : MonoBehaviourPunCallbacks
     GameObject interactingObject;
     private bool movingAlongElectric;
     private bool reversed = false;
+    private Vector2 revivePos;
 
     [Tooltip("The local player instance. Use this to know if the local player is represented in the Scene")]
     public static GameObject LocalPlayerInstance;
@@ -66,7 +68,9 @@ public class Runner : MonoBehaviourPunCallbacks
         {
             runnerMouse = PhotonNetwork.Instantiate("RunnerMouse", Camera.main.ScreenToWorldPoint(Input.mousePosition),
                 Quaternion.identity);
-            GameObject.Find("FogCanvas/Fog").gameObject.SetActive(false);
+            GameObject fog = GameObject.Find("FogCanvas/Fog");
+            if(fog != null)
+                fog.SetActive(false);
         }
 
         InitInput();
@@ -171,12 +175,31 @@ public class Runner : MonoBehaviourPunCallbacks
         }
         splineAnimate.Restart(true);
     }
+
+    public void SetRevivePos(Vector2 pos)
+    {
+        revivePos = pos;
+    }
+
+    private void Revive()
+    {
+        rb.linearVelocity = Vector2.zero;
+        this.transform.position = revivePos;
+    }
     
     [PunRPC]
     private void RPC_SetParent(int viewID)
     {
         if (viewID != -1) transform.SetParent(PhotonView.Find(viewID).transform, false);
         else transform.SetParent(null);
+    }
+    
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.tag == "DeathDesuwa")
+        {
+            Revive();
+        }
     }
 
     private void OnTriggerStay2D(Collider2D other)
