@@ -58,6 +58,7 @@ MonoBehaviour:
   - RPC_RemoveRoomInfoSet
   - RPC_SetParent
   - RPC_SetupSpline
+  - ShowDialogue
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

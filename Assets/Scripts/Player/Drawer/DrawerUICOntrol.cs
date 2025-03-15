@@ -7,12 +7,35 @@ using UnityEngine;
 public class DrawerUICOntrol : MonoBehaviour
 {
     [SerializeField] RectTransform drawerPanel;
+    Dictionary<PenUI.PenType, PenUI> penUI = new Dictionary<PenUI.PenType, PenUI>();
+    [SerializeField] private Transform penHolder;
     public bool panelStatus;
-    private void Start()
+    private void Awake()
     {
-        OpenDrawerPanel();
+        //OpenDrawerPanel();
+        InitDictionary();
     }
 
+    private void InitDictionary()
+    {
+        penUI[PenUI.PenType.Wood] = penHolder.Find("Wood").GetComponent<PenUI>();
+        penUI[PenUI.PenType.Cloud] = penHolder.Find("Cloud").GetComponent<PenUI>();
+        penUI[PenUI.PenType.Electric] = penHolder.Find("Electric").GetComponent<PenUI>();
+        penUI[PenUI.PenType.Steel] = penHolder.Find("Steel").GetComponent<PenUI>();
+    }
+    
+    public void TogglePenStatus(PenUI.PenType penType, bool status)
+    {
+        if (status == true)
+        {
+            penUI[penType].penImage.enabled = true;
+        }
+        else
+        {
+            penUI[penType].penImage.enabled = false;
+        }
+    }
+    
     private void Update()
     {
         if (Input.GetMouseButtonDown(0)) // Left-click detection

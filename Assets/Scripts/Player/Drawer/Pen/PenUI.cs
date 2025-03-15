@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using DG.Tweening;
+using UnityEngine.UI;
 
 public class PenUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler
 {
     [SerializeField] private DrawerUICOntrol drawerUI;
     [SerializeField] private Texture2D cursorTexture;
+    [SerializeField] private Transform penHolder;
+    [SerializeField] public Image penImage;
     public PenType penType;
     public enum PenType
     {
@@ -17,6 +20,7 @@ public class PenUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, I
       Steel,
       Eraser
     };
+
     
     public void OnPointerDown(PointerEventData eventData)
     {
