@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 8575393955252805409}
   - component: {fileID: 6101961984642601450}
   - component: {fileID: 1705769549868699805}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: RunnerMouse
   m_TagString: Untagged
   m_Icon: {fileID: 0}

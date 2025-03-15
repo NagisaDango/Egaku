@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 1547168585396090828}
   - component: {fileID: 7538241954510342772}
   - component: {fileID: 1805093843337505971}
-  m_Layer: 8
+  m_Layer: 9
   m_Name: FogCircleSec
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -370,7 +370,7 @@ GameObject:
   - component: {fileID: 5946090722918354136}
   - component: {fileID: 78705072221844766}
   - component: {fileID: 7731215708629199247}
-  m_Layer: 7
+  m_Layer: 8
   m_Name: FogCircleMain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
