@@ -28,12 +28,17 @@ public class LevelEditor : MonoBehaviour
 
     private void Update()
     {
+        Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         if (spawningObject != null)
-            spawningObject.position = (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        if (Input.GetMouseButtonDown(0)) // Left mouse click
         {
-            Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-
+            spawningObject.position = mousePos;
+            if (Input.GetMouseButtonUp(0))
+            {
+                spawningObject = null;
+            }
+        }
+        else if (Input.GetMouseButtonDown(0))
+        {
             if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
                 return;
 

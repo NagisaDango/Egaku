@@ -49,33 +49,34 @@ public class PlatformEditMode : MonoBehaviour, IMode
     
     /// <summary>
     /// Insert a new point to the spline
-    /// ***Still BUG, choosing the wrong segment to add
     /// </summary>
     private void AddNewSplinePoint()
     {
         Spline controlSpline = controller.spline;
         int splineCount = controlSpline.GetPointCount();
 
-        Vector2 addingPos = (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        Vector2 addingPos = Camera.main.transform.InverseTransformPoint((Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition));
         int minIndex = 0;
-        float minDis = Vector2.Distance(controlSpline.GetPosition(0), addingPos);
+        //int anotherMinIndex = 0;
+        float minDis = Vector2.Distance((controlSpline.GetPosition(0) + controlSpline.GetPosition(1)) / 2f, addingPos);
         for (int i = 1; i < splineCount; i++)
         {
-            float newDis = Vector2.Distance(controlSpline.GetPosition(i), addingPos);
+            float newDis = Vector2.Distance((controlSpline.GetPosition(i) + controlSpline.GetPosition((i + 1) % splineCount)) / 2f, addingPos);
             if (newDis < minDis)
             {
                 minIndex = i;
+                //anotherMinIndex = (i + 1) % splineCount;
                 minDis = newDis;
             }
         }
+        print("Min point is index: " + minIndex);
         Vector2 minPoint = controlSpline.GetPosition(minIndex);
         Vector2 adjPointBefore = controlSpline.GetPosition((minIndex - 1 + splineCount) % splineCount);
         Vector2 adjPointAfter = controlSpline.GetPosition((minIndex + 1) % splineCount);
 
-        int insertIndex = ValidateAddingPoint(addingPos, minPoint, adjPointBefore, adjPointAfter) ? minIndex : ((minIndex + 1) % splineCount);
-        
-        print((Vector2)Camera.main.transform.InverseTransformPoint(addingPos));
-        controlSpline.InsertPointAt(insertIndex, (Vector2)(Camera.main.transform.InverseTransformPoint(addingPos) - this.transform.localPosition));
+        int insertIndex = ValidateAddingPoint(addingPos, minPoint, adjPointAfter, adjPointBefore) ? ((minIndex + 1) % splineCount) : minIndex;
+        //int insertIndex = ((minIndex + 1) % splineCount);
+        controlSpline.InsertPointAt(insertIndex, addingPos - (Vector2)this.transform.localPosition);
         controlSpline.SetTangentMode(insertIndex, ShapeTangentMode.Continuous);
 
         GameObject point = Instantiate(pointPrefab, Vector3.zero, Quaternion.identity, this.transform);

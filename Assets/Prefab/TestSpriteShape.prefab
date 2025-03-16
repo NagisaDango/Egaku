@@ -114,7 +114,39 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Spline:
     m_IsOpenEnded: 0
-    m_ControlPoints: []
+    m_ControlPoints:
+    - position: {x: -1, y: -1, z: 0}
+      leftTangent: {x: 0.53597367, y: -0.00048214197, z: -0}
+      rightTangent: {x: -0.53597367, y: 0.00048214197, z: 0}
+      mode: 0
+      height: 1
+      spriteIndex: 0
+      corner: 0
+      m_CornerMode: 0
+    - position: {x: -1, y: 1, z: 0}
+      leftTangent: {x: -1.0023332, y: 0.0010559559, z: 0}
+      rightTangent: {x: 1.0023332, y: -0.0010559559, z: -0}
+      mode: 0
+      height: 1
+      spriteIndex: 0
+      corner: 0
+      m_CornerMode: 0
+    - position: {x: 1, y: 1, z: 0}
+      leftTangent: {x: -1.0005913, y: -0.0016920567, z: -0}
+      rightTangent: {x: 1.0005913, y: 0.0016920567, z: 0}
+      mode: 0
+      height: 1
+      spriteIndex: 0
+      corner: 0
+      m_CornerMode: 0
+    - position: {x: 1, y: -1, z: 0}
+      leftTangent: {x: 0.54391515, y: 0.0004222989, z: 0}
+      rightTangent: {x: -0.54391515, y: -0.0004222989, z: -0}
+      mode: 0
+      height: 1
+      spriteIndex: 0
+      corner: 0
+      m_CornerMode: 0
   m_SpriteShape: {fileID: 11400000, guid: f24cddf7c09a6442abbce710a6fd7397, type: 2}
   m_FillPixelPerUnit: 256
   m_StretchTiling: 1
@@ -135,43 +167,7 @@ MonoBehaviour:
   m_BoundsScale: 2
   m_Creator: {fileID: 0}
   m_Modifiers: []
-  m_ColliderSegment:
-  - {x: -1.000225, y: -1.25}
-  - {x: -1.1188178, y: -1.2244213}
-  - {x: -1.3885436, y: -1.114564}
-  - {x: -1.6098475, y: -0.9442099}
-  - {x: -1.9081733, y: -0.6458653}
-  - {x: -2.070627, y: -0.44757926}
-  - {x: -2.3539116, y: -0.02179858}
-  - {x: -2.4641333, y: 0.19576558}
-  - {x: -2.5510821, y: 0.43599117}
-  - {x: -2.5889583, y: 0.6308825}
-  - {x: -2.5741858, y: 0.8558159}
-  - {x: -2.464436, y: 1.068956}
-  - {x: -2.2578902, y: 1.2082032}
-  - {x: -2.0184798, y: 1.2493161}
-  - {x: 1.8628895, y: 1.2498019}
-  - {x: 2.0293522, y: 1.248271}
-  - {x: 2.294257, y: 1.1785849}
-  - {x: 2.5131216, y: 0.9897728}
-  - {x: 2.6499312, y: 0.73819995}
-  - {x: 2.737947, y: 0.3826779}
-  - {x: 2.7678132, y: 0.13443981}
-  - {x: 2.7748628, y: -0.20390996}
-  - {x: 2.7385254, y: -0.6956675}
-  - {x: 2.6500149, y: -1.2602377}
-  - {x: 2.476067, y: -1.8954346}
-  - {x: 2.314247, y: -2.2595432}
-  - {x: 2.2404497, y: -2.3889205}
-  - {x: 2.0710897, y: -2.5712457}
-  - {x: 1.847501, y: -2.6582627}
-  - {x: 1.6366127, y: -2.635385}
-  - {x: 1.4520457, y: -2.5746484}
-  - {x: 1.0545337, y: -2.382697}
-  - {x: -0.27788663, y: -1.5818646}
-  - {x: -0.6624304, y: -1.3717933}
-  - {x: -0.9358371, y: -1.261148}
-  - {x: -1.000225, y: -1.25}
+  m_ColliderSegment: []
   m_ShadowSegment: []
 --- !u!60 &5298165775173355520
 PolygonCollider2D:

@@ -8,6 +8,7 @@ public class RotateMode : MonoBehaviour, IMode, IDragHandler, IBeginDragHandler
     private bool active = false;
     private float initialAngle;
     private Vector3 initialMousePosition;
+    private Vector3 lastMousePosition;
 
     public void OnBeginDrag(PointerEventData eventData)
     {
@@ -35,12 +36,14 @@ public class RotateMode : MonoBehaviour, IMode, IDragHandler, IBeginDragHandler
 
     private void RotateObject(Vector3 mousePosition)
     {
-        Vector3 objectPosition = transform.position;
-        Vector2 initialDirection = initialMousePosition - objectPosition;
-        Vector2 currentDirection = mousePosition - objectPosition;
+        var r = GetComponent<Renderer>();
+        if (r == null) return;
 
-        float angleDifference = Vector2.SignedAngle(initialDirection, currentDirection);
-        transform.rotation = Quaternion.Euler(0, 0, initialAngle + angleDifference);
+        Vector3 center = r.bounds.center;
+        Vector3 mouseDelta = mousePosition - lastMousePosition;
+
+        float rotationSpeed = 5f;
+        transform.RotateAround(center, Vector3.forward, mouseDelta.magnitude * rotationSpeed);
     }
 
     public void Initialize()
@@ -67,6 +70,7 @@ public class RotateMode : MonoBehaviour, IMode, IDragHandler, IBeginDragHandler
         {
             Vector3 worldMousePos = GetWorldMousePosition(eventData);
             RotateObject(worldMousePos);
+            lastMousePosition = worldMousePos;
         }
     }
 }
