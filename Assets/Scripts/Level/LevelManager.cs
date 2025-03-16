@@ -12,13 +12,18 @@ public class LevelManager : MonoBehaviour
     {
         runner.GetComponent<Runner>().SetRevivePos(revivePos);
         runner.transform.position = new Vector3(revivePos.x, revivePos.y, 0);
-        _camera.Follow = runner.transform;
     }
 
     public void Init(DrawerUICOntrol drawUI)
     {
         drawerUI = drawUI;
         TempLevelSetting();
+    }
+
+    public void SetUpCamera(Runner runner)
+    {
+        _camera.PreviousStateIsValid = false;
+        _camera.Follow = runner.transform;
     }
 
 

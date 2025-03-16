@@ -58,6 +58,9 @@ public class Runner : MonoBehaviourPunCallbacks
     {
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<Collider2D>();
+        LevelManager LevelM = GameObject.Find("LevelManager").GetComponent<LevelManager>();
+        if (LevelM != null) 
+            LevelM.SetUpCamera(this);
         if (!photonView.IsMine)
         {
             Debug.Log("this player is not the runner, setting the rb to non physic");
