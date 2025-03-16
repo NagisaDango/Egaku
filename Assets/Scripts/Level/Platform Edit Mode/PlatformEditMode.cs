@@ -54,8 +54,11 @@ public class PlatformEditMode : MonoBehaviour, IMode
     {
         Spline controlSpline = controller.spline;
         int splineCount = controlSpline.GetPointCount();
-
-        Vector2 addingPos = Camera.main.transform.InverseTransformPoint((Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition));
+        Vector3 worldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        Vector2 addingPos = worldPos - transform.localPosition;
+        //Vector2 addingPos = Camera.main.transform.InverseTransformPoint((Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition));
+        print("world pos" + worldPos);
+        print("adding: " + addingPos);
         int minIndex = 0;
         //int anotherMinIndex = 0;
         float minDis = Vector2.Distance((controlSpline.GetPosition(0) + controlSpline.GetPosition(1)) / 2f, addingPos);
@@ -75,14 +78,13 @@ public class PlatformEditMode : MonoBehaviour, IMode
         Vector2 adjPointAfter = controlSpline.GetPosition((minIndex + 1) % splineCount);
 
         int insertIndex = ValidateAddingPoint(addingPos, minPoint, adjPointAfter, adjPointBefore) ? ((minIndex + 1) % splineCount) : minIndex;
-        //int insertIndex = ((minIndex + 1) % splineCount);
-        controlSpline.InsertPointAt(insertIndex, addingPos - (Vector2)this.transform.localPosition);
+        controlSpline.InsertPointAt(insertIndex, addingPos);
         controlSpline.SetTangentMode(insertIndex, ShapeTangentMode.Continuous);
 
         GameObject point = Instantiate(pointPrefab, Vector3.zero, Quaternion.identity, this.transform);
-        point.transform.position = (Vector2)addingPos;
-        point.GetComponent<SplinePoint>().SetAssociateObj(this);
         point.transform.SetSiblingIndex(insertIndex);
+        point.transform.localPosition = addingPos;
+        point.GetComponent<SplinePoint>().SetAssociateObj(this);
     }
     
     /// <summary>
