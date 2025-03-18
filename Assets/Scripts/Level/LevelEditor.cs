@@ -11,6 +11,8 @@ public class LevelEditor : MonoBehaviour
     SpriteShapeController controller;
     private EditableObj editingObj;
     private EditMode currentEditMode;
+    public Vector2 levelSize;
+
     public enum EditMode
     {
         Position,

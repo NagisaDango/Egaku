@@ -55,7 +55,7 @@ public class PlatformEditMode : MonoBehaviour, IMode
         Spline controlSpline = controller.spline;
         int splineCount = controlSpline.GetPointCount();
         Vector3 worldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        Vector2 addingPos = worldPos - transform.localPosition;
+        Vector2 addingPos = transform.InverseTransformPoint(worldPos - transform.localPosition);
         //Vector2 addingPos = Camera.main.transform.InverseTransformPoint((Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition));
         print("world pos" + worldPos);
         print("adding: " + addingPos);
