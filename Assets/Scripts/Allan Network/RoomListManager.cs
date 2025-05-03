@@ -205,20 +205,20 @@ public class RoomListManager : MonoBehaviourPunCallbacks
 
     }
 
-    // ·¢ËÍ±äÁ¿µ½ËùÓĞÍæ¼Ò
+    // å‘é€å˜é‡åˆ°æ‰€æœ‰ç©å®¶
     public void SendPlayerData(Dictionary<string, string>  playerNames)
     {
-        object content = playerNames; // Äã¿ÉÒÔ´«µİ¶à¸öÖµ
+        object content = playerNames; // ä½ å¯ä»¥ä¼ é€’å¤šä¸ªå€¼
         RaiseEventOptions options = new RaiseEventOptions { Receivers = ReceiverGroup.All };
         SendOptions sendOptions = new SendOptions { Reliability = true };
 
-        PhotonNetwork.RaiseEvent(1, content, options, sendOptions); // ÊÂ¼ş´úÂë "1"
+        PhotonNetwork.RaiseEvent(1, content, options, sendOptions); // äº‹ä»¶ä»£ç  "1"
     }
 
-    // ¼àÌıÊÂ¼ş
+    // ç›‘å¬äº‹ä»¶
     public void OnEvent(EventData photonEvent)
     {
-        if (photonEvent.Code == 1) // ÊÂ¼ş´úÂë "1"
+        if (photonEvent.Code == 1) // äº‹ä»¶ä»£ç  "1"
         {
             object data = (object)photonEvent.CustomData;
             Dictionary<string, string> roomNames = (Dictionary<string, string>)data;

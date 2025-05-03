@@ -59,6 +59,9 @@ MonoBehaviour:
   - RPC_SetParent
   - RPC_SetupSpline
   - ShowDialogue
+  - RPC_Revive
+  - RPC_Disable
+  - RPC_Enable
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1
