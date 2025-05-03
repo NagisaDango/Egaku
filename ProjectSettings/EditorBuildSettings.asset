@@ -9,13 +9,13 @@ EditorBuildSettings:
     path: Assets/Scenes/AllanLauncher.unity
     guid: 81d2358739a4bf241b50479b4873e4f3
   - enabled: 1
-    path: Assets/Scenes/Allan.unity
+    path: Assets/Scenes/Legacy/Allan.unity
     guid: e63e332ebccc85542bbf78afa79b636c
   - enabled: 1
     path: Assets/Scenes/RoleSelection.unity
     guid: 82848a5e9794e1548b706964c0979306
   - enabled: 1
-    path: Assets/Scenes/RoomSelection.unity
+    path: Assets/Scenes/Legacy/RoomSelection.unity
     guid: dd1a00b9e72993f469e71440d809e88b
   - enabled: 1
     path: Assets/Scenes/Allan 1.unity

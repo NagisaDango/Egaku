@@ -101,6 +101,8 @@ namespace Allan
 
                 var r = PhotonNetwork.Instantiate(playerPrefab.name, spawnPosition, Quaternion.identity);
                 r.name = playerPrefab.name;
+                if(playerRole == PlayerRole.Runner) 
+                    GameObject.Find("LevelManager").GetComponent<LevelManager>().Init(r.GetComponent<Runner>());
             }
             else
             {
@@ -238,9 +240,10 @@ namespace Allan
                     d.name = drawerPrefab.name;
                     var r = PhotonNetwork.Instantiate(runnerPrefab.name, new Vector3(0, 5, 0), Quaternion.identity);
                     r.name = runnerPrefab.name;
-
+                    GameObject.Find("LevelManager").GetComponent<LevelManager>().Init(r.GetComponent<Runner>());
                 }
                 else SpawnPlayer();
+
             }
         }
 

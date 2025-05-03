@@ -52,7 +52,8 @@ public class DialogueTrigger : MonoBehaviourPun
         textDisplay.text = "";
         textDisplay.transform.parent.gameObject.SetActive(false);
         displaying = false;
-        Destroy(this.gameObject);
+        if(photonView.IsMine)
+            PhotonNetwork.Destroy(this.gameObject);
     }
 
     private void OnTriggerEnter2D(Collider2D other)

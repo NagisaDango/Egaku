@@ -8,16 +8,25 @@ public class LevelManager : MonoBehaviour
     private DrawerUICOntrol drawerUI;
     [SerializeField] private CinemachineCamera _camera;
     
-    private void Start()
+    public void Init(Runner runner)
     {
-        GameObject runner = GameObject.Find("Runner");
         runner.GetComponent<Runner>().SetRevivePos(revivePos);
         runner.transform.position = new Vector3(revivePos.x, revivePos.y, 0);
-        drawerUI = GameObject.Find("DrawerUICanvas(Clone)/DrawerUIPanel").GetComponent<DrawerUICOntrol>();
+    }
+
+    public void Init(DrawerUICOntrol drawUI)
+    {
+        drawerUI = drawUI;
         TempLevelSetting();
+    }
+
+    public void SetUpCamera(Runner runner)
+    {
+        _camera.PreviousStateIsValid = false;
         _camera.Follow = runner.transform;
     }
-    
+
+
     private void TempLevelSetting()
     {
         if (drawerUI != null)
@@ -27,10 +36,16 @@ public class LevelManager : MonoBehaviour
             drawerUI.TogglePenStatus(PenUI.PenType.Electric, false);
             drawerUI.TogglePenStatus(PenUI.PenType.Steel, false);
         }
+        else
+        {
+            Debug.LogWarning("nothing set");
+        }
     }
 
     public void EnablePenStatus(string penType)
     {
+        if(drawerUI == null) 
+            return;
         switch (penType)
         {
             case "Wood":

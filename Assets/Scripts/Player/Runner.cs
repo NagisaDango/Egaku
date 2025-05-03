@@ -48,7 +48,6 @@ public class Runner : MonoBehaviourPunCallbacks
             PlayerManager.LocalPlayerInstance = this.gameObject;
             actorNum = PhotonNetwork.LocalPlayer.ActorNumber;
         }
-
         // #Critical
         // we flag as don't destroy on load so that instance survives level synchronization, thus giving a seamless experience when levels load.
         DontDestroyOnLoad(this.gameObject);
@@ -58,6 +57,9 @@ public class Runner : MonoBehaviourPunCallbacks
     {
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<Collider2D>();
+        LevelManager LevelM = GameObject.Find("LevelManager").GetComponent<LevelManager>();
+        if (LevelM != null) 
+            LevelM.SetUpCamera(this);
         if (!photonView.IsMine)
         {
             Debug.Log("this player is not the runner, setting the rb to non physic");
@@ -149,9 +151,9 @@ public class Runner : MonoBehaviourPunCallbacks
         movingAlongElectric = true;
         splineAnimate = interactingObject.transform.parent.GetChild(0).GetComponent<SplineAnimate>();
         ElectricSpline splinePoints = interactingObject.transform.parent.GetComponent<ElectricSpline>();
-        photonView.RPC("RPC_SetParent", RpcTarget.All,
-            interactingObject.transform.parent.GetChild(0).gameObject.GetComponent<PhotonView>().ViewID);
+        transform.SetParent(interactingObject.transform.parent.GetChild(0));
         transform.localPosition = Vector3.zero;
+        
         if (splineAnimate == null)
         {
             Debug.LogWarning("No spline anim");
@@ -183,14 +185,34 @@ public class Runner : MonoBehaviourPunCallbacks
 
     private void Revive()
     {
+        photonView.RPC("RPC_Disable", RpcTarget.Others);
         rb.linearVelocity = Vector2.zero;
-        this.transform.position = revivePos;
+        //this.transform.position = revivePos;
+        photonView.transform.position = revivePos;
+        photonView.RPC("RPC_Enable", RpcTarget.Others);
+    }
+    
+    [PunRPC]
+    private void RPC_Disable()
+    {
+        this.transform.gameObject.SetActive(false);
+    }
+
+    [PunRPC]
+    private void RPC_Enable()
+    {
+        this.transform.gameObject.SetActive(true);
     }
     
     [PunRPC]
     private void RPC_SetParent(int viewID)
     {
-        if (viewID != -1) transform.SetParent(PhotonView.Find(viewID).transform, false);
+        if (viewID != -1)
+        {
+            //transform.SetParent(PhotonView.Find(viewID).transform, true);
+            //transform.localPosition = Vector3.zero;
+            
+        }
         else transform.SetParent(null);
     }
     
