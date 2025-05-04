@@ -71,9 +71,16 @@ public class Drawer : MonoBehaviourPun
 
         if (Input.GetMouseButtonDown(0))//&& !EventSystem.current.IsPointerOverGameObject())
         {
-            if (eraserMode && EventSystem.current.IsPointerOverGameObject())
+            if (eraserMode) //&& EventSystem.current.IsPointerOverGameObject())
             {
-                photonView.RPC("EraseDrawnObj", RpcTarget.AllBuffered, Camera.main.ScreenToWorldPoint(Input.mousePosition));
+                //if(EventSystem.current.IsPointerOverGameObject())
+                RaycastHit2D hit = Physics2D.Raycast((Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition), Vector2.zero, Mathf.Infinity, LayerMask.GetMask("Draw"));
+                if (hit.collider != null)
+                {
+                    print(hit.collider.gameObject.name);
+                    photonView.RPC("EraseDrawnObj", RpcTarget.All,
+                        (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition));
+                }
                 //EraseDrawnObj();
             }
             else if (currentDrawer == null)
@@ -116,13 +123,13 @@ public class Drawer : MonoBehaviourPun
 
     private void SetPenProperties(PenUI.PenType penType)
     {
+        currentPenType = penType;
         if (penType == PenUI.PenType.Eraser)
         {
             eraserMode = true;
         }
         else
         {
-            currentPenType = penType;
             eraserMode = false;
         }
     }
@@ -141,12 +148,13 @@ public class Drawer : MonoBehaviourPun
     }
     
     [PunRPC]
-    private void EraseDrawnObj(Vector3 mousePos)
+    private void EraseDrawnObj(Vector2 mousePos)
     {
         //Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero); // Small downward ray
+        
+        RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero, Mathf.Infinity, LayerMask.GetMask("Draw")); // Small downward ray
 
-        if (hit.collider != null && hit.collider.gameObject.layer == LayerMask.NameToLayer("Draw"))
+        if (hit.collider != null)// && hit.collider.gameObject.layer == LayerMask.NameToLayer("Draw"))
         {
             Debug.Log("Hit: " + hit.collider.gameObject.name);
             //hit.collider.gameObject.GetComponent<DrawMesh>().photonView.TransferOwnership(actorNum);

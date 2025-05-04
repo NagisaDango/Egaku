@@ -166,21 +166,28 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
     [PunRPC]
     private void RPC_FinishDraw()
     {
-        if (currProperty.gravity) rb2d.bodyType = RigidbodyType2D.Dynamic;
-        if (currProperty.mass > 0) rb2d.mass = currProperty.mass;
-        //***!!! if currproperty is trigger just remove the collider for now.
-        if (currProperty.trigger)  Destroy(col2d);
-
-        photonView.TransferOwnership(Runner.Instance.actorNum); 
-
-        if (pointList != null)
+        if(drawStrokes <= 0)
+            PhotonNetwork.Destroy(gameObject);
+        else
         {
-            if (PhotonNetwork.IsMasterClient)
+            if (currProperty.gravity) rb2d.bodyType = RigidbodyType2D.Dynamic;
+            if (currProperty.mass > 0) rb2d.mass = currProperty.mass;
+            //***!!! if currproperty is trigger just remove the collider for now.
+            if (currProperty.trigger)  //Destroy(col2d);
+                col2d.isTrigger = true;
+
+            photonView.TransferOwnership(Runner.Instance.actorNum); 
+        
+            //Electric
+            if (pointList != null)
             {
-                GameObject splineInstance = PhotonNetwork.Instantiate(splinePrefab.name, Vector3.zero, Quaternion.identity);
-                splineInstance.transform.GetChild(1).transform.position = pointList[0];
-                splineInstance.transform.GetChild(2).transform.position = pointList[pointList.Count - 1];
-                photonView.RPC("RPC_SetupSpline", RpcTarget.AllBuffered, splineInstance.GetComponent<PhotonView>().ViewID);
+                if (PhotonNetwork.IsMasterClient)
+                {
+                    GameObject splineInstance = PhotonNetwork.Instantiate(splinePrefab.name, Vector3.zero, Quaternion.identity);
+                    splineInstance.transform.GetChild(1).transform.position = pointList[0];
+                    splineInstance.transform.GetChild(2).transform.position = pointList[pointList.Count - 1];
+                    photonView.RPC("RPC_SetupSpline", RpcTarget.AllBuffered, splineInstance.GetComponent<PhotonView>().ViewID);
+                }
             }
         }
     }
@@ -191,6 +198,7 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
         PhotonView splinePhotonView = PhotonView.Find(splineViewID);
         if (splinePhotonView != null)
         {
+            splinePhotonView.gameObject.transform.SetParent(this.transform);
             ElectricSpline listHolder = splinePhotonView.GetComponent<ElectricSpline>();
             SplineContainer container = splinePhotonView.GetComponent<SplineContainer>();
             if (container != null)

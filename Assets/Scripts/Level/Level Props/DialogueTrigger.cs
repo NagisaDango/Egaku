@@ -22,7 +22,7 @@ public class DialogueTrigger : MonoBehaviourPun
     }
     
     [PunRPC]
-    public void ShowDialogue()
+    public void RPC_ShowDialogue()
     {
         if (!displaying)
         {
@@ -53,14 +53,14 @@ public class DialogueTrigger : MonoBehaviourPun
         textDisplay.transform.parent.gameObject.SetActive(false);
         displaying = false;
         if(photonView.IsMine)
-            PhotonNetwork.Destroy(this.gameObject);
+            Destroy(this.gameObject);
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Player"))
         {
-            photonView.RPC("ShowDialogue", RpcTarget.AllBuffered);
+            photonView.RPC("RPC_ShowDialogue", RpcTarget.All);
             //ShowDialogue();
         }
     }

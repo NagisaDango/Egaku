@@ -147,6 +147,7 @@ public class Runner : MonoBehaviourPunCallbacks
 
     private void MoveAlongElectric()
     {
+        if(movingAlongElectric) return;
         print("start electric");
         movingAlongElectric = true;
         splineAnimate = interactingObject.transform.parent.GetChild(0).GetComponent<SplineAnimate>();
@@ -170,11 +171,13 @@ public class Runner : MonoBehaviourPunCallbacks
         rb.simulated = false;
         col.enabled = false;
         Spline spline = new Spline();
-        if (interactingObject.tag.EndsWith("End"))
+        if (interactingObject.tag.EndsWith("End") && !reversed)
         {
             splineAnimate.Container.ReverseFlow(0);
             reversed = true;
         }
+        else
+            reversed = false;
         splineAnimate.Restart(true);
     }
 
