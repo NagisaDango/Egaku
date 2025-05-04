@@ -94,20 +94,22 @@ public class Drawer : MonoBehaviourPun
         }
         if (Input.GetMouseButton(0) && currentDrawer != null)
         {
-            int djj = drawStrokeTotal - currentDrawer.drawStrokes;
-            photonView.RPC("UpdateSlider", RpcTarget.All, djj * 1.0f / drawStrokeLimit);
-            if (djj <= 0)
+            Vector3 mousePos = GetMouseWorldPosition();
+            if (currentDrawer.ValidateMouseMovement(mousePos))
             {
-                print("stop drawing");
-                drawStrokeTotal -= currentDrawer.drawStrokes;
-                currentDrawer = null;
-            }
-            else
-            {
-                Vector3 mousePos = GetMouseWorldPosition();
-                if(currentDrawer.ValidateMouseMovement(mousePos))
+                int djj = drawStrokeTotal - currentDrawer.drawStrokes;
+                photonView.RPC("UpdateSlider", RpcTarget.All, djj * 1.0f / drawStrokeLimit);
+                if (djj <= 0)
+                {
+                    print("stop drawing");
+                    drawStrokeTotal -= currentDrawer.drawStrokes;
+                    currentDrawer = null;
+                }
+                else
+                {
                     currentDrawer.photonView.RPC("RPC_StartDraw", RpcTarget.All, mousePos);
-                //currentDrawer.StartDraw();
+                    //currentDrawer.StartDraw();
+                }
             }
         }
         if (Input.GetMouseButtonUp(0))
