@@ -99,12 +99,17 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
         GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Dynamic;
     }
 
+    public bool ValidateMouseMovement(Vector3 mousePos)
+    {
+        return Vector3.Distance(mousePos, lastMousePosition) > minDistance;
+    }
+
     //RPC: Draw mesh according to the mosuePos
     [PunRPC]
     void RPC_StartDraw(Vector3 mousePos)
     {
         //GetMouseWorldPosition();
-        if (Vector3.Distance(mousePos, lastMousePosition) > minDistance && ((drawStrokes < maxStrokes) || maxStrokes <= 0))
+        if (((drawStrokes < maxStrokes) || maxStrokes <= 0))
         {
             drawStrokes++;
             if(pointList != null) pointList.Add(mousePos);

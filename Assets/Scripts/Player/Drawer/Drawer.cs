@@ -105,7 +105,8 @@ public class Drawer : MonoBehaviourPun
             else
             {
                 Vector3 mousePos = GetMouseWorldPosition();
-                currentDrawer.photonView.RPC("RPC_StartDraw", RpcTarget.All, mousePos);
+                if(currentDrawer.ValidateMouseMovement(mousePos))
+                    currentDrawer.photonView.RPC("RPC_StartDraw", RpcTarget.All, mousePos);
                 //currentDrawer.StartDraw();
             }
         }
