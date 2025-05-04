@@ -14,6 +14,7 @@ public class RolesManager : MonoBehaviourPunCallbacks
     public Button runnerButton;
     public Button startGameButton;
     public GameObject playerDisplay;
+    public Transform playerDisplayParent;
 
     private Transform drawerTrans;
     private Transform runnerTrans;
@@ -37,11 +38,31 @@ public class RolesManager : MonoBehaviourPunCallbacks
         drawerTrans = drawerButton.transform.parent;
         runnerTrans = runnerButton.transform.parent;
 
+        //photonView.RPC("RPC_ChangePlayerDisplayParent", RpcTarget.AllBuffered, playerDisplayParent.GetComponent<PhotonView>().ViewID);
+        //thisPlayerDisplay.transform.parent = playerDisplayParent;
+        //thisPlayerDisplay.transform.SetParent(playerDisplayParent);
         thisPlayerDisplay.transform.GetChild(0).GetComponent<Button>().onClick.AddListener(() => SelectRole(PlayerRole.None));
         //thisPlayerDisplay.transform.GetChild(1).GetComponent<TMP_Text>().text = PhotonNetwork.NickName;
         displayID = thisPlayerDisplay.GetComponent<PhotonView>().ViewID;
         photonView.RPC("RPC_SwitchDisplayPos", RpcTarget.AllBuffered, selectedRole, displayID, PhotonNetwork.LocalPlayer.ActorNumber);
         photonView.RPC("RPC_Set_Name", RpcTarget.AllBuffered, PhotonNetwork.NickName, displayID);
+
+        if (!PhotonNetwork.IsMasterClient)
+        {
+            startGameButton.gameObject.SetActive(false);
+        }
+    }
+
+    [PunRPC]
+    void RPC_ChangePlayerDisplayParent(int parentViewID)
+    {
+        PhotonView parentView = PhotonView.Find(parentViewID);
+        //Debug.Log("parent VIew", parentView.ViewID);
+        if (parentView != null)
+        {
+            Debug.Log("parent VIew");
+            thisPlayerDisplay.transform.SetParent(parentView.transform);
+        }
     }
 
     void SelectRole(PlayerRole role)
@@ -73,7 +94,7 @@ public class RolesManager : MonoBehaviourPunCallbacks
 
         // Assign correct parent based on selected role
         if (role == PlayerRole.None)
-            targetDisplay.transform.SetParent(this.transform);
+            targetDisplay.transform.SetParent(playerDisplayParent);
         else if (role == PlayerRole.Drawer)
             targetDisplay.transform.SetParent(drawerTrans);
         else if (role == PlayerRole.Runner)

@@ -63,6 +63,8 @@ MonoBehaviour:
   - RPC_Disable
   - RPC_Enable
   - RPC_ShowDialogue
+  - ChangePlayerDisplayParent
+  - RPC_ChangePlayerDisplayParent
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1
