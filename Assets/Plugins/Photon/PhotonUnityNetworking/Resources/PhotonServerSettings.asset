@@ -62,6 +62,8 @@ MonoBehaviour:
   - RPC_Revive
   - RPC_Disable
   - RPC_Enable
+  - ChangePlayerDisplayParent
+  - RPC_ChangePlayerDisplayParent
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

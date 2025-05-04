@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using WebSocketSharp;
 using Hashtable = ExitGames.Client.Photon.Hashtable;
+using Unity.VisualScripting;
 
 
 
@@ -26,7 +27,9 @@ namespace Allan
 
 
         
-        public static GameManager Instance; 
+        public static GameManager Instance;
+        public static bool initialized = false;
+
         [Tooltip("The prefab to use for representing the player")]
         public GameObject runnerPrefab;
         public GameObject drawerPrefab;
@@ -44,10 +47,50 @@ namespace Allan
 
         private void Awake()
         {
+            //if (Instance == null)
+            //{
+            //    Instance = this;
+            //    GameManager.initialized = true;
+            //    DontDestroyOnLoad(gameObject);
+            //}
+            //else if (Instance != this)
+            //{
+            //    Destroy(gameObject);
+            //    return;
+            //}
+            Instance = this;
+
+            DontDestroyOnLoad(gameObject);
+
+
+            roomSelection = GameObject.Find("RoomSelection");
+            roleSelection = GameObject.Find("RoleSelection");
+            gridLayout = roomSelection.transform.Find("Scroll View/Viewport/Content");
+            nameField = roomSelection.transform.Find("RoomNameInputField").GetComponent<TMP_InputField>();
+
+
+
+
+
+
             roomSelection.SetActive(true);
             roleSelection.SetActive(false);
 
+
         }
+
+        public void UpdateProperty(GameObject roomSelection, GameObject roleSelection, Transform gridLayout, TMP_InputField nameField)
+        {
+            this.roomSelection = roomSelection;
+            this.roleSelection = roleSelection;
+            this.gridLayout = gridLayout;
+            this.nameField = nameField;
+
+
+
+        }
+
+
         public override void OnEnable()
         {
             base.OnEnable();
@@ -62,6 +105,15 @@ namespace Allan
 
         void Start()
         {
+            //if(Instance == null)
+            //{
+            //    Instance = this;
+            //}
+            //else
+            //{
+            //    Destroy(this);
+            //}
+
             if (runnerPrefab == null || drawerPrefab == null)
             {
                 Debug.LogError("<Color=Red><a>Missing</a></Color> playerPrefab Reference. Please set it up in GameObject 'Game Manager'", this);
@@ -79,8 +131,8 @@ namespace Allan
                     Debug.LogFormat("Ignoring scene load for {0}", SceneManagerHelper.ActiveSceneName);
                 }
             }
-            DontDestroyOnLoad(this.gameObject);
-            Instance = this;
+            //DontDestroyOnLoad(this.gameObject);
+            //Instance = this;
         }
 
         public void DevSpawnPlayers()
@@ -129,9 +181,17 @@ namespace Allan
         /// </summary>
         public override void OnLeftRoom()
         {
+            Debug.Log("Enter Callback OnLeftRoom");
+
             //SceneManager.LoadScene(0);
-            roomSelection.SetActive(true);
-            roleSelection.SetActive(false);
+            if (PhotonNetwork.InLobby)
+            {
+                Debug.Log("OnLeftRoom: go back to room selection page");
+                roomSelection.SetActive(true);
+                roleSelection.SetActive(false);
+            }
+            PhotonNetwork.LoadLevel("RoleSelection");
+
 
             //Hashtable roomProperties = currentRoom.CustomProperties;
 
@@ -148,6 +208,9 @@ namespace Allan
             //Invoke("JoinLobbyAfterDelay", 0.5f);
 
         }
+
+
+
         private Room currentRoom;
 
         void JoinLobbyAfterDelay()
@@ -219,7 +282,7 @@ namespace Allan
 
         public override void OnPlayerLeftRoom(Player other)
         {
-            Debug.LogFormat("OnPlayerLeftRoom() {0}", other.NickName); // seen when other disconnects
+            Debug.LogFormat("Enter Callback OnPlayerLeftRoom: {0} left room", other.NickName); // seen when other disconnects
 
             if (PhotonNetwork.IsMasterClient)
             {
@@ -227,6 +290,8 @@ namespace Allan
 
                 //LoadArena();
             }
+
+            PhotonNetwork.LeaveRoom();
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
