@@ -103,6 +103,7 @@ namespace Allan
             SceneManager.sceneLoaded -= OnSceneLoaded;
         }
 
+
         void Start()
         {
             //if(Instance == null)
