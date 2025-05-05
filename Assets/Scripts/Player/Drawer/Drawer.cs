@@ -35,8 +35,27 @@ public class Drawer : MonoBehaviourPun
     
     private void Awake()
     {
+        //DontDestroyOnLoad(this.gameObject);
+        Instance = this;
         inkSlider = GameObject.Find("Canvas/Slider").GetComponent<Slider>();
-        DontDestroyOnLoad(this.gameObject);
+        //if(inkSlider == null)
+        //    inkSlider = GameObject.Find("Canvas/Slider").GetComponent<Slider>();
+        //DontDestroyOnLoad(this.gameObject);
+        //if (Instance == null)
+        //{
+        //    Instance = this;
+        //}
+        //else if(Instance == this)
+        //{
+
+        //}
+        //else
+        //{
+        //    Debug.LogWarning("Drawer is already active and set, destroying this drawer.");
+        //    Destroy(this.gameObject);
+        //}
+        //inkSlider = GameObject.Find("Canvas/Slider").GetComponent<Slider>();
+
 
         if (photonView.IsMine)
         {
@@ -47,15 +66,15 @@ public class Drawer : MonoBehaviourPun
 
     private void Start()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else
-        {
-            Debug.LogWarning("Drawer is already active and set, destroying this drawer.");
-            Destroy(this.gameObject);
-        }
+        //if (Instance == null)
+        //{
+        //    Instance = this;
+        //}
+        //else
+        //{
+        //    Debug.LogWarning("Drawer is already active and set, destroying this drawer.");
+        //    Destroy(this.gameObject);
+        //}
         if (photonView.IsMine)
         {
             actorNum = PhotonNetwork.LocalPlayer.ActorNumber;
@@ -63,7 +82,26 @@ public class Drawer : MonoBehaviourPun
             OnPenSelect += SetPenProperties;
         }
     }
-    
+
+    private void OnEnable()
+    {
+        //DontDestroyOnLoad(this.gameObject);
+        //if (Instance == null)
+        //{
+        //    Instance = this;
+        //}
+        //else if (Instance == this)
+        //{
+
+        //}
+        //else
+        //{
+        //    Debug.LogWarning("Drawer is already active and set, destroying this drawer.");
+        //    Destroy(this.gameObject);
+        //}
+        //inkSlider = GameObject.Find("Canvas/Slider").GetComponent<Slider>();
+    }
+
     void Update()
     {
         if(!photonView.IsMine)
