@@ -279,6 +279,8 @@ namespace Allan
 
                 //LoadArena();
             }
+
+
         }
 
         public override void OnPlayerLeftRoom(Player other)

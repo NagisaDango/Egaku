@@ -1738,6 +1738,8 @@ MonoBehaviour:
   startGameButton: {fileID: 1027671672}
   playerDisplay: {fileID: 1524065566015113217, guid: 488886feea9ae84498a371a439926d1f, type: 3}
   playerDisplayParent: {fileID: 976073036}
+  drawerTrans: {fileID: 1345368358}
+  runnerTrans: {fileID: 1193920140}
 --- !u!114 &1130844072
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -16,8 +16,8 @@ public class RolesManager : MonoBehaviourPunCallbacks
     public GameObject playerDisplay;
     public Transform playerDisplayParent;
 
-    private Transform drawerTrans;
-    private Transform runnerTrans;
+    [SerializeField] private Transform drawerTrans;
+    [SerializeField] private Transform runnerTrans;
     private GameObject thisPlayerDisplay;
     private int displayID;
     private PlayerRole selectedRole = PlayerRole.None; // Default
@@ -35,8 +35,8 @@ public class RolesManager : MonoBehaviourPunCallbacks
         thisPlayerDisplay =
             PhotonNetwork.Instantiate(playerDisplay.name, new Vector3(0,0,0), this.transform.rotation);
 
-        drawerTrans = drawerButton.transform.parent;
-        runnerTrans = runnerButton.transform.parent;
+        //drawerTrans = drawerButton.transform.parent;
+        //runnerTrans = runnerButton.transform.parent;
 
         //photonView.RPC("RPC_ChangePlayerDisplayParent", RpcTarget.AllBuffered, playerDisplayParent.GetComponent<PhotonView>().ViewID);
         //thisPlayerDisplay.transform.parent = playerDisplayParent;
@@ -53,17 +53,7 @@ public class RolesManager : MonoBehaviourPunCallbacks
         }
     }
 
-    [PunRPC]
-    void RPC_ChangePlayerDisplayParent(int parentViewID)
-    {
-        PhotonView parentView = PhotonView.Find(parentViewID);
-        //Debug.Log("parent VIew", parentView.ViewID);
-        if (parentView != null)
-        {
-            Debug.Log("parent VIew");
-            thisPlayerDisplay.transform.SetParent(parentView.transform);
-        }
-    }
+
 
     void SelectRole(PlayerRole role)
     {
@@ -87,18 +77,28 @@ public class RolesManager : MonoBehaviourPunCallbacks
     void RPC_SwitchDisplayPos(PlayerRole role, int viewID, int playerActorNumber)
     {
         PhotonView targetView = PhotonView.Find(viewID);
+        Debug.Log("RPC" + viewID + targetView == null);
         if (targetView == null) return; // Ensure target exists
 
         GameObject targetDisplay = targetView.gameObject;
         GameObject noRoleButton = targetDisplay.transform.GetChild(0).gameObject;
-
+        print("RPC " + targetDisplay.name + viewID);
         // Assign correct parent based on selected role
         if (role == PlayerRole.None)
+        {
             targetDisplay.transform.SetParent(playerDisplayParent);
+        }
         else if (role == PlayerRole.Drawer)
+        {
             targetDisplay.transform.SetParent(drawerTrans);
+        }
         else if (role == PlayerRole.Runner)
+        {
             targetDisplay.transform.SetParent(runnerTrans);
+        }
+
+        else
+            print("RPC enter else");
 
         // Store player's role in Photon Custom Properties (Async Update)
         Hashtable playerProperties = new Hashtable { { "Role_" + playerActorNumber, (int)role } };
