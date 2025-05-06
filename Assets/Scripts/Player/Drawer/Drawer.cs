@@ -209,6 +209,15 @@ public class Drawer : MonoBehaviourPun
         }
     }
 
+    [PunRPC]
+    public void RPC_DirectErase(int drawStrokes, Vector2 centerPos)
+    {
+        drawStrokeTotal += drawStrokes;
+        float value = drawStrokeTotal * 1.0f / drawStrokeLimit;
+        StartCoroutine(AddSliderValue(value, time));
+        ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", new Vector3(centerPos.x, centerPos.y, 0), Quaternion.identity).GetComponent<ParticleAttractor>();
+    }
+
     IEnumerator AddSliderValue(float target, float time)
     {
         float currentValue = inkSlider.value;
