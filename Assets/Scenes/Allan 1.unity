@@ -1521,6 +1521,30 @@ PrefabInstance:
     m_TransformParent: {fileID: 10208324}
     m_Modifications:
     - target: {fileID: 2998718763828748050, guid: 34b3a40bc1b1c06459189b7d704d62d4, type: 3}
+      propertyPath: m_fontSize
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: 2998718763828748050, guid: 34b3a40bc1b1c06459189b7d704d62d4, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 20c8bcaa44bd38941a9fdea4c66825a9, type: 2}
+    - target: {fileID: 2998718763828748050, guid: 34b3a40bc1b1c06459189b7d704d62d4, type: 3}
+      propertyPath: m_fontSizeBase
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: 2998718763828748050, guid: 34b3a40bc1b1c06459189b7d704d62d4, type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: -3643828317548328607, guid: 20c8bcaa44bd38941a9fdea4c66825a9, type: 2}
+    - target: {fileID: 2998718763828748050, guid: 34b3a40bc1b1c06459189b7d704d62d4, type: 3}
+      propertyPath: m_enableAutoSizing
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2998718763828748050, guid: 34b3a40bc1b1c06459189b7d704d62d4, type: 3}
+      propertyPath: m_hasFontAssetChanged
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2998718763828748050, guid: 34b3a40bc1b1c06459189b7d704d62d4, type: 3}
       propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
       value: 1801810542
       objectReference: {fileID: 0}
@@ -1604,6 +1628,22 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5744519884935233988, guid: 34b3a40bc1b1c06459189b7d704d62d4, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 250
+      objectReference: {fileID: 0}
+    - target: {fileID: 5744519884935233988, guid: 34b3a40bc1b1c06459189b7d704d62d4, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: 5744519884935233988, guid: 34b3a40bc1b1c06459189b7d704d62d4, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5744519884935233988, guid: 34b3a40bc1b1c06459189b7d704d62d4, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7998191499624342378, guid: 34b3a40bc1b1c06459189b7d704d62d4, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
@@ -1619,6 +1659,22 @@ PrefabInstance:
     - target: {fileID: 8417532359975017565, guid: 34b3a40bc1b1c06459189b7d704d62d4, type: 3}
       propertyPath: m_Name
       value: Panel
+      objectReference: {fileID: 0}
+    - target: {fileID: 8534306909374872702, guid: 34b3a40bc1b1c06459189b7d704d62d4, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8534306909374872702, guid: 34b3a40bc1b1c06459189b7d704d62d4, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: -0.00011444
+      objectReference: {fileID: 0}
+    - target: {fileID: 8534306909374872702, guid: 34b3a40bc1b1c06459189b7d704d62d4, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8534306909374872702, guid: 34b3a40bc1b1c06459189b7d704d62d4, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -0.000045776367
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -3133,12 +3189,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: '
-
-'
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20c8bcaa44bd38941a9fdea4c66825a9, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: -3643828317548328607, guid: 20c8bcaa44bd38941a9fdea4c66825a9, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3162,12 +3216,12 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 72
+  m_fontSize: 36
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
   m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_fontSizeMax: 80
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
@@ -3203,7 +3257,7 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
-  m_hasFontAssetChanged: 1
+  m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!222 &1232006046
