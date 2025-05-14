@@ -36,6 +36,9 @@ namespace Allan
 
         public GameObject roomSelection;
         public GameObject roleSelection;
+        public GameObject levelSelection;
+
+
 
 
         public GameObject roomItemPrefab;
@@ -44,6 +47,10 @@ namespace Allan
 
         private HashSet<string> roomInfoSet = new();
         private bool devSpawn = false;
+
+        public int gameScenes = 10;
+        [SerializeField] private int currrentScene = 0;
+
 
         private void Awake()
         {
@@ -65,19 +72,36 @@ namespace Allan
 
             roomSelection = GameObject.Find("RoomSelection");
             roleSelection = GameObject.Find("RoleSelection");
+            //levelSelection = GameObject.Find("LevelSelection");
+
             gridLayout = roomSelection.transform.Find("Scroll View/Viewport/Content");
             nameField = roomSelection.transform.Find("RoomNameInputField").GetComponent<TMP_InputField>();
-
-
-
-
-
-
             roomSelection.SetActive(true);
             roleSelection.SetActive(false);
 
 
+            //levelSelection.transform.Find("BackButton").GetComponent<Button>().onClick.AddListener(() => { Back2RoleSelection(); });
+
+
         }
+
+
+        public void LoadLevel(int level)
+        {
+            PhotonNetwork.LoadLevel("Level_" + level);
+
+        }
+
+        public void Back2RoleSelection()
+        {
+            roleSelection.SetActive(false);
+            roleSelection.SetActive(true);
+            levelSelection.SetActive(false);
+
+
+        }
+
+
 
         public void UpdateProperty(GameObject roomSelection, GameObject roleSelection, Transform gridLayout, TMP_InputField nameField)
         {
