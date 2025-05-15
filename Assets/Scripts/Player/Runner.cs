@@ -25,6 +25,9 @@ public class Runner : MonoBehaviourPunCallbacks
     private bool movingAlongElectric;
     private bool reversed = false;
     private Vector2 revivePos;
+    private int extraJumpForce;
+    public bool validHoldJump;
+    [SerializeField] private FixedJoint2D fixedJoint2D;
 
     [Tooltip("The local player instance. Use this to know if the local player is represented in the Scene")]
     public static GameObject LocalPlayerInstance;
@@ -113,6 +116,18 @@ public class Runner : MonoBehaviourPunCallbacks
         {
             jump = true;
         }
+        
+        
+        if (Input.GetKeyDown(KeyCode.LeftShift))
+        {
+            if(holdingObjectID != -1)
+                photonView.RPC("RPC_HoldWood", RpcTarget.All, holdingObjectID);
+        }
+
+        if (holding && Input.GetKeyUp(KeyCode.LeftShift))
+        {
+            photonView.RPC("RPC_ReleaseWood", RpcTarget.All);
+        }
 
         if (splineAnimate != null && splineAnimate.NormalizedTime >= 1)
         {
@@ -140,7 +155,8 @@ public class Runner : MonoBehaviourPunCallbacks
     {
         if (jump)
         {
-            _RunnerMovement.Jump(jumpForce);
+            _RunnerMovement.Jump(jumpForce + extraJumpForce, validHoldJump);
+            print("Jump with force " + extraJumpForce + jumpForce);
             jump = false;
         }
     }
@@ -149,11 +165,12 @@ public class Runner : MonoBehaviourPunCallbacks
     {
         if(movingAlongElectric) return;
         print("start electric");
-        movingAlongElectric = true;
+        print(interactingObject);
         splineAnimate = interactingObject.transform.parent.GetChild(0).GetComponent<SplineAnimate>();
         ElectricSpline splinePoints = interactingObject.transform.parent.GetComponent<ElectricSpline>();
         transform.SetParent(interactingObject.transform.parent.GetChild(0));
         transform.localPosition = Vector3.zero;
+        movingAlongElectric = true;
         
         if (splineAnimate == null)
         {
@@ -186,9 +203,11 @@ public class Runner : MonoBehaviourPunCallbacks
         revivePos = pos;
     }
 
+    
     private void Revive()
     {
         photonView.RPC("RPC_Disable", RpcTarget.Others);
+        //photonView.RPC("RPC_ReleaseWood", RpcTarget.All);
         rb.linearVelocity = Vector2.zero;
         //this.transform.position = revivePos;
         photonView.transform.position = revivePos;
@@ -218,7 +237,59 @@ public class Runner : MonoBehaviourPunCallbacks
         }
         else transform.SetParent(null);
     }
-    
+
+    private bool holding;
+    [PunRPC]
+    private void RPC_HoldWood(int viewID)
+    {
+        if (viewID != -1)
+        {
+            //_RunnerMovement.SetJumpAllowance(false);
+            GameObject holdingObj = PhotonView.Find(viewID).gameObject;
+            holdingObj.tag = "Holding";
+            holdingObj.transform.SetParent(this.transform);
+            Rigidbody2D holdingRb = holdingObj.GetComponent<Rigidbody2D>();
+            holdingObj.GetComponent<WoodPen>().holder = this;
+            holdingRb.mass = 1;
+            holding = true;
+            fixedJoint2D.connectedBody = holdingRb;
+        }
+    }
+
+    [PunRPC]
+    private void RPC_ReleaseWood()
+    {
+        //fixedJoint2D.gameObject.layer = LayerMask.NameToLayer("Draw");
+        _RunnerMovement.SetJumpAllowance(true);
+        // TODO: only setting to wood here cuz its the only one that can be hold, might want to change, have a buffer holding the original tag name
+        validHoldJump = false;
+        fixedJoint2D.connectedBody.gameObject.tag = "Wood";
+        extraJumpForce = 0;
+        fixedJoint2D.connectedBody.gameObject.GetComponent<WoodPen>().holder = null;
+        fixedJoint2D.connectedBody.mass = 20;
+        holding = false;
+        fixedJoint2D.connectedBody.gameObject.transform.SetParent(null);
+        fixedJoint2D.connectedBody = rb;
+    }
+    private int holdingObjectID;
+    private void OnCollisionStay2D(Collision2D other)
+    {
+        if (other.gameObject.tag == "Wood")
+        {
+            holdingObjectID = other.gameObject.GetPhotonView().ViewID;
+        }
+    }
+
+    public void SetExtraJumpForce(int _extraJumpForce)
+    {
+        extraJumpForce = _extraJumpForce;
+    }
+
+    private void OnCollisionExit2D(Collision2D other)
+    {
+        holdingObjectID = -1;
+    }
+
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (other.tag == "DeathDesuwa")
@@ -229,7 +300,7 @@ public class Runner : MonoBehaviourPunCallbacks
 
     private void OnTriggerStay2D(Collider2D other)
     {
-        if (other.tag.StartsWith("Electric"))
+        if (other.tag.StartsWith("Electric") && !other.CompareTag("Electric"))
         {
             inElectric = true;
             interactingObject = other.gameObject;
