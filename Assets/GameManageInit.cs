@@ -25,7 +25,11 @@ public class GameManageInit : MonoBehaviour
         GameManager go = null;
         if (!GameManager.initialized)
         {
-            go = Instantiate(gameManagerPrefab,Vector3.zero,Quaternion.identity).GetComponent<GameManager>();
+
+            Debug.Log(gameManagerPrefab.name);
+
+            GameObject g = Instantiate(gameManagerPrefab, Vector3.zero, Quaternion.identity).gameObject;
+            go = g.GetComponent<GameManager>();
             Debug.Log($"{go.name} has been instantiated");
             GameManager.initialized = true;
             //go.GetComponent<PhotonView>().

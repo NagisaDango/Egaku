@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
+using Photon.Pun;
+using System.Threading.Tasks;
 
 public class ParticleAttractor : MonoBehaviour
 {
@@ -51,9 +53,24 @@ public class ParticleAttractor : MonoBehaviour
             if(Mathf.Abs(particles[i].position.x - djj.x) < 0.01)
             {
                 particles[i].remainingLifetime = 0;
+
+                DeleteParticle();
             }
         }
 
         ps.SetParticles(particles, numParticlesAlive);
+    }
+
+    //[PunRPC]
+    //private async void CallAfterDelayAsync()
+    //{
+    //    await Task.Delay(3000); // milliseconds
+    //    Destroy(this.gameObject);
+    //}
+
+    private async void DeleteParticle()
+    {
+        await Task.Delay(10000); // milliseconds
+        Destroy(this.gameObject);
     }
 }

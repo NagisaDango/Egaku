@@ -9,4 +9,17 @@ public class GeneralUI : MonoBehaviourPunCallbacks
     {
         PhotonNetwork.LeaveRoom();
     }
+
+    public void ResetGame()
+    {
+        photonView.RPC("RPC_Reset", RpcTarget.AllBuffered);
+
+    }
+
+    [PunRPC]
+    private void RPC_Reset()
+    {
+        PhotonNetwork.LoadLevel("Allan 1");
+
+    }
 }

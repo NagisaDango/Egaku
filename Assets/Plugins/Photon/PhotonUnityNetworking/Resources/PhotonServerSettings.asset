@@ -65,6 +65,7 @@ MonoBehaviour:
   - RPC_ShowDialogue
   - ChangePlayerDisplayParent
   - RPC_ChangePlayerDisplayParent
+  - RPC_Reset
   - RPC_DirectErase
   - RPC_HoldWood
   - RPC_ReleaseWood
