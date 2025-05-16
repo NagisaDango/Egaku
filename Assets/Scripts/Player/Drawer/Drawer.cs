@@ -60,7 +60,7 @@ public class Drawer : MonoBehaviourPun
         if (photonView.IsMine)
         {
             GameObject UI = Instantiate(drawerPanelPrefab).transform.GetChild(0).gameObject;
-            GameObject.Find("LevelManager").GetComponent<LevelManager>().Init(UI.GetComponent<DrawerUICOntrol>());
+            GameObject.Find("LevelSetup").GetComponent<LevelSetup>().Init(UI.GetComponent<DrawerUICOntrol>());
         }
     }
 

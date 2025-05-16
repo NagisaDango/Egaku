@@ -16,20 +16,19 @@ public class GameManageInit : MonoBehaviour
 
     public GameObject roomSelection;
     public GameObject roleSelection;
+    public GameObject levelSelection;
+
     public Transform gridLayout;
     public TMP_InputField nameField;
 
 
-    void Start()
+    void Awake()
     {
         GameManager go = null;
         if (!GameManager.initialized)
         {
 
-            Debug.Log(gameManagerPrefab.name);
-
-            GameObject g = Instantiate(gameManagerPrefab, Vector3.zero, Quaternion.identity).gameObject;
-            go = g.GetComponent<GameManager>();
+            go = Instantiate(gameManagerPrefab, Vector3.zero, Quaternion.identity).GetComponent<GameManager>();
             Debug.Log($"{go.name} has been instantiated");
             GameManager.initialized = true;
             //go.GetComponent<PhotonView>().
@@ -40,12 +39,15 @@ public class GameManageInit : MonoBehaviour
         }
 
         roomCreateOrJoinButton.onClick.AddListener(() => { go.CreateJoinButton(); });
-        startGaemButton.onClick.AddListener(() => { go.DevSpawnPlayers(); });
-        go.UpdateProperty(roomSelection, roleSelection, gridLayout, nameField);
+        startGaemButton.onClick.AddListener(() => { go.LoadLevelSelection(); });
+        go.UpdateProperty(roomSelection, roleSelection, levelSelection, gridLayout, nameField);
         leaveGameButton.onClick.AddListener(() => { go.LeaveRoom(); });
 
         roomSelection.SetActive(true);
         roleSelection.SetActive(false);
+        levelSelection.SetActive(false);
+
+
     }
 
     // Update is called once per frame
