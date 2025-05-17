@@ -26,8 +26,8 @@ public class Drawer : MonoBehaviourPun
     public float time = 3;
 
     private int actorNum;
-    
-    [Header("Pen")]
+
+    [Header("Pen")] 
     [SerializeField] public PenProperty woodPen;
     [SerializeField] public PenProperty cloudPen;
     [SerializeField] public PenProperty steelPen;
@@ -235,6 +235,15 @@ public class Drawer : MonoBehaviourPun
 [System.Serializable]
 public struct PenProperty
 {
+    public enum PenType
+    {
+        Wood,
+        Cloud,
+        Electric,
+        Steel,
+        Eraser
+    };
+    public PenType penType;
     public bool gravity;
     public bool trigger;
     public int mass;

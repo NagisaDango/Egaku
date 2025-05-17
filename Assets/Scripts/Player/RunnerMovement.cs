@@ -6,8 +6,10 @@ public class RunnerMovement
 {
     private float speed;
     private int maxSpeed;
+    private bool allowJump = true;
     Rigidbody2D rb;
     RaycastHit2D hit;
+    private int extraJump;
 
     public RunnerMovement(Rigidbody2D rg2d, float speed, int maxSpeed)
     {
@@ -27,10 +29,10 @@ public class RunnerMovement
         rb.linearVelocity = new Vector2(axis.x * speed, axis.y * speed + rb.linearVelocity.y);
     }
 
-    public void Jump(int jumpForce)
+    public void Jump(int jumpForce, bool directAllowance)
     {
-        if(GroundDetect())
-            rb.linearVelocity= new Vector2(rb.linearVelocity.x, jumpForce);
+        if(directAllowance || GroundDetect() )
+            rb.linearVelocity= new Vector2(rb.linearVelocity.x, jumpForce + extraJump);
     }
 
     private Vector2 GetMoveAxis()
@@ -42,6 +44,11 @@ public class RunnerMovement
         return Vector2.right; // Return some default direction if no ground is found
     }
 
+    public void SetJumpAllowance(bool allow)
+    {
+        allowJump = allow;
+    }
+    
     public bool GroundDetect()
     {
         hit = Physics2D.Raycast(rb.transform.position, Vector2.down, 1f, LayerMask.GetMask("Platform", "Draw")); 
@@ -52,7 +59,17 @@ public class RunnerMovement
             return false;
         }
 
+        if (hit.collider.gameObject.CompareTag("Cloud"))
+            extraJump = 5;
+        else
+            extraJump = 0;
+
         rb.linearDamping = 5;
+        if (hit.collider.gameObject.CompareTag("Holding"))
+        {
+            return false;
+        }
+        
         return true;
     }
 }

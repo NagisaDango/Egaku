@@ -18,7 +18,7 @@ EditorBuildSettings:
     path: Assets/Scenes/Legacy/RoomSelection.unity
     guid: dd1a00b9e72993f469e71440d809e88b
   - enabled: 1
-    path: Assets/Scenes/Allan 1.unity
+    path: Assets/Scenes/Legacy/Allan 1.unity
     guid: 24e23b39f60c1b4489e79c797c02478b
   - enabled: 1
     path: Assets/Scenes/Level_0.unity

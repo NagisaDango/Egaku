@@ -155,6 +155,7 @@ GameObject:
   - component: {fileID: 3838232777117374118}
   - component: {fileID: 5065973080118956949}
   - component: {fileID: 7988319569955487624}
+  - component: {fileID: 6520781276632100566}
   - component: {fileID: 470126263520636966}
   - component: {fileID: 530124913488223632}
   - component: {fileID: 7239380617049265528}
@@ -224,7 +225,7 @@ BoxCollider2D:
   m_Enabled: 1
   serializedVersion: 3
   m_Density: 1
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 6200000, guid: 019d06960fd51ef45a05118e6bb43f5e, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -276,7 +277,7 @@ Rigidbody2D:
   m_LinearDamping: 0
   m_AngularDamping: 0
   m_GravityScale: 5
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 6200000, guid: 019d06960fd51ef45a05118e6bb43f5e, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -287,6 +288,25 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!255 &6520781276632100566
+FixedJoint2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6516697053591408558}
+  m_Enabled: 1
+  serializedVersion: 4
+  m_EnableCollision: 0
+  m_ConnectedRigidBody: {fileID: 7988319569955487624}
+  m_BreakForce: Infinity
+  m_BreakTorque: Infinity
+  m_BreakAction: 3
+  m_AutoConfigureConnectedAnchor: 1
+  m_Anchor: {x: 0, y: 0}
+  m_ConnectedAnchor: {x: 0, y: 0}
+  m_DampingRatio: 0
+  m_Frequency: 0
 --- !u!114 &470126263520636966
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -303,6 +323,8 @@ MonoBehaviour:
   _ActionMap: {fileID: -944628639613478452, guid: e867bc50cb3156e42a79d69fa37878ad, type: 3}
   jumpForce: 20
   maxSpeed: 8
+  validHoldJump: 0
+  fixedJoint2D: {fileID: 6520781276632100566}
 --- !u!114 &530124913488223632
 MonoBehaviour:
   m_ObjectHideFlags: 0

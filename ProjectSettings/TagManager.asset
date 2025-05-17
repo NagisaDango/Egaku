@@ -8,6 +8,11 @@ TagManager:
   - ElectricBegin
   - Holder
   - DeathDesuwa
+  - Wood
+  - Cloud
+  - Steel
+  - Electric
+  - Holding
   layers:
   - Default
   - TransparentFX
@@ -20,6 +25,7 @@ TagManager:
   - FogMain
   - FogSec
   - Cursor
+  - Holding
   - 
   - 
   - 

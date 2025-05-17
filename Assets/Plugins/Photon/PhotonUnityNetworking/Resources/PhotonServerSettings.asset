@@ -67,6 +67,8 @@ MonoBehaviour:
   - RPC_ChangePlayerDisplayParent
   - RPC_Reset
   - RPC_DirectErase
+  - RPC_HoldWood
+  - RPC_ReleaseWood
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

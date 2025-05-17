@@ -3,6 +3,7 @@ using Photon.Pun;
 using System.Collections.Generic;
 using System.Linq;
 using Photon.Realtime;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Splines;
 
@@ -182,10 +183,11 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
             if (currProperty.trigger)  //Destroy(col2d);
                 col2d.isTrigger = true;
 
-            photonView.TransferOwnership(Runner.Instance.actorNum); 
-        
+            this.gameObject.tag = SetUpObjectTag(currProperty.penType);
+            photonView.TransferOwnership(Runner.Instance.actorNum);
+
             //Electric
-            if (pointList != null)
+            if (pointList != null && currProperty.penType == PenProperty.PenType.Electric)
             {
                 if (PhotonNetwork.IsMasterClient)
                 {
@@ -195,9 +197,34 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
                     photonView.RPC("RPC_SetupSpline", RpcTarget.AllBuffered, splineInstance.GetComponent<PhotonView>().ViewID);
                 }
             }
+            else if (currProperty.penType == PenProperty.PenType.Cloud)
+            {
+                this.AddComponent<CloudFloat>();
+            }
+            else if (currProperty.penType == PenProperty.PenType.Wood)
+            {
+                this.AddComponent<WoodPen>();
+            }
         }
     }
 
+    private string SetUpObjectTag(PenProperty.PenType penType)
+    {
+        switch (penType)
+        {
+            case PenProperty.PenType.Electric:
+                return "Electric";
+            case PenProperty.PenType.Wood:
+                return "Wood";
+            case PenProperty.PenType.Steel:
+                return "Steel";
+            case PenProperty.PenType.Cloud:
+                return "Cloud";
+            default:
+                return "Error";
+        }
+    }
+    
     [PunRPC]
     private void RPC_SetupSpline(int splineViewID)
     {
