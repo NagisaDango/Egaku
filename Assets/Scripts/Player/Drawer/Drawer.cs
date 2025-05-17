@@ -137,17 +137,33 @@ public class Drawer : MonoBehaviourPun
             {
                 int djj = drawStrokeTotal - currentDrawer.drawStrokes;
                 photonView.RPC("UpdateSlider", RpcTarget.All, djj * 1.0f / drawStrokeLimit);
+
+                RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero, 0, LayerMask.GetMask("DrawProhibited"));
+                //hit = Physics2D.Raycast(mousePos, Vector2.zero);
+
+
                 if (djj <= 0)
                 {
                     print("stop drawing");
                     drawStrokeTotal -= currentDrawer.drawStrokes;
                     currentDrawer = null;
                 }
+                else if(hit.collider != null)
+                {
+                    print(hit.collider.name);
+                    drawStrokeTotal -= currentDrawer.drawStrokes;
+                    currentDrawer.photonView.RPC("RPC_FinishDraw", RpcTarget.All);
+                    currentDrawer = null;
+
+                }
                 else
                 {
                     currentDrawer.photonView.RPC("RPC_StartDraw", RpcTarget.All, mousePos);
                     //currentDrawer.StartDraw();
                 }
+
+
+
             }
         }
         if (Input.GetMouseButtonUp(0))

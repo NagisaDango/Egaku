@@ -275,7 +275,7 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
                     break;
                 }
                 stack.Push(array[i]);
-                print(array[i]);
+                //print(array[i]);
             }
 
         }
