@@ -1495,7 +1495,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameManagerPrefab: {fileID: 8722705766776074390, guid: a1bc6ab01b35cc144b9557a7bc598dcf, type: 3}
   roomCreateOrJoinButton: {fileID: 1865081520}
-  startGaemButton: {fileID: 1027671672}
+  startGameButton: {fileID: 1027671672}
+  devStartGameButton: {fileID: 1985432792}
   leaveGameButton: {fileID: 1948909488}
   roomSelection: {fileID: 1954899025}
   roleSelection: {fileID: 1130844069}

@@ -10,7 +10,9 @@ public class GameManageInit : MonoBehaviour
 
     public GameObject gameManagerPrefab;
     public Button roomCreateOrJoinButton;
-    public Button startGaemButton;
+    public Button startGameButton;
+    public Button devStartGameButton;
+
     public Button leaveGameButton;
 
 
@@ -39,7 +41,9 @@ public class GameManageInit : MonoBehaviour
         }
 
         roomCreateOrJoinButton.onClick.AddListener(() => { go.CreateJoinButton(); });
-        startGaemButton.onClick.AddListener(() => { go.LoadLevelSelection(); });
+        startGameButton.onClick.AddListener(() => { go.LoadLevelSelection(); });
+        devStartGameButton.onClick.AddListener(() => { go.DevSpawnPlayers(); });
+
         go.UpdateProperty(roomSelection, roleSelection, levelSelection, gridLayout, nameField);
         leaveGameButton.onClick.AddListener(() => { go.LeaveRoom(); });
 
