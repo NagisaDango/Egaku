@@ -2112,52 +2112,6 @@ Transform:
   - {fileID: 2140498910}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &747243993
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 747243995}
-  - component: {fileID: 747243994}
-  m_Layer: 0
-  m_Name: LevelManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &747243994
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 747243993}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a9b5956942dd7434db2d222ca6a672ec, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  revivePos: {x: -32.6, y: -8.6}
-  _camera: {fileID: 58214893}
---- !u!4 &747243995
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 747243993}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -14.189879, y: 2.8879697, z: -9.012477}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &748524038
 GameObject:
   m_ObjectHideFlags: 0
@@ -2213,7 +2167,7 @@ MonoBehaviour:
   onCustomEvent:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 747243994}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: LevelManager, Assembly-CSharp
         m_MethodName: EnablePenStatus
         m_Mode: 5
@@ -2395,7 +2349,7 @@ MonoBehaviour:
   onCustomEvent:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 747243994}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: LevelManager, Assembly-CSharp
         m_MethodName: EnablePenStatus
         m_Mode: 5
@@ -3156,7 +3110,7 @@ MonoBehaviour:
   onCustomEvent:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 747243994}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: LevelManager, Assembly-CSharp
         m_MethodName: EnablePenStatus
         m_Mode: 5
@@ -4517,6 +4471,52 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1471919002}
   m_CullTransparentMesh: 1
+--- !u!1 &1471928269
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1471928271}
+  - component: {fileID: 1471928270}
+  m_Layer: 0
+  m_Name: LevelSetup
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1471928270
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1471928269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 545a665682c7f884290b62d2e97457f3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  revivePos: {x: -30, y: -9}
+  _camera: {fileID: 58214893}
+--- !u!4 &1471928271
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1471928269}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -30.35, y: -8.82, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1491130775
 GameObject:
   m_ObjectHideFlags: 0
@@ -5520,7 +5520,7 @@ MonoBehaviour:
   onCustomEvent:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 747243994}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: LevelManager, Assembly-CSharp
         m_MethodName: EnablePenStatus
         m_Mode: 5
@@ -6530,7 +6530,7 @@ SceneRoots:
   - {fileID: 1094029439}
   - {fileID: 58214894}
   - {fileID: 327580032}
-  - {fileID: 747243995}
   - {fileID: 963194228}
   - {fileID: 1071905631}
   - {fileID: 2121465428}
+  - {fileID: 1471928271}

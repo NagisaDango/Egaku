@@ -30,7 +30,7 @@ public class RolesManager : MonoBehaviourPunCallbacks
         drawerButton.onClick.AddListener(() => SelectRole(PlayerRole.Drawer));
         runnerButton.onClick.AddListener(() => { SelectRole(PlayerRole.Runner); });
 
-        startGameButton.onClick.AddListener(() => GameManager.Instance.LoadArena());
+        //startGameButton.onClick.AddListener(() => GameManager.Instance.LoadArena());
         startGameButton.interactable = false; // Disable until valid selections
         thisPlayerDisplay =
             PhotonNetwork.Instantiate(playerDisplay.name, new Vector3(0,0,0), this.transform.rotation);

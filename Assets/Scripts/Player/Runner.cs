@@ -60,7 +60,7 @@ public class Runner : MonoBehaviourPunCallbacks
     {
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<Collider2D>();
-        LevelManager LevelM = GameObject.Find("LevelManager").GetComponent<LevelManager>();
+        LevelSetup LevelM = GameObject.Find("LevelSetup").GetComponent<LevelSetup>();
         if (LevelM != null) 
             LevelM.SetUpCamera(this);
         if (!photonView.IsMine)

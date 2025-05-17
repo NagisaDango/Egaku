@@ -2,7 +2,7 @@ using System;
 using Unity.Cinemachine;
 using UnityEngine;
 
-public class LevelManager : MonoBehaviour
+public class LevelSetup : MonoBehaviour
 {
     [SerializeField] private Vector2 revivePos;
     private DrawerUICOntrol drawerUI;

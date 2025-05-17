@@ -48,8 +48,10 @@ namespace Allan
         private HashSet<string> roomInfoSet = new();
         private bool devSpawn = false;
 
-        public int gameScenes = 10;
-        [SerializeField] private int currrentScene = 0;
+        public int levelCounts = 2;
+        public int levelUnlocked = 1;
+        [SerializeField] private int currrentLevel = 0;
+
 
 
         private void Awake()
@@ -69,18 +71,20 @@ namespace Allan
 
             DontDestroyOnLoad(gameObject);
 
-
-            roomSelection = GameObject.Find("RoomSelection");
-            roleSelection = GameObject.Find("RoleSelection");
-            //levelSelection = GameObject.Find("LevelSelection");
+            Transform canvas = GameObject.Find("Canvas").transform;
+            roomSelection = canvas.Find("RoomSelection").gameObject;
+            roleSelection = canvas.Find("RoleSelection").gameObject;
+            levelSelection = canvas.Find("LevelSelection").gameObject;
 
             gridLayout = roomSelection.transform.Find("Scroll View/Viewport/Content");
             nameField = roomSelection.transform.Find("RoomNameInputField").GetComponent<TMP_InputField>();
             roomSelection.SetActive(true);
             roleSelection.SetActive(false);
+            levelSelection.SetActive(false);
 
 
-            //levelSelection.transform.Find("BackButton").GetComponent<Button>().onClick.AddListener(() => { Back2RoleSelection(); });
+
+            levelSelection.transform.Find("BackButton").GetComponent<Button>().onClick.AddListener(() => { Back2RoleSelection(); });
 
 
         }
@@ -88,13 +92,18 @@ namespace Allan
 
         public void LoadLevel(int level)
         {
-            PhotonNetwork.LoadLevel("Level_" + level);
+            if (level < levelUnlocked)
+            {
+                PhotonNetwork.LoadLevel("Level_" + level);
+
+            }
+
 
         }
 
         public void Back2RoleSelection()
         {
-            roleSelection.SetActive(false);
+            roomSelection.SetActive(false);
             roleSelection.SetActive(true);
             levelSelection.SetActive(false);
 
@@ -103,10 +112,12 @@ namespace Allan
 
 
 
-        public void UpdateProperty(GameObject roomSelection, GameObject roleSelection, Transform gridLayout, TMP_InputField nameField)
+        public void UpdateProperty(GameObject roomSelection, GameObject roleSelection, GameObject levelSelection, Transform gridLayout, TMP_InputField nameField)
         {
             this.roomSelection = roomSelection;
             this.roleSelection = roleSelection;
+            this.levelSelection = levelSelection;
+
             this.gridLayout = gridLayout;
             this.nameField = nameField;
 
@@ -160,13 +171,26 @@ namespace Allan
             //Instance = this;
         }
 
+        public void LoadLevelSelection()
+        {
+            print("Enter LoadLevelSelection");
+            roomSelection.SetActive(false);
+            roleSelection.SetActive(false);
+            levelSelection.SetActive(true);
+
+
+
+        }
+
+
+
         public void DevSpawnPlayers()
         {
             devSpawn = true;
             LoadArena();
         }
 
-        void SpawnPlayer()
+        public void SpawnPlayer()
         {
             if (PhotonNetwork.LocalPlayer.CustomProperties.ContainsKey("Role"))
             {
@@ -179,7 +203,7 @@ namespace Allan
                 var r = PhotonNetwork.Instantiate(playerPrefab.name, spawnPosition, Quaternion.identity);
                 r.name = playerPrefab.name;
                 if(playerRole == PlayerRole.Runner) 
-                    GameObject.Find("LevelManager").GetComponent<LevelManager>().Init(r.GetComponent<Runner>());
+                    GameObject.Find("LevelSetup").GetComponent<LevelSetup>().Init(r.GetComponent<Runner>());
             }
             else
             {
@@ -195,9 +219,9 @@ namespace Allan
                 return;
             }
             Debug.LogFormat("PhotonNetwork : Loading Level to scene Allan : {0}", PhotonNetwork.CurrentRoom.PlayerCount);
-            
+
             //PhotonNetwork.IsMessageQueueRunning = false; // ✅ 暂停消息队列，防止 Photon 处理不完整的 ViewID
-            PhotonNetwork.LoadLevel("Allan 1");
+            LoadLevel(currrentLevel);
             //SpawnPlayer();
         }
 
@@ -214,6 +238,8 @@ namespace Allan
                 Debug.Log("OnLeftRoom: go back to room selection page");
                 roomSelection.SetActive(true);
                 roleSelection.SetActive(false);
+                levelSelection.SetActive(false);
+
             }
             PhotonNetwork.LoadLevel("RoleSelection");
 
@@ -233,7 +259,6 @@ namespace Allan
             //Invoke("JoinLobbyAfterDelay", 0.5f);
 
         }
-
 
 
         private Room currentRoom;
@@ -323,7 +348,7 @@ namespace Allan
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (scene.name == "Allan" || scene.name == "Allan 1")
+            if (scene.name.Contains("Level_"))
             {
                 Debug.Log("Scene Allan loaded. Spawning player...");
                 if (devSpawn)
@@ -332,7 +357,7 @@ namespace Allan
                     d.name = drawerPrefab.name;
                     var r = PhotonNetwork.Instantiate(runnerPrefab.name, new Vector3(0, 5, 0), Quaternion.identity);
                     r.name = runnerPrefab.name;
-                    GameObject.Find("LevelManager").GetComponent<LevelManager>().Init(r.GetComponent<Runner>());
+                    GameObject.Find("LevelSetup").GetComponent<LevelSetup>().Init(r.GetComponent<Runner>());
                 }
                 else SpawnPlayer();
 
@@ -478,6 +503,8 @@ namespace Allan
             Debug.Log($"Room successfully created! Now joining the room...");
             roomSelection.SetActive(false);
             roleSelection.SetActive(true);
+            levelSelection.SetActive(false);
+
 
             UpdateRoomPlayerList(PhotonNetwork.CurrentRoom.Players);
 
@@ -493,6 +520,8 @@ namespace Allan
                 //PhotonNetwork.LoadLevel("RoleSelection");
                 roomSelection.SetActive(false);
                 roleSelection.SetActive(true);
+                levelSelection.SetActive(false);
+
             }
             //RefreshRoomList();
 
