@@ -299,6 +299,12 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
         }
     }
 
+    public void SelfDestroy()
+    {
+        Drawer.Instance.photonView.RPC("RPC_DirectErase", RpcTarget.AllBuffered, drawStrokes, (Vector2)col2d.bounds.center);
+        PhotonNetwork.Destroy(gameObject);
+    }
+
     private void OnTriggerEnter2D(Collider2D other)
     {
         if (other.tag == "DeathDesuwa")
