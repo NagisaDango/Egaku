@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: bc65a70798c64f545a7138b066dd7c3a
+guid: 96181101fce8a4c4bb2acf33ce4b3379
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 4736719905278445861
-    second: Gemini_Generated_Image_dfm18wdfm18wdfm1_0
+      213: -2931831568914828826
+    second: rain-clouds-png-27_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -40,19 +40,19 @@ TextureImporter:
     filterMode: 1
     aniso: 1
     mipBias: 0
-    wrapU: 1
-    wrapV: 1
-    wrapW: 1
+    wrapU: 0
+    wrapV: 0
+    wrapW: 0
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 2
+  spriteMode: 1
   spriteExtrude: 1
-  spriteMeshType: 1
+  spriteMeshType: 0
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 100
-  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteBorder: {x: 112, y: 49, z: 67, w: 43}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
   alphaIsTransparency: 1
@@ -84,7 +84,7 @@ TextureImporter:
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 4
-    buildTarget: Standalone
+    buildTarget: Win64
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
@@ -98,6 +98,19 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 4
     buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
@@ -126,23 +139,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Gemini_Generated_Image_dfm18wdfm18wdfm1_0
+      name: rain-clouds-png-27_0
       rect:
         serializedVersion: 2
-        x: 0
+        x: 31
         y: 0
-        width: 2048
-        height: 2048
+        width: 271
+        height: 167
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 529c4aa58a53cb140800000000000000
-      internalID: 4736719905278445861
+      spriteID: 6e13e89b8ba0057d0800000000000000
+      internalID: -2931831568914828826
       vertices: []
       indices: 
       edges: []
@@ -151,8 +164,8 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
-    internalID: 0
+    spriteID: 71a191f8af0cc5a4b8ec4f5a24fc0ae9
+    internalID: 318066012
     vertices: []
     indices: 
     edges: []
@@ -161,7 +174,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Gemini_Generated_Image_dfm18wdfm18wdfm1_0: 4736719905278445861
+      rain-clouds-png-27_0: -2931831568914828826
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
