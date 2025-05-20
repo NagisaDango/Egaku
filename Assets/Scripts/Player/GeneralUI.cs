@@ -1,3 +1,4 @@
+using Allan;
 using Photon.Pun;
 using System.Collections;
 using System.Collections.Generic;
@@ -19,7 +20,7 @@ public class GeneralUI : MonoBehaviourPunCallbacks
     [PunRPC]
     private void RPC_Reset()
     {
-        PhotonNetwork.LoadLevel("Allan 1");
+        GameManager.Instance.LoadLevel(GameManager.Instance.currentLevel);
 
     }
 }

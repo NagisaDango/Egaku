@@ -29,6 +29,9 @@ public class Runner : MonoBehaviourPunCallbacks
     public bool validHoldJump;
     [SerializeField] private FixedJoint2D fixedJoint2D;
 
+    public Transform face;
+
+
     [Tooltip("The local player instance. Use this to know if the local player is represented in the Scene")]
     public static GameObject LocalPlayerInstance;
 
@@ -105,6 +108,10 @@ public class Runner : MonoBehaviourPunCallbacks
         {
             Vector2 movement = moveAction.ReadValue<Vector2>();
             _RunnerMovement.Move(movement);
+            if (movement.x > 0)
+                face.localScale = Vector3.one;
+            else
+                face.localScale = new Vector3(-1, 1, 1);
         }
 
         if (Input.GetKeyDown(KeyCode.E) && inElectric && interactingObject != null)
@@ -142,6 +149,8 @@ public class Runner : MonoBehaviourPunCallbacks
             movingAlongElectric = false;
             photonView.RPC("RPC_SetParent", RpcTarget.AllBuffered, -1);
         }
+
+        face.rotation = Quaternion.Euler(0, 0, -transform.rotation.z);
     }
 
     private void RunnerMouseUpdate()

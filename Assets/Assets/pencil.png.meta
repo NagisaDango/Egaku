@@ -168,13 +168,13 @@ TextureImporter:
       name: pencil_0
       rect:
         serializedVersion: 2
-        x: 165
-        y: 43
-        width: 148
-        height: 409
+        x: 136
+        y: 45
+        width: 208
+        height: 407
       alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 136, z: 0, w: 83}
       customData: 
       outline: []
       physicsShape: []
@@ -190,7 +190,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: dd83ce8e81cfe71418e6bd064bd8c21e
     internalID: 0
     vertices: []
     indices: 
@@ -199,7 +199,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      pencil_0: -6418337541015408120
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
