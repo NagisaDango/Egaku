@@ -213,6 +213,12 @@ public class Drawer : MonoBehaviourPun
 
         if (hit.collider != null)// && hit.collider.gameObject.layer == LayerMask.NameToLayer("Draw"))
         {
+            if(hit.collider.gameObject.tag == "ClickToErase")
+            {
+                Destroy(hit.collider.gameObject.transform.parent.gameObject);
+                return;
+            }
+
             Debug.Log("Hit: " + hit.collider.gameObject.name);
             //hit.collider.gameObject.GetComponent<DrawMesh>().photonView.TransferOwnership(actorNum);
             DrawMesh erasingMesh = hit.collider.gameObject.GetComponent<DrawMesh>();

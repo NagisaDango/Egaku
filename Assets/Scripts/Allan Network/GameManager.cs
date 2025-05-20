@@ -17,6 +17,7 @@ using UnityEditor;
 using WebSocketSharp;
 using Hashtable = ExitGames.Client.Photon.Hashtable;
 using Unity.VisualScripting;
+using Photon.Pun.Demo.Cockpit.Forms;
 
 
 
@@ -48,9 +49,11 @@ namespace Allan
         private HashSet<string> roomInfoSet = new();
         private bool devSpawn = false;
 
-        public int levelCounts = 2;
-        public int levelUnlocked = 1;
-        [SerializeField] private int currrentLevel = 0;
+        public int levelCounts = 3;
+        public int levelUnlocked = 3;
+        //[SerializeField] private int currentLevel = 0;
+        public int currentLevel = 0;
+
 
 
 
@@ -95,10 +98,17 @@ namespace Allan
             if (level < levelUnlocked)
             {
                 PhotonNetwork.LoadLevel("Level_" + level);
+                currentLevel = level;
+            }
+        }
+
+        [PunRPC] public void RPC_LoadLevel(int level)
+        {
+            if (PhotonNetwork.IsMasterClient)
+            {
+                LoadLevel(level);
 
             }
-
-
         }
 
         public void Back2RoleSelection()
@@ -130,12 +140,15 @@ namespace Allan
         {
             base.OnEnable();
             SceneManager.sceneLoaded += OnSceneLoaded;
+            EventHandler.ReachDestinationEvent += OnReachDestination;
         }
 
         public override void OnDisable()
         {
             base.OnDisable();
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            EventHandler.ReachDestinationEvent -= OnReachDestination;
+
         }
 
 
@@ -170,6 +183,31 @@ namespace Allan
             //DontDestroyOnLoad(this.gameObject);
             //Instance = this;
         }
+
+
+        public void OnReachDestination()
+        {
+            print("Enter OnReachDestination");
+            if(true)//PhotonNetwork.IsMasterClient)
+            {
+                if (currentLevel == levelUnlocked)
+                {
+                    levelUnlocked++;
+                    currentLevel = levelUnlocked;
+                    LoadLevel(currentLevel);
+                    //photonView.RPC("RPC_LoadLevel", RpcTarget.All, currentLevel);
+                }
+                else
+                {
+                    LoadLevel(currentLevel + 1);
+                    //photonView.RPC("RPC_LoadLevel", RpcTarget.All, currentLevel+1);
+
+                }
+            }
+
+        }
+
+
 
         public void LoadLevelSelection()
         {
@@ -221,7 +259,7 @@ namespace Allan
             Debug.LogFormat("PhotonNetwork : Loading Level to scene Allan : {0}", PhotonNetwork.CurrentRoom.PlayerCount);
 
             //PhotonNetwork.IsMessageQueueRunning = false; // ✅ 暂停消息队列，防止 Photon 处理不完整的 ViewID
-            LoadLevel(currrentLevel);
+            LoadLevel(currentLevel);
             //SpawnPlayer();
         }
 

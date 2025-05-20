@@ -53,8 +53,8 @@ MonoBehaviour:
   roomItemPrefab: {fileID: 933874831032086738, guid: b2e063235eee34d4ab5ba2e937b10bde, type: 3}
   gridLayout: {fileID: 0}
   nameField: {fileID: 0}
-  levelCounts: 2
-  levelUnlocked: 1
+  levelCounts: 3
+  levelUnlocked: 3
   currrentLevel: 0
 --- !u!114 &6385152489850710683
 MonoBehaviour:

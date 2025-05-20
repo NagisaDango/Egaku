@@ -9,10 +9,20 @@ public class DialogueTrigger : MonoBehaviourPun
 {
     [SerializeField] private TMP_Text textDisplay;
     [SerializeField] private List<string> sentences;
+    [SerializeField] private GameObject iconImage;
+
     private int index = 0;
     private bool displaying = false;
     // Public UnityEvent that appears in the Inspector
     public UnityEvent onCustomEvent;
+
+    public void RemoveIconImage()
+    {
+        iconImage.SetActive(false);
+    
+    }
+
+
 
     // Method to trigger the event
     public void TriggerEvent()
