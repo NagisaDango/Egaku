@@ -327,7 +327,7 @@ void RPC_StartDraw(Vector3 mousePos)
                     break;
                 }
                 stack.Push(array[i]);
-                print(array[i]);
+                //print(array[i]);
             }
 
         }
