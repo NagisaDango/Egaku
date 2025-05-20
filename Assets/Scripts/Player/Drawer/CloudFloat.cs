@@ -10,6 +10,7 @@ public class CloudFloat : MonoBehaviour
     
     private Vector3 startPos;
     private PhotonView photonView;
+    private float timeSinceLastValidSurface = 0f;
 
     void Start()
     {
@@ -27,6 +28,7 @@ public class CloudFloat : MonoBehaviour
 
             // 更新物体的位置，只改变 Y 轴
             transform.position = new Vector3(startPos.x, startPos.y + yOffset, startPos.z);
+            
         }
     }
 

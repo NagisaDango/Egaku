@@ -69,6 +69,7 @@ MonoBehaviour:
   - RPC_DirectErase
   - RPC_HoldWood
   - RPC_ReleaseWood
+  - RPC_DrawSpriteShape
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

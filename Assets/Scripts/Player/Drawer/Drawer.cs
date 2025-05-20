@@ -11,6 +11,7 @@ public class Drawer : MonoBehaviourPun
 {
     public static Drawer Instance;
     public DrawMesh drawMeshPrefab;
+    public DrawMesh drawMeshSpriteShapePrefab;
     private DrawMesh currentDrawer;
 
     [SerializeField] private bool eraserMode;
@@ -125,6 +126,7 @@ public class Drawer : MonoBehaviourPun
             {
                 //currentDrawer = Instantiate(drawMeshPrefab);
                 currentDrawer = PhotonNetwork.Instantiate(drawMeshPrefab.name, this.transform.position, this.transform.rotation).GetComponent<DrawMesh>();
+                //currentDrawer = PhotonNetwork.Instantiate(drawMeshSpriteShapePrefab.name, this.transform.position, this.transform.rotation).GetComponent<DrawMesh>();
                 
                 Vector3 mousePos = GetMouseWorldPosition();
                 currentDrawer.photonView.RPC("RPC_InitializedDrawProperty", RpcTarget.All, mousePos, currentPenType.ToString(), interactable);
@@ -146,6 +148,7 @@ public class Drawer : MonoBehaviourPun
                 else
                 {
                     currentDrawer.photonView.RPC("RPC_StartDraw", RpcTarget.All, mousePos);
+                    //currentDrawer.photonView.RPC("RPC_DrawSpriteShape", RpcTarget.All, mousePos);
                     //currentDrawer.StartDraw();
                 }
             }

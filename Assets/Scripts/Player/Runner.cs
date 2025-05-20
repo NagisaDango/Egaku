@@ -155,9 +155,13 @@ public class Runner : MonoBehaviourPunCallbacks
     {
         if (jump)
         {
-            _RunnerMovement.Jump(jumpForce + extraJumpForce, validHoldJump);
+            if(holdingObject!=null)
+                _RunnerMovement.Jump(jumpForce + extraJumpForce, holdingObject.ValidateHold());
+            else
+                _RunnerMovement.Jump(jumpForce + extraJumpForce, false);
             print("Jump with force " + extraJumpForce + jumpForce);
             jump = false;
+            validHoldJump = false;
         }
     }
 
@@ -239,17 +243,19 @@ public class Runner : MonoBehaviourPunCallbacks
     }
 
     private bool holding;
+    private HoldableObject holdingObject;
     [PunRPC]
     private void RPC_HoldWood(int viewID)
     {
         if (viewID != -1)
         {
             //_RunnerMovement.SetJumpAllowance(false);
-            GameObject holdingObj = PhotonView.Find(viewID).gameObject;
-            holdingObj.tag = "Holding";
-            holdingObj.transform.SetParent(this.transform);
-            Rigidbody2D holdingRb = holdingObj.GetComponent<Rigidbody2D>();
-            holdingObj.GetComponent<WoodPen>().holder = this;
+            GameObject holdGO = PhotonView.Find(viewID).gameObject;
+            holdingObject = holdGO.GetComponent<HoldableObject>();
+            holdGO.tag = "Holding";
+            holdGO.transform.SetParent(this.transform);
+            Rigidbody2D holdingRb = holdGO.GetComponent<Rigidbody2D>();
+            holdGO.GetComponent<WoodPen>().holder = this;
             holdingRb.mass = 1;
             holding = true;
             fixedJoint2D.connectedBody = holdingRb;
@@ -262,6 +268,8 @@ public class Runner : MonoBehaviourPunCallbacks
         //fixedJoint2D.gameObject.layer = LayerMask.NameToLayer("Draw");
         _RunnerMovement.SetJumpAllowance(true);
         // TODO: only setting to wood here cuz its the only one that can be hold, might want to change, have a buffer holding the original tag name
+        holdingObject.Reset();
+        holdingObject = null;
         validHoldJump = false;
         fixedJoint2D.connectedBody.gameObject.tag = "Wood";
         extraJumpForce = 0;

@@ -46,6 +46,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   drawMeshPrefab: {fileID: 4313003225536343305, guid: 4afaac7cd927afb429517c0ed5ad1f23, type: 3}
+  drawMeshSpriteShapePrefab: {fileID: 2125569825394638127, guid: 1037ed47e976ddc41b15e68f3b0f2f91, type: 3}
   eraserMode: 0
   interactable: 0
   drawerPanelPrefab: {fileID: 8702785834451653974, guid: e8f1197e6f8defb4cae72e54989399da, type: 3}

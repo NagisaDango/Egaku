@@ -6,6 +6,8 @@ using Photon.Realtime;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Splines;
+using UnityEngine.U2D;
+using Spline = UnityEngine.Splines.Spline;
 
 public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
 {
@@ -23,26 +25,27 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
     private float drawSize = 1;
     private int maxStrokes;
     public bool earsingSelf;
-    private List<Vector3> pointList;
+    private List<Vector2> pointList;
+
+    [SerializeField] private SpriteShapeController spriteShapeController;
     
     [PunRPC]
-    //Initialize the properties
-    void RPC_InitializedDrawProperty(Vector3 mousePos, string penType, bool interactable)//Material mat, bool interactable)
+//Initialize the properties
+    void RPC_InitializedDrawProperty(Vector3 mousePos, string penType, bool interactable)
     {
         mesh = new Mesh();
         SetPenProperty(penType);
-        if (penType == "Electric")
-        {
-            pointList = new List<Vector3>();
-            pointList.Add(new Vector3(mousePos.x, mousePos.y, 0));
-        }
+    
+        pointList = new List<Vector2>();
+        pointList.Add(new Vector2(mousePos.x, mousePos.y)); // If used for other logic
+
         GetComponent<MeshRenderer>().material = currProperty.material;
         drawSize = currProperty.size;
         maxStrokes = currProperty.maxStrokes;
-        
+    
         Vector3 startPos = mousePos;
         lastMousePosition = startPos;
-        
+    
         Vector3[] vertices = new Vector3[4];
         Vector2[] uv = new Vector2[4];
         int[] triangles = new int[6];
@@ -52,17 +55,21 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
         vertices[2] = startPos;
         vertices[3] = startPos;
 
-        uv[0] = Vector2.zero;
-        uv[1] = Vector2.zero;
-        uv[2] = Vector2.zero;
-        uv[3] = Vector2.zero;
+        // --- MODIFIED UV INITIALIZATION ---
+        // The "end" of this degenerate quad (vertices 2 and 3) will have V=1.
+        // The "start" (vertices 0 and 1) will have V=0.
+        uv[0] = new Vector2(0, 0); // Corresponds to vertices[0]
+        uv[1] = new Vector2(1, 0); // Corresponds to vertices[1]
+        uv[2] = new Vector2(0, 1); // Corresponds to vertices[2] (used as vIndex0 in first segment)
+        uv[3] = new Vector2(1, 1); // Corresponds to vertices[3] (used as vIndex1 in first segment)
+        // --- END MODIFIED UV INITIALIZATION ---
 
         triangles[0] = 0;
-        triangles[1] = 3;
+        triangles[1] = 3; // Original: 0-3-1
         triangles[2] = 1;
 
         triangles[3] = 1;
-        triangles[4] = 3;
+        triangles[4] = 3; // Original: 1-3-2
         triangles[5] = 2;
 
         mesh.vertices = vertices;
@@ -73,9 +80,8 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
         if (interactable)
             InteractSetting();
 
-
         GetComponent<MeshFilter>().mesh = mesh;
-        lastMousePosition = mousePos;
+        // lastMousePosition = mousePos; // Already set
     }
 
     private void SetPenProperty(string penName)
@@ -107,76 +113,122 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
     }
 
     //RPC: Draw mesh according to the mosuePos
-    [PunRPC]
-    void RPC_StartDraw(Vector3 mousePos)
+   [PunRPC]
+void RPC_StartDraw(Vector3 mousePos)
+{
+    if (((drawStrokes < maxStrokes) || maxStrokes <= 0))
     {
-        //GetMouseWorldPosition();
+        drawStrokes++;
+        if(pointList != null) pointList.Add(mousePos); // Assuming pointList is for other logic like ElectricSpline
+
+        Vector3[] vertices = new Vector3[mesh.vertices.Length + 2];
+        Vector2[] uv = new Vector2[mesh.uv.Length + 2]; // UV array also needs to be expanded
+        int[] triangles = new int[mesh.triangles.Length + 6];
+        
+        mesh.vertices.CopyTo(vertices, 0);
+        mesh.uv.CopyTo(uv, 0); // Copy existing UVs
+        mesh.triangles.CopyTo(triangles, 0);
+
+        // vIndex0 and vIndex1 point to the last two vertices of the previous segment
+        // Their indices in the 'vertices' array (which is mesh.vertices.Length + 2 long)
+        // are effectively mesh.vertices.Length - 2 and mesh.vertices.Length - 1 if we consider the old mesh state.
+        // However, the script uses indices relative to the *new, expanded* 'vertices' array length
+        // to access the *copied old* vertices.
+        int vIndex = vertices.Length - 4; // Base index for the previous quad's end vertices in the *new* array
+        int vIndex0 = vIndex + 0; // Previous segment's "up" (relative to its forward direction)
+        int vIndex1 = vIndex + 1; // Previous segment's "down"
+        int vIndex2 = vIndex + 2; // New segment's "up"
+        int vIndex3 = vIndex + 3; // New segment's "down"
+
+        Vector3 mouseForwardVector = (mousePos - lastMousePosition).normalized;
+        // If mouseForwardVector is zero (mouse hasn't moved enough), handle to avoid issues
+        if (mouseForwardVector == Vector3.zero) {
+            mouseForwardVector = Vector3.right; // Or some other default, or skip drawing this segment
+        }
+
+        Vector3 normal2D = new Vector3(0, 0, -drawSize); // Used to get a perpendicular vector in XY plane
+        float lineThickness = 1f; // You can adjust this thickness
+        Vector3 newVertexUp = mousePos + Vector3.Cross(mouseForwardVector, normal2D) * lineThickness;
+        Vector3 newVertexDown = mousePos + Vector3.Cross(mouseForwardVector, normal2D * -1f) * lineThickness;
+
+        vertices[vIndex2] = newVertexUp;
+        vertices[vIndex3] = newVertexDown;
+
+        // --- NEW UV CALCULATION ---
+        // Assumes uv[vIndex0] and uv[vIndex1] hold the UVs of the end of the last segment.
+        // U goes from 0 to 1 across the width.
+        // V increments by 1 for each new segment, allowing textures to tile along the length.
+        float previousV = uv[vIndex0].y; // Get V from one of the previous segment's end points
+                                         // (assuming U-coordinates differ but V-coordinates are the same for that edge)
+        
+        uv[vIndex2] = new Vector2(0, previousV + 1.0f); // New "up" vertex UV
+        uv[vIndex3] = new Vector2(1, previousV + 1.0f); // New "down" vertex UV
+        // --- END NEW UV CALCULATION ---
+
+        int tIndex = triangles.Length - 6;
+
+        // Triangles for the new quad. Ensure Counter-Clockwise (CCW) winding for front faces.
+        // Quad formed by (vIndex0, vIndex1) and (vIndex2, vIndex3)
+        // vIndex0 --- vIndex2
+        //   |           |
+        // vIndex1 --- vIndex3
+        
+        // Triangle 1: (vIndex0, vIndex2, vIndex1)
+        triangles[tIndex + 0] = vIndex0;
+        triangles[tIndex + 1] = vIndex2;
+        triangles[tIndex + 2] = vIndex1;
+
+        // Triangle 2: (vIndex1, vIndex2, vIndex3)
+        triangles[tIndex + 3] = vIndex1;
+        triangles[tIndex + 4] = vIndex2;
+        triangles[tIndex + 5] = vIndex3;
+
+        mesh.vertices = vertices;
+        mesh.uv = uv;
+        mesh.triangles = triangles;
+
+        // --- RECALCULATE NORMALS AND BOUNDS ---
+        mesh.RecalculateNormals(); // Crucial for lighting
+        mesh.RecalculateBounds();  // Good for culling and other calculations
+        // --- END RECALCULATION ---
+
+        lastMousePosition = mousePos;
+
+        PolygonCollider2D polyCol = GetComponent<PolygonCollider2D>();
+        if (polyCol != null) // Check if the component exists
+        {
+            // Ensure GetEdge returns valid points for PolygonCollider2D
+            // The GetEdge method might need review if it's causing issues or not matching the visual mesh.
+            Vector2[] colliderPoints = System.Array.ConvertAll(mesh.vertices, v3 => new Vector2(v3.x, v3.y));
+            polyCol.points = GetEdge(colliderPoints); 
+        }
+    }
+}
+    
+    [PunRPC]
+    private void RPC_DrawSpriteShape(Vector3 mousePos)
+    {
         if (((drawStrokes < maxStrokes) || maxStrokes <= 0))
         {
             drawStrokes++;
             if(pointList != null) pointList.Add(mousePos);
-            //Debug.Log("draw times:" + i);
-            Vector3[] vertices = new Vector3[mesh.vertices.Length + 2];
-            Vector2[] uv = new Vector2[mesh.uv.Length + 2];
-            int[] triangles = new int[mesh.triangles.Length + 6];
-            
-            mesh.vertices.CopyTo(vertices, 0);
-            mesh.uv.CopyTo(uv, 0);
-            mesh.triangles.CopyTo(triangles, 0);
-
-            int vIndex = vertices.Length - 4;
-            int vIndex0 = vIndex + 0;
-            int vIndex1 = vIndex + 1;
-            int vIndex2 = vIndex + 2;
-            int vIndex3 = vIndex + 3;
-
-            Vector3 mouseForwardVector = (mousePos - lastMousePosition).normalized;
-            Vector3 normal2D = new Vector3(0, 0, -drawSize);
-            float lineThickness = 1f;
-            Vector3 newVertexUp = mousePos + Vector3.Cross(mouseForwardVector, normal2D) * lineThickness;
-            Vector3 newVertexDown = mousePos + Vector3.Cross(mouseForwardVector, normal2D * -1f) * lineThickness;
-
-            //debugVisual1.position = newVectexUp;
-            //debugVisual2.position = newVectexDown;
-
-            vertices[vIndex2] = newVertexUp;
-            vertices[vIndex3] = newVertexDown;
-
-            uv[vIndex2] = Vector2.zero;
-            uv[vIndex3] = Vector2.zero;
-
-            int tIndex = triangles.Length - 6;
-
-            triangles[tIndex + 0] = vIndex0;
-            triangles[tIndex + 1] = vIndex2;
-            triangles[tIndex + 2] = vIndex1;
-
-            triangles[tIndex + 3] = vIndex1;
-            triangles[tIndex + 4] = vIndex2;
-            triangles[tIndex + 5] = vIndex3;
-
-
-            mesh.vertices = vertices;
-            mesh.uv = uv;
-            mesh.triangles = triangles;
 
             lastMousePosition = mousePos;
-
-            //EdgeCollider2D col = GetComponent<EdgeCollider2D>();
-            PolygonCollider2D col = GetComponent<PolygonCollider2D>();
-
-            Vector2[] v2 = System.Array.ConvertAll(mesh.vertices, v3 => new Vector2(v3.x, v3.y));
-            col.points = GetEdge(v2);
+            EdgeCollider2D col = GetComponent<EdgeCollider2D>();
+            print(pointList.Count );
+            spriteShapeController.spline.InsertPointAt(pointList.Count - 1, mousePos);
+            col.points = pointList.ToArray();
         }
     }
 
     [PunRPC]
     private void RPC_FinishDraw()
     {
-        if(drawStrokes <= 0)
+        if(drawStrokes <= 0 || pointList.Count == 0)
             PhotonNetwork.Destroy(gameObject);
         else
         {
+            rb2d.centerOfMass = col2d.bounds.center;
             if (currProperty.gravity) rb2d.bodyType = RigidbodyType2D.Dynamic;
             if (currProperty.mass > 0) rb2d.mass = currProperty.mass;
             //***!!! if currproperty is trigger just remove the collider for now.
@@ -187,7 +239,7 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
             photonView.TransferOwnership(Runner.Instance.actorNum);
 
             //Electric
-            if (pointList != null && currProperty.penType == PenProperty.PenType.Electric)
+            if (currProperty.penType == PenProperty.PenType.Electric)
             {
                 if (PhotonNetwork.IsMasterClient)
                 {

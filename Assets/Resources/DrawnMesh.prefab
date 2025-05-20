@@ -57,6 +57,7 @@ MonoBehaviour:
   rb2d: {fileID: 1433935798187040207}
   col2d: {fileID: 7309415233719333893}
   earsingSelf: 0
+  spriteShapeController: {fileID: 0}
 --- !u!33 &2449231605852471263
 MeshFilter:
   m_ObjectHideFlags: 0
