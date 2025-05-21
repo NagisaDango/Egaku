@@ -97,8 +97,8 @@ namespace Allan
         {
             if (level < levelUnlocked)
             {
-                PhotonNetwork.LoadLevel("Level_" + level);
                 currentLevel = level;
+                PhotonNetwork.LoadLevel("Level_" + level);
             }
         }
 

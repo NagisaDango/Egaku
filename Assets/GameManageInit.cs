@@ -50,7 +50,7 @@ public class GameManageInit : MonoBehaviour
         roomSelection.SetActive(true);
         roleSelection.SetActive(false);
         levelSelection.SetActive(false);
-        PhotonNetwork.AllocateSceneViewID(go.photonView);
+        //PhotonNetwork.AllocateSceneViewID(go.photonView);
 
     }
 

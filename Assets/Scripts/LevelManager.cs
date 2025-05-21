@@ -4,8 +4,9 @@ using UnityEngine.UI;
 using TMPro;
 using NUnit.Framework;
 using System.Collections.Generic;
+using Photon.Pun;
 
-public class LevelManager : MonoBehaviour
+public class LevelManager : MonoBehaviourPunCallbacks
 {
     public Transform grid;
     public GameObject levelDisplayPrefab;
@@ -41,12 +42,28 @@ public class LevelManager : MonoBehaviour
 
             display.levelIndex = i;
 
-            go.GetComponent<Button>().onClick.AddListener(() => { GameManager.Instance.LoadLevel(display.levelIndex);  });
+            //go.GetComponent<Button>().onClick.AddListener(() => { GameManager.Instance.LoadLevel(display.levelIndex);  });
+            //go.GetComponent<Button>().onClick.AddListener(() => { GameManager.Instance.photonView.RPC("RPC_LoadLevel", RpcTarget.AllBuffered, display.levelIndex); });
+            go.GetComponent<Button>().onClick.AddListener(() => { photonView.RPC("RPC_LoadLevel", RpcTarget.AllBuffered, display.levelIndex); });
+
+
 
         }
 
 
     }
+
+
+    [PunRPC]
+    public void RPC_LoadLevel(int level)
+    {
+        if(true)// (PhotonNetwork.IsMasterClient)
+        {
+            GameManager.Instance.LoadLevel(level);
+
+        }
+    }
+
 
     // Update is called once per frame
     void Update()
