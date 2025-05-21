@@ -140,6 +140,10 @@ public class Runner : MonoBehaviourPunCallbacks
         {
             col.enabled = true;
             rb.simulated = true;
+            if (holdingObject != null)
+            {
+                holdingObject.ToggleCollider(true);
+            }
             if (reversed)
             {
                 splineAnimate.Container.ReverseFlow(0);
@@ -183,7 +187,6 @@ public class Runner : MonoBehaviourPunCallbacks
         transform.SetParent(interactingObject.transform.parent.GetChild(0));
         transform.localPosition = Vector3.zero;
         movingAlongElectric = true;
-        
         if (splineAnimate == null)
         {
             Debug.LogWarning("No spline anim");
@@ -199,6 +202,11 @@ public class Runner : MonoBehaviourPunCallbacks
 
         rb.simulated = false;
         col.enabled = false;
+        if (holdingObject != null)
+        {
+            holdingObject.ToggleCollider(false);
+        }
+        
         Spline spline = new Spline();
         if (interactingObject.tag.EndsWith("End") && !reversed)
         {
@@ -208,6 +216,7 @@ public class Runner : MonoBehaviourPunCallbacks
         else
             reversed = false;
         splineAnimate.Restart(true);
+        interactingObject = null;
     }
 
     public void SetRevivePos(Vector2 pos)
@@ -277,6 +286,7 @@ public class Runner : MonoBehaviourPunCallbacks
         _RunnerMovement.SetJumpAllowance(true);
         // TODO: only setting to wood here cuz its the only one that can be hold, might want to change, have a buffer holding the original tag name
         holdingObject.Reset();
+        holdingObject.ToggleCollider(true);
         holdingObject = null;
         validHoldJump = false;
         fixedJoint2D.connectedBody.gameObject.tag = "Wood";

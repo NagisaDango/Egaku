@@ -5,6 +5,7 @@ using UnityEngine;
 public class WoodPen : MonoBehaviour, HoldableObject
 {
     private Collider2D col;
+    private Rigidbody2D rb;
     private Vector2 lastContactPoint { get; set; }
     public Runner holder;
     private HoldableObject _holdableObjectImplementation;
@@ -50,6 +51,7 @@ public class WoodPen : MonoBehaviour, HoldableObject
     private void Start()
     {
         col = GetComponent<Collider2D>();
+        rb = GetComponent<Rigidbody2D>();
     }
 
     public bool ValidateHold()
@@ -88,6 +90,12 @@ public class WoodPen : MonoBehaviour, HoldableObject
         holder.SetExtraJumpForce(0);
         holder.validHoldJump = false;
         return false;
+    }
+
+    public void ToggleCollider(bool status)
+    {
+        rb.simulated = status;
+        col.enabled = status;
     }
 
 }
