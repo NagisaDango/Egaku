@@ -60,7 +60,7 @@ public class RunnerMovement
         }
 
         if (hit.collider.gameObject.CompareTag("Cloud"))
-            extraJump = 5;
+            extraJump = 10;
         else
             extraJump = 0;
 

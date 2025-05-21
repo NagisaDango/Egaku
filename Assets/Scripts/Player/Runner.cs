@@ -168,7 +168,6 @@ public class Runner : MonoBehaviourPunCallbacks
                 _RunnerMovement.Jump(jumpForce + extraJumpForce, holdingObject.ValidateHold());
             else
                 _RunnerMovement.Jump(jumpForce + extraJumpForce, false);
-            print("Jump with force " + extraJumpForce + jumpForce);
             jump = false;
             validHoldJump = false;
         }
