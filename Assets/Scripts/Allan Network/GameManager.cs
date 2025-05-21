@@ -104,7 +104,7 @@ namespace Allan
 
         [PunRPC] public void RPC_LoadLevel(int level)
         {
-            if (PhotonNetwork.IsMasterClient)
+            if (true)//(PhotonNetwork.IsMasterClient)
             {
                 LoadLevel(level);
 
@@ -206,8 +206,6 @@ namespace Allan
             }
 
         }
-
-
 
         public void LoadLevelSelection()
         {

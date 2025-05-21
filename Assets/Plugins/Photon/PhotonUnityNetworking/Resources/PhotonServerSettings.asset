@@ -71,6 +71,7 @@ MonoBehaviour:
   - RPC_ReleaseWood
   - RPC_DrawSpriteShape
   - RPC_LoadLevel
+  - RPC_LoadLevelGM
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1
