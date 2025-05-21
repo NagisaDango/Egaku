@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 8254256436874892530}
   - component: {fileID: -3421249795859517616}
   m_Layer: 0
-  m_Name: EraseEffect
+  m_Name: EraseEffectSteel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4782,7 +4782,7 @@ ParticleSystemRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 6aee6f484a66206489f88aa8682ad516, type: 2}
+  - {fileID: 2100000, guid: dac5e6e274aa060418cdb1753457783a, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

@@ -17,6 +17,7 @@ public class Drawer : MonoBehaviourPun
     [SerializeField] private bool eraserMode;
     [SerializeField] private bool interactable;
     [SerializeField] private GameObject drawerPanelPrefab;
+    [SerializeField] private Texture2D cursorTexture;
 
     public static Action<PenUI.PenType> OnPenSelect;
     private PenUI.PenType currentPenType;
@@ -62,6 +63,7 @@ public class Drawer : MonoBehaviourPun
         {
             GameObject UI = Instantiate(drawerPanelPrefab).transform.GetChild(0).gameObject;
             GameObject.Find("LevelSetup").GetComponent<LevelSetup>().Init(UI.GetComponent<DrawerUICOntrol>());
+            Cursor.SetCursor(cursorTexture, new Vector2(0, cursorTexture.height), CursorMode.Auto);
         }
     }
 
@@ -222,7 +224,7 @@ public class Drawer : MonoBehaviourPun
                 return;
             }
 
-            Debug.Log("Hit: " + hit.collider.gameObject.name);
+            //Debug.Log("Hit: " + hit.collider.gameObject.name);
             //hit.collider.gameObject.GetComponent<DrawMesh>().photonView.TransferOwnership(actorNum);
             DrawMesh erasingMesh = hit.collider.gameObject.GetComponent<DrawMesh>();
             drawStrokeTotal += erasingMesh.drawStrokes;
@@ -230,17 +232,24 @@ public class Drawer : MonoBehaviourPun
             StartCoroutine(AddSliderValue(value, time));
             erasingMesh.earsingSelf = true;
             PhotonNetwork.Destroy(hit.collider.gameObject);
-            ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", new Vector3(mousePos.x, mousePos.y, 0), Quaternion.identity).GetComponent<ParticleAttractor>();
+            SpawnParticles(hit.collider.gameObject.tag, mousePos);
+            //ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", new Vector3(mousePos.x, mousePos.y, 0), Quaternion.identity).GetComponent<ParticleAttractor>();
         }
     }
 
     [PunRPC]
-    public void RPC_DirectErase(int drawStrokes, Vector2 centerPos)
+    public void RPC_DirectErase(int drawStrokes, Vector2 centerPos, string name)
     {
         drawStrokeTotal += drawStrokes;
         float value = drawStrokeTotal * 1.0f / drawStrokeLimit;
         StartCoroutine(AddSliderValue(value, time));
-        ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", new Vector3(centerPos.x, centerPos.y, 0), Quaternion.identity).GetComponent<ParticleAttractor>();
+        SpawnParticles(name, centerPos);
+        //ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", new Vector3(centerPos.x, centerPos.y, 0), Quaternion.identity).GetComponent<ParticleAttractor>();
+    }
+
+    private void SpawnParticles(string erasingTagName, Vector3 centerPos)
+    {
+        PhotonNetwork.Instantiate("EraseEffect" + erasingTagName, new Vector3(centerPos.x, centerPos.y, 0), Quaternion.identity).GetComponent<ParticleAttractor>();
     }
 
     IEnumerator AddSliderValue(float target, float time)

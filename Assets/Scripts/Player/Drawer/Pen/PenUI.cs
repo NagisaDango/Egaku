@@ -71,7 +71,7 @@ public class PenUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, I
         {
             drawerUI.ToggleDrawerPanel();
             Drawer.OnPenSelect.Invoke(penType);
-            Cursor.SetCursor(cursorTexture, Vector2.zero, CursorMode.Auto);
+            //Cursor.SetCursor(cursorTexture, Vector2.zero, CursorMode.Auto);
         }
     }
 

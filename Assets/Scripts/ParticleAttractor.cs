@@ -21,6 +21,11 @@ public class ParticleAttractor : MonoBehaviour
         particles = new ParticleSystem.Particle[ps.main.maxParticles];
     }
 
+    public void SetMaterial()
+    {
+        
+    }
+
     void SetTarget()
     {
         print($"Setting Target cause: djj not set: {djj == Vector3.zero} or target not set: {target == null}" );

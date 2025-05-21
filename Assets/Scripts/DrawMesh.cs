@@ -353,7 +353,7 @@ void RPC_StartDraw(Vector3 mousePos)
 
     public void SelfDestroy()
     {
-        Drawer.Instance.photonView.RPC("RPC_DirectErase", RpcTarget.AllBuffered, drawStrokes, (Vector2)col2d.bounds.center);
+        Drawer.Instance.photonView.RPC("RPC_DirectErase", RpcTarget.AllBuffered, drawStrokes, (Vector2)col2d.bounds.center, this.gameObject.tag);
         PhotonNetwork.Destroy(gameObject);
     }
 
@@ -361,7 +361,7 @@ void RPC_StartDraw(Vector3 mousePos)
     {
         if (other.tag == "DeathDesuwa")
         {
-            Drawer.Instance.photonView.RPC("RPC_DirectErase", RpcTarget.AllBuffered, drawStrokes, (Vector2)col2d.bounds.center);
+            Drawer.Instance.photonView.RPC("RPC_DirectErase", RpcTarget.AllBuffered, drawStrokes, (Vector2)col2d.bounds.center, this.gameObject.tag);
             //ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", new Vector3(col2d.bounds.center.x, col2d.bounds.center.y, 0), Quaternion.identity).GetComponent<ParticleAttractor>();
             PhotonNetwork.Destroy(gameObject);
         }

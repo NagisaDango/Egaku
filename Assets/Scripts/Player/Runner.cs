@@ -69,6 +69,7 @@ public class Runner : MonoBehaviourPunCallbacks
         if (!photonView.IsMine)
         {
             Debug.Log("this player is not the runner, setting the rb to non physic");
+            //rb.bodyType = RigidbodyType2D.Dynamic;
             rb.isKinematic = true; // Stop physics interactions
             rb.simulated = false; // Turn off physics on non-owners
         }
@@ -227,12 +228,13 @@ public class Runner : MonoBehaviourPunCallbacks
     
     private void Revive()
     {
-        photonView.RPC("RPC_Disable", RpcTarget.Others);
-        //photonView.RPC("RPC_ReleaseWood", RpcTarget.All);
+        photonView.RPC("RPC_ReleaseWood", RpcTarget.All);
         rb.linearVelocity = Vector2.zero;
         //this.transform.position = revivePos;
         photonView.transform.position = revivePos;
-        photonView.RPC("RPC_Enable", RpcTarget.Others);
+        //Below are for fog of war to prevent teleport and clear the pathway
+        //photonView.RPC("RPC_Enable", RpcTarget.Others);
+        //photonView.RPC("RPC_Disable", RpcTarget.Others);
     }
     
     [PunRPC]
@@ -285,17 +287,22 @@ public class Runner : MonoBehaviourPunCallbacks
         //fixedJoint2D.gameObject.layer = LayerMask.NameToLayer("Draw");
         _RunnerMovement.SetJumpAllowance(true);
         // TODO: only setting to wood here cuz its the only one that can be hold, might want to change, have a buffer holding the original tag name
-        holdingObject.Reset();
-        holdingObject.ToggleCollider(true);
-        holdingObject = null;
+        if (holdingObject != null)
+        {
+            holdingObject.Reset();
+            holdingObject.ToggleCollider(true);
+            holdingObject = null;
+            
+            fixedJoint2D.connectedBody.gameObject.tag = "Wood";
+            fixedJoint2D.connectedBody.gameObject.GetComponent<WoodPen>().holder = null;
+            fixedJoint2D.connectedBody.mass = 20;
+            fixedJoint2D.connectedBody.gameObject.transform.SetParent(null);
+            fixedJoint2D.connectedBody = rb;
+        }
+        
         validHoldJump = false;
-        fixedJoint2D.connectedBody.gameObject.tag = "Wood";
         extraJumpForce = 0;
-        fixedJoint2D.connectedBody.gameObject.GetComponent<WoodPen>().holder = null;
-        fixedJoint2D.connectedBody.mass = 20;
         holding = false;
-        fixedJoint2D.connectedBody.gameObject.transform.SetParent(null);
-        fixedJoint2D.connectedBody = rb;
     }
     private int holdingObjectID;
     private void OnCollisionStay2D(Collision2D other)

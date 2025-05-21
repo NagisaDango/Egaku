@@ -14,13 +14,12 @@ public class GeneralUI : MonoBehaviourPunCallbacks
     public void ResetGame()
     {
         photonView.RPC("RPC_Reset", RpcTarget.AllBuffered);
-
+        //GameManager.Instance.LoadLevel(GameManager.Instance.currentLevel);
     }
 
     [PunRPC]
     private void RPC_Reset()
     {
         GameManager.Instance.LoadLevel(GameManager.Instance.currentLevel);
-
     }
 }

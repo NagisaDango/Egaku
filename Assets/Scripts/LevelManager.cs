@@ -60,7 +60,7 @@ public class LevelManager : MonoBehaviourPunCallbacks
         if(true)// (PhotonNetwork.IsMasterClient)
         {
             GameManager.Instance.LoadLevel(level);
-
+            GameManager.Instance.currentLevel = level;
         }
     }
 
