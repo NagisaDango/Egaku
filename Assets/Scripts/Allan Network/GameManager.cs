@@ -191,14 +191,14 @@ namespace Allan
         {
             base.OnEnable();
             SceneManager.sceneLoaded += OnSceneLoaded;
-            EventHandler.ReachDestinationEvent += OnReachDestination;
+            //EventHandler.ReachDestinationEvent += OnReachDestination;
         }
 
         public override void OnDisable()
         {
             base.OnDisable();
             SceneManager.sceneLoaded -= OnSceneLoaded;
-            EventHandler.ReachDestinationEvent -= OnReachDestination;
+            //EventHandler.ReachDestinationEvent -= OnReachDestination;
 
         }
 
@@ -240,8 +240,6 @@ namespace Allan
         {
             print("Enter OnReachDestination");
             if(true)//PhotonNetwork.IsMasterClient)
-
-
             {
                 if (currentLevel == levelUnlocked)
                 {
@@ -443,6 +441,8 @@ namespace Allan
         {
             if (scene.name.Contains("Level_"))
             {
+                EventHandler.CallLevelStartEvent();
+
                 currentLevel = int.Parse(scene.name.Split('_')[1]);
 
                 Debug.Log($"Scene {scene.name} loaded. Spawning player...");
