@@ -55,7 +55,10 @@ namespace Allan
         public int currentLevel = 0;
 
 
-
+        public Button roomCreateOrJoinButton;
+        public Button startGameButton;
+        public Button devStartGameButton;
+        public Button leaveGameButton;
 
         private void Awake()
         {
@@ -70,17 +73,30 @@ namespace Allan
             //    Destroy(gameObject);
             //    return;
             //}
+
+            print("Awake Before");
+
+            if(Instance != null && Instance != this)
+            {
+                print("Awake Destroy");
+
+                Destroy(this.gameObject);
+                return;
+            }
+
+
             Instance = this;
+            gameObject.AddComponent<PhotonView>();
+            PhotonNetwork.AllocateViewID(photonView);
+            DontDestroyOnLoad(this.gameObject);
 
-            DontDestroyOnLoad(gameObject);
+            //Transform canvas = GameObject.Find("Canvas").transform;
+            //roomSelection = canvas.Find("RoomSelection").gameObject;
+            //roleSelection = canvas.Find("RoleSelection").gameObject;
+            //levelSelection = canvas.Find("LevelSelection").gameObject;
 
-            Transform canvas = GameObject.Find("Canvas").transform;
-            roomSelection = canvas.Find("RoomSelection").gameObject;
-            roleSelection = canvas.Find("RoleSelection").gameObject;
-            levelSelection = canvas.Find("LevelSelection").gameObject;
-
-            gridLayout = roomSelection.transform.Find("Scroll View/Viewport/Content");
-            nameField = roomSelection.transform.Find("RoomNameInputField").GetComponent<TMP_InputField>();
+            //gridLayout = roomSelection.transform.Find("Scroll View/Viewport/Content");
+            //nameField = roomSelection.transform.Find("RoomNameInputField").GetComponent<TMP_InputField>();
             roomSelection.SetActive(true);
             roleSelection.SetActive(false);
             levelSelection.SetActive(false);
@@ -88,6 +104,14 @@ namespace Allan
 
 
             levelSelection.transform.Find("BackButton").GetComponent<Button>().onClick.AddListener(() => { Back2RoleSelection(); });
+
+
+            roomCreateOrJoinButton.onClick.AddListener(() => { CreateJoinButton(); });
+            startGameButton.onClick.AddListener(() => { LoadLevelSelection(); });
+            devStartGameButton.onClick.AddListener(() => { DevSpawnPlayers(); });
+
+            //go.UpdateProperty(roomSelection, roleSelection, levelSelection, gridLayout, nameField);
+            leaveGameButton.onClick.AddListener(() => { LeaveRoom(); });
 
 
         }
@@ -104,7 +128,7 @@ namespace Allan
 
         [PunRPC] public void RPC_LoadLevel(int level)
         {
-            if (PhotonNetwork.IsMasterClient)
+            if (true)//(PhotonNetwork.IsMasterClient)
             {
                 LoadLevel(level);
 
@@ -135,19 +159,46 @@ namespace Allan
 
         }
 
+        public void UpdateProperty()
+        {
+            Transform canvas = GameObject.Find("Canvas").transform;
+            roomSelection = canvas.Find("RoomSelection").gameObject;
+            roleSelection = canvas.Find("RoleSelection").gameObject;
+            levelSelection = canvas.Find("LevelSelection").gameObject;
+
+            gridLayout = roomSelection.transform.Find("Scroll View/Viewport/Content");
+            nameField = roomSelection.transform.Find("RoomNameInputField").GetComponent<TMP_InputField>();
+
+
+
+            roomCreateOrJoinButton = roomSelection.transform.Find("Button").GetComponent<Button>();
+            startGameButton = roleSelection.transform.Find("Start").GetComponent<Button>();
+            leaveGameButton = roleSelection.transform.Find("LeaveRoomButton").GetComponent<Button>();
+            devStartGameButton = roleSelection.transform.Find("DevButton").GetComponent<Button>();
+
+
+            roomCreateOrJoinButton.onClick.AddListener(() => { CreateJoinButton(); });
+            startGameButton.onClick.AddListener(() => { LoadLevelSelection(); });
+            devStartGameButton.onClick.AddListener(() => { DevSpawnPlayers(); });
+            leaveGameButton.onClick.AddListener(() => { LeaveRoom(); });
+
+            levelSelection.transform.Find("BackButton").GetComponent<Button>().onClick.AddListener(() => { Back2RoleSelection(); });
+        }
+
+
 
         public override void OnEnable()
         {
             base.OnEnable();
             SceneManager.sceneLoaded += OnSceneLoaded;
-            EventHandler.ReachDestinationEvent += OnReachDestination;
+            //EventHandler.ReachDestinationEvent += OnReachDestination;
         }
 
         public override void OnDisable()
         {
             base.OnDisable();
             SceneManager.sceneLoaded -= OnSceneLoaded;
-            EventHandler.ReachDestinationEvent -= OnReachDestination;
+            //EventHandler.ReachDestinationEvent -= OnReachDestination;
 
         }
 
@@ -194,20 +245,18 @@ namespace Allan
                 {
                     levelUnlocked++;
                     currentLevel = levelUnlocked;
-                    LoadLevel(currentLevel);
-                    //photonView.RPC("RPC_LoadLevel", RpcTarget.All, currentLevel);
+                    //LoadLevel(currentLevel);
+                    photonView.RPC("RPC_LoadLevel", RpcTarget.All, currentLevel);
                 }
                 else
                 {
-                    LoadLevel(currentLevel + 1);
-                    //photonView.RPC("RPC_LoadLevel", RpcTarget.All, currentLevel+1);
+                    //LoadLevel(currentLevel + 1);
+                    photonView.RPC("RPC_LoadLevel", RpcTarget.All, currentLevel+1);
 
                 }
             }
 
         }
-
-
 
         public void LoadLevelSelection()
         {
@@ -269,8 +318,11 @@ namespace Allan
         public override void OnLeftRoom()
         {
             Debug.Log("Enter Callback OnLeftRoom");
+            PhotonNetwork.LoadLevel("RoleSelection");
+            /*
+            UpdateProperty();
 
-            //SceneManager.LoadScene(0);
+            SceneManager.LoadScene(0);
             if (PhotonNetwork.InLobby)
             {
                 Debug.Log("OnLeftRoom: go back to room selection page");
@@ -279,7 +331,8 @@ namespace Allan
                 levelSelection.SetActive(false);
 
             }
-            PhotonNetwork.LoadLevel("RoleSelection");
+            */
+
 
 
             //Hashtable roomProperties = currentRoom.CustomProperties;
@@ -388,7 +441,11 @@ namespace Allan
         {
             if (scene.name.Contains("Level_"))
             {
-                Debug.Log("Scene Allan loaded. Spawning player...");
+                EventHandler.CallLevelStartEvent();
+
+                currentLevel = int.Parse(scene.name.Split('_')[1]);
+
+                Debug.Log($"Scene {scene.name} loaded. Spawning player...");
                 if (devSpawn)
                 {
                     var d = PhotonNetwork.Instantiate(drawerPrefab.name, new Vector3(0, 0, 0), Quaternion.identity);
@@ -398,6 +455,24 @@ namespace Allan
                     GameObject.Find("LevelSetup").GetComponent<LevelSetup>().Init(r.GetComponent<Runner>());
                 }
                 else SpawnPlayer();
+
+            }
+            else if(scene.name == "RoleSelection")
+            {
+                Debug.Log("Scene RoleSelection loaded");
+                UpdateProperty();
+                if (PhotonNetwork.InRoom)
+                {
+                    roomSelection.SetActive(false);
+                    roleSelection.SetActive(true);
+                    levelSelection.SetActive(false);
+                }
+                else
+                {
+                    roomSelection.SetActive(true);
+                    roleSelection.SetActive(false);
+                    levelSelection.SetActive(false);
+                }
 
             }
         }

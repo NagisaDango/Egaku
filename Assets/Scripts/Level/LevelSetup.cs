@@ -26,6 +26,10 @@ public class LevelSetup : MonoBehaviour
         _camera.Follow = runner.transform;
     }
 
+    public Vector2 GetRevivePos()
+    {
+        return revivePos;
+    }
 
     private void TempLevelSetting()
     {
