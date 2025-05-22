@@ -9,6 +9,7 @@ public class WoodPen : MonoBehaviour, HoldableObject
     private Vector2 lastContactPoint { get; set; }
     public Runner holder;
     private HoldableObject _holdableObjectImplementation;
+    private bool simulatedStatus;
     
     /*
     private void OnCollisionStay2D(Collision2D other)
@@ -46,12 +47,14 @@ public class WoodPen : MonoBehaviour, HoldableObject
     {
         holder = null;
         lastContactPoint = Vector2.negativeInfinity;
+        rb.simulated = simulatedStatus;
     }
 
     private void Start()
     {
         col = GetComponent<Collider2D>();
         rb = GetComponent<Rigidbody2D>();
+        simulatedStatus = rb.simulated;
     }
 
     public bool ValidateHold()
@@ -94,8 +97,17 @@ public class WoodPen : MonoBehaviour, HoldableObject
 
     public void ToggleCollider(bool status)
     {
-        rb.simulated = status;
+        //rb.simulated = status;
         col.enabled = status;
     }
 
+    public void ToggleRbSimulated(bool status)
+    {
+        rb.simulated = status;
+    }
+
+    public void ToggleRbSimulated()
+    {
+        rb.simulated = simulatedStatus;
+    }
 }

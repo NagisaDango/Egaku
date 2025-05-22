@@ -144,6 +144,7 @@ public class Runner : MonoBehaviourPunCallbacks
             if (holdingObject != null)
             {
                 holdingObject.ToggleCollider(true);
+                holdingObject.ToggleRbSimulated();
             }
             if (reversed)
             {
@@ -206,6 +207,7 @@ public class Runner : MonoBehaviourPunCallbacks
         if (holdingObject != null)
         {
             holdingObject.ToggleCollider(false);
+            holdingObject.ToggleRbSimulated(false);
         }
         
         Spline spline = new Spline();
@@ -289,8 +291,8 @@ public class Runner : MonoBehaviourPunCallbacks
         // TODO: only setting to wood here cuz its the only one that can be hold, might want to change, have a buffer holding the original tag name
         if (holdingObject != null)
         {
-            holdingObject.Reset();
             holdingObject.ToggleCollider(true);
+            holdingObject.Reset();
             holdingObject = null;
             
             fixedJoint2D.connectedBody.gameObject.tag = "Wood";
@@ -299,7 +301,6 @@ public class Runner : MonoBehaviourPunCallbacks
             fixedJoint2D.connectedBody.gameObject.transform.SetParent(null);
             fixedJoint2D.connectedBody = rb;
         }
-        
         validHoldJump = false;
         extraJumpForce = 0;
         holding = false;

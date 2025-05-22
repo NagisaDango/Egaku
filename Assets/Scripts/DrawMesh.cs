@@ -79,6 +79,12 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
 
         if (interactable)
             InteractSetting();
+        
+        
+        if (photonView.IsMine)
+        {
+            GetComponent<Rigidbody2D>().simulated = false;
+        }
 
         GetComponent<MeshFilter>().mesh = mesh;
         // lastMousePosition = mousePos; // Already set
@@ -234,7 +240,7 @@ void RPC_StartDraw(Vector3 mousePos)
             //***!!! if currproperty is trigger just remove the collider for now.
             if (currProperty.trigger)  //Destroy(col2d);
                 col2d.isTrigger = true;
-
+                
             this.gameObject.tag = SetUpObjectTag(currProperty.penType);
             photonView.TransferOwnership(Runner.Instance.actorNum);
 
