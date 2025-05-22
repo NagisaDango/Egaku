@@ -57,11 +57,7 @@ public class LevelManager : MonoBehaviourPunCallbacks
     [PunRPC]
     public void RPC_LoadLevel(int level)
     {
-        if(true)// (PhotonNetwork.IsMasterClient)
-        {
-            GameManager.Instance.LoadLevel(level);
-
-        }
+        GameManager.Instance.LoadLevel(level);
     }
 
 

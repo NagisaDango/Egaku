@@ -12,7 +12,6 @@ public class GameManageInit : MonoBehaviour
     public Button roomCreateOrJoinButton;
     public Button startGameButton;
     public Button devStartGameButton;
-
     public Button leaveGameButton;
 
 

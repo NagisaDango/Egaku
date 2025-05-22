@@ -8,11 +8,15 @@ public class GeneralUI : MonoBehaviourPunCallbacks
 {
     public void LeaveRoom()
     {
+        print("Enter LeaveRoom");
+
         PhotonNetwork.LeaveRoom();
     }
 
     public void ResetGame()
     {
+        print("Enter ResetGame");
+
         photonView.RPC("RPC_Reset", RpcTarget.AllBuffered);
 
     }
