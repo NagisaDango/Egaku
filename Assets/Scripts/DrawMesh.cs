@@ -127,6 +127,8 @@ void RPC_StartDraw(Vector3 mousePos)
         drawStrokes++;
         if(pointList != null) pointList.Add(mousePos); // Assuming pointList is for other logic like ElectricSpline
 
+        PhotonNetwork.RaiseEvent(AudioManager.PlayAudioEventCode, new object[] { AudioManager.DRAWSFX, false }, new RaiseEventOptions { Receivers = ReceiverGroup.All }, ExitGames.Client.Photon.SendOptions.SendReliable);
+
         Vector3[] vertices = new Vector3[mesh.vertices.Length + 2];
         Vector2[] uv = new Vector2[mesh.uv.Length + 2]; // UV array also needs to be expanded
         int[] triangles = new int[mesh.triangles.Length + 6];

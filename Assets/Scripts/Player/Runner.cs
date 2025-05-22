@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
+using ExitGames.Client.Photon;
 using Photon.Pun;
 using Photon.Pun.Demo.PunBasics;
+using Photon.Realtime;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Splines;
@@ -174,6 +176,9 @@ public class Runner : MonoBehaviourPunCallbacks
                 _RunnerMovement.Jump(jumpForce + extraJumpForce, holdingObject.ValidateHold());
             else
                 _RunnerMovement.Jump(jumpForce + extraJumpForce, false);
+            //AudioManager.m_photonView.RPC("RPC_PlayOne", RpcTarget.All, AudioManager.JUMPSFX, false);
+            //AudioManager.PlayOne(AudioManager.JUMPSFX, false);
+            PhotonNetwork.RaiseEvent(AudioManager.PlayAudioEventCode, new object[] { AudioManager.JUMPSFX, false }, new RaiseEventOptions { Receivers = ReceiverGroup.All }, SendOptions.SendReliable);
             jump = false;
             validHoldJump = false;
         }

@@ -8,5 +8,9 @@ public static class EventHandler
         ReachDestinationEvent?.Invoke();
     }
 
-
+    public static event Action LevelStartEvent;
+    public static void CallLevelStartEvent()
+    {
+        LevelStartEvent?.Invoke();
+    }
 }

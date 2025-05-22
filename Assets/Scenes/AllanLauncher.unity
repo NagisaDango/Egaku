@@ -697,6 +697,60 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 835125659}
   m_CullTransparentMesh: 1
+--- !u!1 &891639183
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 891639184}
+  - component: {fileID: 891639185}
+  m_Layer: 0
+  m_Name: AudioManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &891639184
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 891639183}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1280, y: 720, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &891639185
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 891639183}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f07d6cb5519373c429fea820fd6d463c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playBgm: {fileID: 0}
+  menuBgm: {fileID: 0}
+  clickSFX: {fileID: 8300000, guid: 8b3c204482213894f900839f898292a4, type: 3}
+  jumpSFX: {fileID: 8300000, guid: 5fed2231fa60a8d49baf4d535b11ac97, type: 3}
+  fallSFX: {fileID: 0}
+  holdSFX: {fileID: 0}
+  drawSFX: {fileID: 8300000, guid: a7e47f483f278d945b93a35549572381, type: 3}
+  cloudBounceSFX: {fileID: 0}
+  glassBreakSFX: {fileID: 0}
+  eraseSFX: {fileID: 0}
 --- !u!1 &966526201
 GameObject:
   m_ObjectHideFlags: 0
@@ -1658,3 +1712,4 @@ SceneRoots:
   - {fileID: 118944580}
   - {fileID: 967409081}
   - {fileID: 1199025917}
+  - {fileID: 891639184}
