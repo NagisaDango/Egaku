@@ -74,6 +74,7 @@ MonoBehaviour:
   - RPC_LoadLevelGM
   - LoadLevelEnd
   - LoadLevelStart
+  - RPC_PlayOne
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

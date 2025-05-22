@@ -83,6 +83,7 @@ namespace Phantom
         {
             progressLabel.SetActive(true);
             controlPanel.SetActive(false);
+            AudioManager.PlayOne(AudioManager.CLICKSFX, false);
             // we check if we are connected or not, we join if we are , else we initiate the connection to the server.
             if (PhotonNetwork.IsConnected)
             {
