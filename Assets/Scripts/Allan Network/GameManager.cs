@@ -1,23 +1,14 @@
-﻿using System;
-using System.Collections;
-
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
-
 using UnityEngine.SceneManagement;
-
 using Photon.Pun;
 using Photon.Realtime;
-using Photon.Pun.Demo.PunBasics;
 using static RolesManager;
 using TMPro;
 using ExitGames.Client.Photon;
 using System.Collections.Generic;
-using UnityEditor;
 using WebSocketSharp;
 using Hashtable = ExitGames.Client.Photon.Hashtable;
-using Unity.VisualScripting;
-using Photon.Pun.Demo.Cockpit.Forms;
 
 
 
@@ -25,24 +16,27 @@ namespace Allan
 {
     public class GameManager : MonoBehaviourPunCallbacks
     {
-
-
-        
         public static GameManager Instance;
         public static bool initialized = false;
-
+        
+        [Header("Prefabs")]
         [Tooltip("The prefab to use for representing the player")]
         public GameObject runnerPrefab;
         public GameObject drawerPrefab;
-
+        
         public GameObject roomSelection;
         public GameObject roleSelection;
         public GameObject levelSelection;
-
-
-
-
+        
         public GameObject roomItemPrefab;
+        
+        [Header("Buttons")]
+        public Button roomCreateOrJoinButton;
+        public Button startGameButton;
+        public Button devStartGameButton;
+        public Button leaveGameButton;
+        
+        [Header("Other")]
         public Transform gridLayout;
         public TMP_InputField nameField;
 
@@ -51,14 +45,8 @@ namespace Allan
 
         public int levelCounts = 3;
         public int levelUnlocked = 3;
-        //[SerializeField] private int currentLevel = 0;
         public int currentLevel = 0;
 
-
-        public Button roomCreateOrJoinButton;
-        public Button startGameButton;
-        public Button devStartGameButton;
-        public Button leaveGameButton;
 
         private void Awake()
         {
@@ -108,12 +96,10 @@ namespace Allan
 
             roomCreateOrJoinButton.onClick.AddListener(() => { CreateJoinButton(); });
             startGameButton.onClick.AddListener(() => { LoadLevelSelection(); });
-            devStartGameButton.onClick.AddListener(() => { DevSpawnPlayers(); });
+            //devStartGameButton.onClick.AddListener(() => { DevSpawnPlayers(); });
 
             //go.UpdateProperty(roomSelection, roleSelection, levelSelection, gridLayout, nameField);
             leaveGameButton.onClick.AddListener(() => { LeaveRoom(); });
-
-
         }
 
 
@@ -264,9 +250,6 @@ namespace Allan
             roomSelection.SetActive(false);
             roleSelection.SetActive(false);
             levelSelection.SetActive(true);
-
-
-
         }
 
 
@@ -274,7 +257,8 @@ namespace Allan
         public void DevSpawnPlayers()
         {
             devSpawn = true;
-            LoadArena();
+            LoadLevelSelection();
+            //LoadArena();
         }
 
         public void SpawnPlayer()
@@ -435,6 +419,7 @@ namespace Allan
             }
 
             PhotonNetwork.LeaveRoom();
+            PhotonNetwork.JoinLobby();
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -485,6 +470,11 @@ namespace Allan
                 return;
             }
 
+            if (!PhotonNetwork.InLobby)
+            {
+                Debug.Log("Not in lobby, join back to lobby ");
+                PhotonNetwork.JoinLobby();
+            }
 
             if (PhotonNetwork.IsConnectedAndReady && PhotonNetwork.InLobby)
             {
@@ -768,17 +758,10 @@ namespace Allan
         public override void OnRoomPropertiesUpdate(Hashtable propertiesThatChanged)
         {
             Debug.Log("Enter Callback OnRoomPropertiesUpdate");
-
-
             foreach (var key in propertiesThatChanged.Keys)
             {
                 Debug.Log($"Room Properly changed:{key} ->{propertiesThatChanged[key]}, ROOM:{PhotonNetwork.CurrentRoom.Name}");
-
             }
         }
-
-
     }
-
-   
 }

@@ -45,9 +45,6 @@ public class LevelManager : MonoBehaviourPunCallbacks
             //go.GetComponent<Button>().onClick.AddListener(() => { GameManager.Instance.LoadLevel(display.levelIndex);  });
             //go.GetComponent<Button>().onClick.AddListener(() => { GameManager.Instance.photonView.RPC("RPC_LoadLevel", RpcTarget.AllBuffered, display.levelIndex); });
             go.GetComponent<Button>().onClick.AddListener(() => { photonView.RPC("RPC_LoadLevel", RpcTarget.AllBuffered, display.levelIndex); });
-
-
-
         }
 
 

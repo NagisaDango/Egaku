@@ -187,6 +187,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3284654936372631707}
   - component: {fileID: 3451191439089629770}
+  - component: {fileID: -6739487321959550870}
   m_Layer: 0
   m_Name: LevelTransition
   m_TagString: Untagged
@@ -226,3 +227,25 @@ MonoBehaviour:
   inTime: 1
   image: {fileID: 5659832359968184049}
   canvas: {fileID: 6956884645814946984}
+--- !u!114 &-6739487321959550870
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7604415928925378979}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa584fbee541324448dd18d8409c7a41, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ObservedComponentsFoldoutOpen: 1
+  Group: 0
+  prefixField: -1
+  Synchronization: 3
+  OwnershipTransfer: 0
+  observableSearch: 2
+  ObservedComponents: []
+  sceneViewId: 0
+  InstantiationId: 0
+  isRuntimeInstantiated: 0

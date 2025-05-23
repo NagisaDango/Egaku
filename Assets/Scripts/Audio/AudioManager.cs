@@ -100,8 +100,9 @@ public class AudioManager : MonoBehaviour, IOnEventCallback
         {
             if (channels[i].channel.isPlaying &&
                 channels[i].channel.clip == NameAudioPair[name] &&
-                channels[i].lastPlayed >= Time.time - 0.1f)
+                channels[i].lastPlayed >= Time.time - 0.2f)
             {
+                channels[i].channel.Play();
                 return -1;
             }
         }

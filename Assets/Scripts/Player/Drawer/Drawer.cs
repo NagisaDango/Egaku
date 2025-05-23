@@ -116,11 +116,12 @@ public class Drawer : MonoBehaviourPun
             {
                 //if(EventSystem.current.IsPointerOverGameObject())
                 RaycastHit2D hit = Physics2D.Raycast((Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition), Vector2.zero, Mathf.Infinity, LayerMask.GetMask("Draw"));
+                
+                photonView.RPC("EraseDrawnObj", RpcTarget.All,
+                    (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition));
                 if (hit.collider != null)
                 {
                     print(hit.collider.gameObject.name);
-                    photonView.RPC("EraseDrawnObj", RpcTarget.All,
-                        (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition));
                 }
                 //EraseDrawnObj();
             }
@@ -213,7 +214,6 @@ public class Drawer : MonoBehaviourPun
     private void EraseDrawnObj(Vector2 mousePos)
     {
         //Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        
         RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero, Mathf.Infinity, LayerMask.GetMask("Draw")); // Small downward ray
 
         if (hit.collider != null)// && hit.collider.gameObject.layer == LayerMask.NameToLayer("Draw"))
@@ -224,7 +224,7 @@ public class Drawer : MonoBehaviourPun
                 return;
             }
 
-            //Debug.Log("Hit: " + hit.collider.gameObject.name);
+            Debug.Log("Hit: " + hit.collider.gameObject.name);
             //hit.collider.gameObject.GetComponent<DrawMesh>().photonView.TransferOwnership(actorNum);
             DrawMesh erasingMesh = hit.collider.gameObject.GetComponent<DrawMesh>();
             drawStrokeTotal += erasingMesh.drawStrokes;

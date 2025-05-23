@@ -26,7 +26,7 @@ public class DestinationCheck : MonoBehaviour
 
             //gameObject.GetComponent<PhotonView>().RPC("RPC_LoadLevel", RpcTarget.AllBuffered, GameManager.Instance.currentLevel);
             EventHandler.CallReachDestinationEvent();
-
+            this.gameObject.SetActive(false);
         }
     }
 

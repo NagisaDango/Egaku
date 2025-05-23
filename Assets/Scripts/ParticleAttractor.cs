@@ -28,7 +28,7 @@ public class ParticleAttractor : MonoBehaviour
 
     void SetTarget()
     {
-        print($"Setting Target cause: djj not set: {djj == Vector3.zero} or target not set: {target == null}" );
+        //print($"Setting Target cause: djj not set: {djj == Vector3.zero} or target not set: {target == null}" );
         target = GameObject.Find("Canvas/Slider").transform;
         //Vector3 xjj = Camera.main.ScreenToWorldPoint(target.position);
         float h = target.GetComponent<RectTransform>().rect.height;
