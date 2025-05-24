@@ -32,6 +32,13 @@ public class Runner : MonoBehaviourPunCallbacks
     [SerializeField] private FixedJoint2D fixedJoint2D;
 
     public Transform face;
+    
+    [Header("Appearance")]
+    [SerializeField] private SpriteRenderer leftEye;
+    [SerializeField] private SpriteRenderer rightEye;
+    [SerializeField] private SpriteRenderer mouth;
+    [SerializeField] private SpriteRenderer color;
+    
 
 
     [Tooltip("The local player instance. Use this to know if the local player is represented in the Scene")]
@@ -82,10 +89,21 @@ public class Runner : MonoBehaviourPunCallbacks
             GameObject fog = GameObject.Find("FogCanvas/Fog");
             if(fog != null)
                 fog.SetActive(false);
+            photonView.RPC("RPC_SetUpAppearance", RpcTarget.AllBuffered, PhotonNetwork.LocalPlayer.CustomProperties["Eyes"],PhotonNetwork.LocalPlayer.CustomProperties["Mouth"],PhotonNetwork.LocalPlayer.CustomProperties["Color"]);
         }
 
         InitInput();
         _RunnerMovement = new RunnerMovement(rb, 10f, maxSpeed);
+    }
+    
+    
+    [PunRPC]
+    private void RPC_SetUpAppearance(int eyeType, int mouthType, Vector3 playerColor)
+    {
+        leftEye.sprite = Resources.Load<Sprite>("Eyes/" + eyeType);
+        rightEye.sprite = Resources.Load<Sprite>("Eyes/" + eyeType);
+        mouth.sprite = Resources.Load<Sprite>("Mouth/" + mouthType);
+        color.color = new Color(playerColor.x, playerColor.y, playerColor.z);
     }
 
     private void InitInput()

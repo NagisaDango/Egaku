@@ -60,7 +60,6 @@ namespace Allan
                 return;
             }
             PhotonNetwork.NickName = value;
-
             PlayerPrefs.SetString(playerNamePrefKey,value);
         }
 

@@ -76,6 +76,8 @@ MonoBehaviour:
   - LoadLevelStart
   - RPC_PlayOne
   - RPC_BreakEffect
+  - SetUpAppearance
+  - RPC_SetUpAppearance
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1
