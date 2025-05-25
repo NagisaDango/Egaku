@@ -1,5 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using ExitGames.Client.Photon;
+using Photon.Pun;
+using Photon.Realtime;
 using UnityEngine;
 
 public class RunnerMovement
@@ -18,6 +21,7 @@ public class RunnerMovement
         this.maxSpeed = maxSpeed;
     }
 
+    
     public void Update()
     {
         GroundDetect();
@@ -31,8 +35,13 @@ public class RunnerMovement
 
     public void Jump(int jumpForce, bool directAllowance)
     {
-        if(directAllowance || GroundDetect() )
-            rb.linearVelocity= new Vector2(rb.linearVelocity.x, jumpForce + extraJump);
+        if (directAllowance || GroundDetect())
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce + extraJump);
+            PhotonNetwork.RaiseEvent(AudioManager.PlayAudioEventCode, new object[] { AudioManager.JUMPSFX, false },
+                new RaiseEventOptions { Receivers = ReceiverGroup.All }, SendOptions.SendReliable);
+            PhotonNetwork.Instantiate("JumpVFX",rb.transform.position - new Vector3(0,0.6f,5), Quaternion.identity);
+        }
     }
 
     private Vector2 GetMoveAxis()

@@ -30,6 +30,7 @@ public class PlayerAppearance : MonoBehaviour
     {
         colorPicker.ColorChanged.AddListener((c => body.color = c));
         maxEyesSelected = eyes.Count - 1;
+        maxMouthSelected = mouthList.Count - 1;
         /*
         eyeHash = new Hashtable();
         eyeHash.Add("Eyes", currentSelectedEyes);
@@ -90,8 +91,7 @@ public class PlayerAppearance : MonoBehaviour
     
     private void SetMouthAppearance()
     {
-        leftEye.sprite = mouthList[currentSelectedMouth];
-        rightEye.sprite = mouthList[currentSelectedMouth];
+        mouth.sprite = mouthList[currentSelectedMouth];
     }
     #endregion
 

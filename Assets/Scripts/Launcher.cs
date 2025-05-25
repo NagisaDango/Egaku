@@ -42,6 +42,7 @@ namespace Phantom
         [Tooltip("The UI Label to inform the user that the connection is in progress")]
         [SerializeField]
         private GameObject progressLabel;
+        [SerializeField] private GameObject facePanel;
         
         #endregion
         
@@ -83,6 +84,7 @@ namespace Phantom
         {
             progressLabel.SetActive(true);
             controlPanel.SetActive(false);
+            facePanel.SetActive(false);
             AudioManager.PlayOne(AudioManager.CLICKSFX, false);
             // we check if we are connected or not, we join if we are , else we initiate the connection to the server.
             if (PhotonNetwork.IsConnected)

@@ -59,7 +59,7 @@ public class ParticleAttractor : MonoBehaviour
             {
                 particles[i].remainingLifetime = 0;
 
-                DeleteParticle();
+                //DeleteParticle();
             }
         }
 

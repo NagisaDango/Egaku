@@ -196,7 +196,7 @@ public class Runner : MonoBehaviourPunCallbacks
                 _RunnerMovement.Jump(jumpForce + extraJumpForce, false);
             //AudioManager.m_photonView.RPC("RPC_PlayOne", RpcTarget.All, AudioManager.JUMPSFX, false);
             //AudioManager.PlayOne(AudioManager.JUMPSFX, false);
-            PhotonNetwork.RaiseEvent(AudioManager.PlayAudioEventCode, new object[] { AudioManager.JUMPSFX, false }, new RaiseEventOptions { Receivers = ReceiverGroup.All }, SendOptions.SendReliable);
+            
             jump = false;
             validHoldJump = false;
         }
