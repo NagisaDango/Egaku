@@ -15,6 +15,7 @@ TagManager:
   - Holding
   - ClickToErase
   - Final
+  - Battery
   layers:
   - Default
   - TransparentFX
@@ -29,8 +30,8 @@ TagManager:
   - Cursor
   - Holding
   - DrawProhibited
-  - 
-  - 
+  - Player
+  - Battery
   - 
   - 
   - 

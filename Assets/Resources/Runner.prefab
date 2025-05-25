@@ -1039,9 +1039,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   actorNum: 0
   _ActionMap: {fileID: -944628639613478452, guid: e867bc50cb3156e42a79d69fa37878ad, type: 3}
+  validHoldJump: 0
   jumpForce: 20
   maxSpeed: 8
-  validHoldJump: 0
   fixedJoint2D: {fileID: 6520781276632100566}
   face: {fileID: 6665149993856065429}
   leftEye: {fileID: 473712637998911065}

@@ -1,49 +1,65 @@
-using System;
+﻿using System;
 using System.Collections;
 using ExitGames.Client.Photon;
 using Photon.Pun;
 using Photon.Pun.Demo.PunBasics;
 using Photon.Realtime;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Splines;
 
 public class Runner : MonoBehaviourPunCallbacks
 {
+    [Header("Player components")]
+    [Tooltip("The local player instance. Use this to know if the local player is represented in the Scene")]
+    public static GameObject LocalPlayerInstance;
     public static Runner Instance;
-    public int actorNum;
     private RunnerMovement _RunnerMovement;
     private Rigidbody2D rb;
     private Collider2D col;
+
+    [Header("Runtime Player Data")]
+    public int actorNum;
+    private Vector2 revivePos;
+
+    [Header("Input")]
     public InputActionAsset _ActionMap;
     private InputAction moveAction;
     private InputAction jumpAction;
-    public int jumpForce;
-    public int maxSpeed;
-    private GameObject runnerMouse;
-    private SplineAnimate splineAnimate;
-    bool inElectric = false;
+
+    [Header("Player Status")]
     GameObject interactingObject;
     private bool movingAlongElectric;
+    bool inElectric = false;
     private bool reversed = false;
-    private Vector2 revivePos;
-    private int extraJumpForce;
-    public bool validHoldJump;
-    [SerializeField] private FixedJoint2D fixedJoint2D;
+    private SplineAnimate splineAnimate;
 
-    public Transform face;
-    
+    public bool validHoldJump;
+    private int extraJumpForce;
+    private bool jump;
+
+    [Header("Editable Data")]
+    public int jumpForce;
+    public int maxSpeed;
+
+    [Header("Hold Object")]
+    [SerializeField] private FixedJoint2D fixedJoint2D;
+    [SerializeField] private LayerMask batteryLayer;
+    GameObject holdGO;
+    private bool holding;
+    private HoldableObject holdingObject;
+    private int holdingObjectID;
+
     [Header("Appearance")]
+    private GameObject runnerMouse;
+    public Transform face;
     [SerializeField] private SpriteRenderer leftEye;
     [SerializeField] private SpriteRenderer rightEye;
     [SerializeField] private SpriteRenderer mouth;
     [SerializeField] private SpriteRenderer color;
-    
 
-
-    [Tooltip("The local player instance. Use this to know if the local player is represented in the Scene")]
-    public static GameObject LocalPlayerInstance;
-
+    #region Unity Execution Events
     private void Awake()
     {
         if (Instance == null)
@@ -73,7 +89,7 @@ public class Runner : MonoBehaviourPunCallbacks
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<Collider2D>();
         LevelSetup LevelM = GameObject.Find("LevelSetup").GetComponent<LevelSetup>();
-        if (LevelM != null) 
+        if (LevelM != null)
             LevelM.SetUpCamera(this);
         if (!photonView.IsMine)
         {
@@ -87,32 +103,14 @@ public class Runner : MonoBehaviourPunCallbacks
             runnerMouse = PhotonNetwork.Instantiate("RunnerMouse", Camera.main.ScreenToWorldPoint(Input.mousePosition),
                 Quaternion.identity);
             GameObject fog = GameObject.Find("FogCanvas/Fog");
-            if(fog != null)
+            if (fog != null)
                 fog.SetActive(false);
-            photonView.RPC("RPC_SetUpAppearance", RpcTarget.AllBuffered, PhotonNetwork.LocalPlayer.CustomProperties["Eyes"],PhotonNetwork.LocalPlayer.CustomProperties["Mouth"],PhotonNetwork.LocalPlayer.CustomProperties["Color"]);
+            photonView.RPC("RPC_SetUpAppearance", RpcTarget.AllBuffered, PhotonNetwork.LocalPlayer.CustomProperties["Eyes"], PhotonNetwork.LocalPlayer.CustomProperties["Mouth"], PhotonNetwork.LocalPlayer.CustomProperties["Color"]);
         }
 
         InitInput();
         _RunnerMovement = new RunnerMovement(rb, 10f, maxSpeed);
     }
-    
-    
-    [PunRPC]
-    private void RPC_SetUpAppearance(int eyeType, int mouthType, Vector3 playerColor)
-    {
-        leftEye.sprite = Resources.Load<Sprite>("Eyes/" + eyeType);
-        rightEye.sprite = Resources.Load<Sprite>("Eyes/" + eyeType);
-        mouth.sprite = Resources.Load<Sprite>("Mouth/" + mouthType);
-        color.color = new Color(playerColor.x, playerColor.y, playerColor.z);
-    }
-
-    private void InitInput()
-    {
-        moveAction = _ActionMap.FindAction("Move");
-        jumpAction = _ActionMap.FindAction("Jump");
-    }
-
-    private bool jump;
 
     private void Update()
     {
@@ -124,7 +122,7 @@ public class Runner : MonoBehaviourPunCallbacks
         }
 
         _RunnerMovement.Update();
-        if(runnerMouse)
+        if (runnerMouse)
             RunnerMouseUpdate();
         print("Run update");
         if (moveAction.ReadValue<Vector2>() != Vector2.zero)
@@ -150,17 +148,31 @@ public class Runner : MonoBehaviourPunCallbacks
         {
             jump = true;
         }
-        
-        
+
+
         if (Input.GetKeyDown(KeyCode.LeftShift))
         {
-            if(holdingObjectID != -1)
-                photonView.RPC("RPC_HoldWood", RpcTarget.All, holdingObjectID);
+            if (holdingObjectID != -1)
+            {
+                holdGO = PhotonView.Find(holdingObjectID).gameObject;
+                holdingObject = holdGO.GetComponent<HoldableObject>();
+                if (holdGO.CompareTag("Wood") || holdingObject is WoodPen)
+                {
+                    photonView.RPC("RPC_HoldWood", RpcTarget.All, holdingObjectID);
+                }
+                else if (holdGO.CompareTag("Battery") || holdingObject is Battery)
+                {
+                    photonView.RPC("RPC_HoldBattery", RpcTarget.All);
+                }
+            }
         }
 
         if (holding && Input.GetKeyUp(KeyCode.LeftShift))
         {
-            photonView.RPC("RPC_ReleaseWood", RpcTarget.All);
+            if (holdingObject is WoodPen)
+                photonView.RPC("RPC_ReleaseWood", RpcTarget.All);
+            else if (holdingObject is Battery)
+                photonView.RPC("RPC_ReleaseBattery", RpcTarget.All);
         }
 
         if (splineAnimate != null && splineAnimate.NormalizedTime >= 1)
@@ -186,6 +198,33 @@ public class Runner : MonoBehaviourPunCallbacks
         //photonView.RPC("AdjustFaceRotation", RpcTarget.All);
     }
 
+    private void FixedUpdate()
+    {
+        if (jump)
+        {
+            if (holdingObject != null)
+                _RunnerMovement.Jump(jumpForce + extraJumpForce, holdingObject.ValidateHold());
+            else
+                _RunnerMovement.Jump(jumpForce + extraJumpForce, false);
+            //AudioManager.m_photonView.RPC("RPC_PlayOne", RpcTarget.All, AudioManager.JUMPSFX, false);
+            //AudioManager.PlayOne(AudioManager.JUMPSFX, false);
+
+            jump = false;
+            validHoldJump = false;
+        }
+    }
+    #endregion
+
+    #region Appearance
+    [PunRPC]
+    private void RPC_SetUpAppearance(int eyeType, int mouthType, Vector3 playerColor)
+    {
+        leftEye.sprite = Resources.Load<Sprite>("Eyes/" + eyeType);
+        rightEye.sprite = Resources.Load<Sprite>("Eyes/" + eyeType);
+        mouth.sprite = Resources.Load<Sprite>("Mouth/" + mouthType);
+        color.color = new Color(playerColor.x, playerColor.y, playerColor.z);
+    }
+
     public void AdjustFaceRotation()
     {
         face.rotation = Quaternion.Euler(0, 0, -transform.rotation.z);
@@ -206,26 +245,17 @@ public class Runner : MonoBehaviourPunCallbacks
         mousePos.z = 0;
         runnerMouse.transform.position = mousePos;
     }
+    #endregion
 
-    private void FixedUpdate()
+    private void InitInput()
     {
-        if (jump)
-        {
-            if(holdingObject!=null)
-                _RunnerMovement.Jump(jumpForce + extraJumpForce, holdingObject.ValidateHold());
-            else
-                _RunnerMovement.Jump(jumpForce + extraJumpForce, false);
-            //AudioManager.m_photonView.RPC("RPC_PlayOne", RpcTarget.All, AudioManager.JUMPSFX, false);
-            //AudioManager.PlayOne(AudioManager.JUMPSFX, false);
-            
-            jump = false;
-            validHoldJump = false;
-        }
+        moveAction = _ActionMap.FindAction("Move");
+        jumpAction = _ActionMap.FindAction("Jump");
     }
 
     private void MoveAlongElectric()
     {
-        if(movingAlongElectric) return;
+        if (movingAlongElectric) return;
         print("start electric");
         print(interactingObject);
         splineAnimate = interactingObject.transform.parent.GetChild(0).GetComponent<SplineAnimate>();
@@ -253,7 +283,7 @@ public class Runner : MonoBehaviourPunCallbacks
             holdingObject.ToggleCollider(false);
             holdingObject.ToggleRbSimulated(false);
         }
-        
+
         Spline spline = new Spline();
         if (interactingObject.tag.EndsWith("End") && !reversed)
         {
@@ -266,12 +296,32 @@ public class Runner : MonoBehaviourPunCallbacks
         interactingObject = null;
     }
 
+    private bool DetectElectricField()
+    {
+        //setting 200 as the longest radius just cuz no battery can exceed that
+        //可優化: 現在為每次調用，改為當超出第一次檢測時得到的radius後再重新Raycast檢測
+        RaycastHit2D hit = Physics2D.CircleCast(transform.position, 200, Vector2.zero, 0, batteryLayer); 
+        if (hit.collider == null)
+        {
+            Debug.Log("Currently Not in any electric zone, cannot or stop travel thru electric spline");
+        }
+        else
+        {
+            if(Vector2.Distance(this.transform.position, hit.collider.transform.position) <= 
+                hit.collider.gameObject.GetComponent<Battery>().radius)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void SetRevivePos(Vector2 pos)
     {
         revivePos = pos;
     }
 
-    
+
     private void Revive()
     {
         photonView.RPC("RPC_ReleaseWood", RpcTarget.All);
@@ -282,7 +332,7 @@ public class Runner : MonoBehaviourPunCallbacks
         //photonView.RPC("RPC_Enable", RpcTarget.Others);
         //photonView.RPC("RPC_Disable", RpcTarget.Others);
     }
-    
+
     [PunRPC]
     private void RPC_Disable()
     {
@@ -294,7 +344,7 @@ public class Runner : MonoBehaviourPunCallbacks
     {
         this.transform.gameObject.SetActive(true);
     }
-    
+
     [PunRPC]
     private void RPC_SetParent(int viewID)
     {
@@ -302,21 +352,19 @@ public class Runner : MonoBehaviourPunCallbacks
         {
             //transform.SetParent(PhotonView.Find(viewID).transform, true);
             //transform.localPosition = Vector3.zero;
-            
+
         }
         else transform.SetParent(null);
     }
 
-    private bool holding;
-    private HoldableObject holdingObject;
+
+    #region Hold Objects
     [PunRPC]
     private void RPC_HoldWood(int viewID)
     {
         if (viewID != -1)
         {
             //_RunnerMovement.SetJumpAllowance(false);
-            GameObject holdGO = PhotonView.Find(viewID).gameObject;
-            holdingObject = holdGO.GetComponent<HoldableObject>();
             holdGO.tag = "Holding";
             holdGO.transform.SetParent(this.transform);
             Rigidbody2D holdingRb = holdGO.GetComponent<Rigidbody2D>();
@@ -338,7 +386,7 @@ public class Runner : MonoBehaviourPunCallbacks
             holdingObject.ToggleCollider(true);
             holdingObject.Reset();
             holdingObject = null;
-            
+
             fixedJoint2D.connectedBody.gameObject.tag = "Wood";
             fixedJoint2D.connectedBody.gameObject.GetComponent<WoodPen>().holder = null;
             fixedJoint2D.connectedBody.mass = 20;
@@ -349,19 +397,53 @@ public class Runner : MonoBehaviourPunCallbacks
         extraJumpForce = 0;
         holding = false;
     }
-    private int holdingObjectID;
-    private void OnCollisionStay2D(Collision2D other)
+
+
+    [PunRPC]
+    private void RPC_HoldBattery()
     {
-        if (other.gameObject.tag == "Wood")
-        {
-            holdingObjectID = other.gameObject.GetPhotonView().ViewID;
-        }
+        holdGO.tag = "Holding";
+        holdGO.transform.SetParent(this.transform);
+        Rigidbody2D holdingRb = holdGO.GetComponent<Rigidbody2D>();
+        //holdGO.GetComponent<WoodPen>().holder = this;
+        holdingRb.mass = 1;
+        holding = true;
+        fixedJoint2D.connectedBody = holdingRb;
     }
+
+    [PunRPC]
+    private void RPC_ReleaseBattery()
+    {
+        // TODO: only setting to wood here cuz its the only one that can be hold, might want to change, have a buffer holding the original tag name
+        if (holdingObject != null)
+        {
+            holdingObject.ToggleCollider(true);
+            holdingObject.Reset();
+            holdingObject = null;
+
+            fixedJoint2D.connectedBody = rb;
+        }
+        validHoldJump = false;
+        extraJumpForce = 0;
+        holding = false;
+    }
+    #endregion
+
 
     public void SetExtraJumpForce(int _extraJumpForce)
     {
         extraJumpForce = _extraJumpForce;
     }
+
+    #region Collision / Trigger Detection
+    private void OnCollisionStay2D(Collision2D other)
+    {
+        if (other.gameObject.tag == "Wood" || other.gameObject.tag == "Battery")
+        {
+            holdingObjectID = other.gameObject.GetPhotonView().ViewID;
+        }
+    }
+
 
     private void OnCollisionExit2D(Collision2D other)
     {
@@ -393,4 +475,5 @@ public class Runner : MonoBehaviourPunCallbacks
             interactingObject = null;
         }
     }
+    #endregion
 }
