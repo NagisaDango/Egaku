@@ -29,6 +29,7 @@ public class RunnerMovement
 
     public void Move(Vector2 inputVector)
     {
+        Debug.Log("Moving");
         Vector2 axis = GetMoveAxis().normalized * inputVector;
         rb.linearVelocity = new Vector2(axis.x * speed, axis.y * speed + rb.linearVelocity.y);
     }

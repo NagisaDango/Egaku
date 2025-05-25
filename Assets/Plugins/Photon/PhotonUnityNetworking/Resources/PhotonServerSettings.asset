@@ -78,6 +78,8 @@ MonoBehaviour:
   - RPC_BreakEffect
   - SetUpAppearance
   - RPC_SetUpAppearance
+  - AdjustFaceRotation
+  - AdjustScale
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

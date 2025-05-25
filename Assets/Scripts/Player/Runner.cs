@@ -116,6 +116,7 @@ public class Runner : MonoBehaviourPunCallbacks
 
     private void Update()
     {
+        AdjustFaceRotation();
         //***need fix calling in update
         if (!photonView.IsMine)
         {
@@ -125,14 +126,19 @@ public class Runner : MonoBehaviourPunCallbacks
         _RunnerMovement.Update();
         if(runnerMouse)
             RunnerMouseUpdate();
+        print("Run update");
         if (moveAction.ReadValue<Vector2>() != Vector2.zero)
         {
             Vector2 movement = moveAction.ReadValue<Vector2>();
+            print("Run input update: " + movement);
             _RunnerMovement.Move(movement);
+            /*
             if (movement.x > 0)
                 face.localScale = Vector3.one;
             else
                 face.localScale = new Vector3(-1, 1, 1);
+            */
+            photonView.RPC("AdjustScale", RpcTarget.All, movement);
         }
 
         if (Input.GetKeyDown(KeyCode.E) && inElectric && interactingObject != null)
@@ -176,7 +182,22 @@ public class Runner : MonoBehaviourPunCallbacks
             photonView.RPC("RPC_SetParent", RpcTarget.AllBuffered, -1);
         }
 
+        //face.rotation = Quaternion.Euler(0, 0, -transform.rotation.z);
+        //photonView.RPC("AdjustFaceRotation", RpcTarget.All);
+    }
+
+    public void AdjustFaceRotation()
+    {
         face.rotation = Quaternion.Euler(0, 0, -transform.rotation.z);
+    }
+
+    [PunRPC]
+    public void AdjustScale(Vector2 movement)
+    {
+        if (movement.x > 0)
+            face.localScale = Vector3.one;
+        else
+            face.localScale = new Vector3(-1, 1, 1);
     }
 
     private void RunnerMouseUpdate()

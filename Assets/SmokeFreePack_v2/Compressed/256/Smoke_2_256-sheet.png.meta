@@ -312,6 +312,58 @@ TextureImporter:
     ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WindowsStoreApps
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
     sprites:
@@ -1934,7 +1986,80 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      Smoke_2_256-sheet_0: 8098539694048938932
+      Smoke_2_256-sheet_1: 227692429453658092
+      Smoke_2_256-sheet_10: 3730126521246275414
+      Smoke_2_256-sheet_11: 6928243130129265675
+      Smoke_2_256-sheet_12: 93382237365809887
+      Smoke_2_256-sheet_13: 5818223140154051798
+      Smoke_2_256-sheet_14: 1262704732385679043
+      Smoke_2_256-sheet_15: 2906039222925355377
+      Smoke_2_256-sheet_16: 6774629905668103032
+      Smoke_2_256-sheet_17: -8734798160592908451
+      Smoke_2_256-sheet_18: -8371770150101458485
+      Smoke_2_256-sheet_19: -3832185397208199648
+      Smoke_2_256-sheet_2: -8532039616864068287
+      Smoke_2_256-sheet_20: -5555272253609300401
+      Smoke_2_256-sheet_21: -6929247842532369902
+      Smoke_2_256-sheet_22: -3077147533145467068
+      Smoke_2_256-sheet_23: -5689031460088060267
+      Smoke_2_256-sheet_24: 6040647843815763862
+      Smoke_2_256-sheet_25: 1459591541275390900
+      Smoke_2_256-sheet_26: 5583983515014725108
+      Smoke_2_256-sheet_27: 8241415300418228481
+      Smoke_2_256-sheet_28: 1321115258224336269
+      Smoke_2_256-sheet_29: 7442788227244964453
+      Smoke_2_256-sheet_3: 2540614327938258170
+      Smoke_2_256-sheet_30: 5040673230452444983
+      Smoke_2_256-sheet_31: 2400810393917423876
+      Smoke_2_256-sheet_32: 553058159263703019
+      Smoke_2_256-sheet_33: 3486451807342596357
+      Smoke_2_256-sheet_34: 2380565899157411273
+      Smoke_2_256-sheet_35: -8600684250082058129
+      Smoke_2_256-sheet_36: 5395025618078868864
+      Smoke_2_256-sheet_37: 5193945650268622573
+      Smoke_2_256-sheet_38: -6568401790144015052
+      Smoke_2_256-sheet_39: 6487720632545034580
+      Smoke_2_256-sheet_4: 5416554755537412052
+      Smoke_2_256-sheet_40: 3270337228685854576
+      Smoke_2_256-sheet_41: -8729810650718305415
+      Smoke_2_256-sheet_42: -4970363155055144537
+      Smoke_2_256-sheet_43: -3073378272737445836
+      Smoke_2_256-sheet_44: -5223305897170334075
+      Smoke_2_256-sheet_45: 7439596755673696974
+      Smoke_2_256-sheet_46: 5198070204022732420
+      Smoke_2_256-sheet_47: 5169917868843281952
+      Smoke_2_256-sheet_48: -7224787856402649241
+      Smoke_2_256-sheet_49: -6490813713516434028
+      Smoke_2_256-sheet_5: -7740914101879480964
+      Smoke_2_256-sheet_50: -3412237088096255927
+      Smoke_2_256-sheet_51: -5664650267140861371
+      Smoke_2_256-sheet_52: -1159411118596098422
+      Smoke_2_256-sheet_53: 8883546865447250821
+      Smoke_2_256-sheet_54: 1369019117754315628
+      Smoke_2_256-sheet_55: 5690556890684039000
+      Smoke_2_256-sheet_56: -4452156526331095045
+      Smoke_2_256-sheet_57: -4310988022301758193
+      Smoke_2_256-sheet_58: 3297224966475585053
+      Smoke_2_256-sheet_59: -6839747588025083196
+      Smoke_2_256-sheet_6: -295330003290725024
+      Smoke_2_256-sheet_60: -1274604094548844293
+      Smoke_2_256-sheet_61: -5123395287478784722
+      Smoke_2_256-sheet_62: -3396862122495740267
+      Smoke_2_256-sheet_63: 2232076952960190727
+      Smoke_2_256-sheet_64: 2139941303018281007
+      Smoke_2_256-sheet_65: -3540661763323696570
+      Smoke_2_256-sheet_66: 8547262178337942204
+      Smoke_2_256-sheet_67: 3489395761917713696
+      Smoke_2_256-sheet_68: 6086292639322160114
+      Smoke_2_256-sheet_69: -7735748775668837366
+      Smoke_2_256-sheet_7: 7192795622128711933
+      Smoke_2_256-sheet_70: 3568378686837675875
+      Smoke_2_256-sheet_71: 1413434075943888363
+      Smoke_2_256-sheet_72: -9214890638254168377
+      Smoke_2_256-sheet_8: -6858756602662296119
+      Smoke_2_256-sheet_9: -5791934303522479995
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
