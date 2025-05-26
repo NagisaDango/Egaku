@@ -41,7 +41,7 @@ namespace Allan
         public TMP_InputField nameField;
 
         private HashSet<string> roomInfoSet = new();
-        private bool devSpawn = false;
+        public bool devSpawn = false;
 
         public int levelCounts = 3;
         public int levelUnlocked = 3;
