@@ -82,6 +82,8 @@ MonoBehaviour:
   - AdjustScale
   - RPC_HoldBattery
   - RPC_ReleaseBattery
+  - RPC_SetHoldingEyes
+  - RPC_PlayGameBGM
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

@@ -29,7 +29,7 @@ public class RunnerMovement
 
     public void Move(Vector2 inputVector)
     {
-        Debug.Log("Moving");
+        //Debug.Log("Moving");
         Vector2 axis = GetMoveAxis().normalized * inputVector;
         rb.linearVelocity = new Vector2(axis.x * speed, axis.y * speed + rb.linearVelocity.y);
     }
@@ -61,7 +61,7 @@ public class RunnerMovement
     
     public bool GroundDetect()
     {
-        hit = Physics2D.Raycast(rb.transform.position, Vector2.down, 1.5f, LayerMask.GetMask("Platform", "Draw")); 
+        hit = Physics2D.Raycast(rb.transform.position, Vector2.down, 1.5f, LayerMask.GetMask("Platform", "Draw", "Battery")); 
         
         if (hit.collider == null)
         {

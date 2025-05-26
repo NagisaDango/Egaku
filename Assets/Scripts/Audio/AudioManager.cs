@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
@@ -47,7 +48,7 @@ public class AudioManager : MonoBehaviour, IOnEventCallback
     }
 
     private static Channel[] channels;
-    private Channel BGMChannel;
+    private static Channel BGMChannel;
 
     public static Dictionary<string, AudioClip> NameAudioPair;
 
@@ -61,10 +62,16 @@ public class AudioManager : MonoBehaviour, IOnEventCallback
         }
         BGMChannel.channel = this.gameObject.AddComponent<AudioSource>();
         BGMChannel.lastPlayed = 0;
+        BGMChannel.channel.loop = true;
 
         m_photonView = GetComponent<PhotonView>();
         InitAudioDict();
         DontDestroyOnLoad(this.gameObject);
+    }
+
+    private void Start()
+    {
+        PlayBGM(MENUBGM);
     }
 
     [PunRPC]
@@ -94,7 +101,12 @@ public class AudioManager : MonoBehaviour, IOnEventCallback
         NameAudioPair[ERASESFX] = eraseSFX;
     }
 
-    public static int PlayOne(string name, bool randomPitch)
+    public static void PlayBGM(string name)
+    {
+        BGMChannel.channel.clip = NameAudioPair[name];
+        BGMChannel.channel.Play();  
+    }
+    public static int PlayOne(string name, bool randomPitch = false)
     {
         for (int i = 0; i < channels.Length; ++i)
         {

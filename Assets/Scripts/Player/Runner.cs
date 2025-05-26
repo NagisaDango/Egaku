@@ -59,6 +59,10 @@ public class Runner : MonoBehaviourPunCallbacks
     [SerializeField] private SpriteRenderer mouth;
     [SerializeField] private SpriteRenderer color;
 
+    [SerializeField] private Sprite holdEyeLeft;
+    [SerializeField] private Sprite holdEyeRight;
+    [SerializeField] private Sprite ogEyes;
+
     #region Unity Execution Events
     private void Awake()
     {
@@ -128,7 +132,7 @@ public class Runner : MonoBehaviourPunCallbacks
         if (moveAction.ReadValue<Vector2>() != Vector2.zero)
         {
             Vector2 movement = moveAction.ReadValue<Vector2>();
-            print("Run input update: " + movement);
+            //print("Run input update: " + movement);
             _RunnerMovement.Move(movement);
             /*
             if (movement.x > 0)
@@ -155,6 +159,7 @@ public class Runner : MonoBehaviourPunCallbacks
         {
             if (holdingObjectID != -1)
             {
+                photonView.RPC("RPC_SetHoldingEyes", RpcTarget.All);
                 holdGO = PhotonView.Find(holdingObjectID).gameObject;
                 holdingObject = holdGO.GetComponent<HoldableObject>();
                 if (holdGO.CompareTag("Wood") || holdingObject is WoodPen)
@@ -244,8 +249,22 @@ public class Runner : MonoBehaviourPunCallbacks
     {
         leftEye.sprite = Resources.Load<Sprite>("Eyes/" + eyeType);
         rightEye.sprite = Resources.Load<Sprite>("Eyes/" + eyeType);
+        ogEyes = leftEye.sprite;
         mouth.sprite = Resources.Load<Sprite>("Mouth/" + mouthType);
         color.color = new Color(playerColor.x, playerColor.y, playerColor.z);
+    }
+
+    [PunRPC]
+    private void RPC_SetHoldingEyes()
+    {
+        leftEye.sprite = holdEyeLeft;
+        rightEye.sprite = holdEyeRight;
+    }
+    
+    private void ResetAppearance()
+    {
+        leftEye.sprite = ogEyes;
+        rightEye.sprite = ogEyes;
     }
 
     public void AdjustFaceRotation()
@@ -405,6 +424,7 @@ public class Runner : MonoBehaviourPunCallbacks
     [PunRPC]
     private void RPC_ReleaseWood()
     {
+        ResetAppearance();
         //fixedJoint2D.gameObject.layer = LayerMask.NameToLayer("Draw");
         _RunnerMovement.SetJumpAllowance(true);
         // TODO: only setting to wood here cuz its the only one that can be hold, might want to change, have a buffer holding the original tag name
@@ -441,6 +461,7 @@ public class Runner : MonoBehaviourPunCallbacks
     [PunRPC]
     private void RPC_ReleaseBattery()
     {
+        ResetAppearance();
         // TODO: only setting to wood here cuz its the only one that can be hold, might want to change, have a buffer holding the original tag name
         if (holdingObject != null)
         {

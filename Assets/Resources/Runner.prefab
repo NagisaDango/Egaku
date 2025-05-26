@@ -1040,7 +1040,7 @@ MonoBehaviour:
   actorNum: 0
   _ActionMap: {fileID: -944628639613478452, guid: e867bc50cb3156e42a79d69fa37878ad, type: 3}
   validHoldJump: 0
-  jumpForce: 20
+  jumpForce: 22
   maxSpeed: 8
   fixedJoint2D: {fileID: 6520781276632100566}
   batteryLayer:
@@ -1051,6 +1051,9 @@ MonoBehaviour:
   rightEye: {fileID: 2174589979212135281}
   mouth: {fileID: 7514584370489218643}
   color: {fileID: 1835077723966152671}
+  holdEyeLeft: {fileID: -2208510542369132325, guid: 3026edb30439a6e49a4e1ff2e8ec9192, type: 3}
+  holdEyeRight: {fileID: -4345969612696422427, guid: 36a23be1f09589a43944baff1b8332a8, type: 3}
+  ogEyes: {fileID: 0}
 --- !u!114 &530124913488223632
 MonoBehaviour:
   m_ObjectHideFlags: 0

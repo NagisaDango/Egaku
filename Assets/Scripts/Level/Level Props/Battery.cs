@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -153,6 +154,21 @@ public class Battery : MonoBehaviour, HoldableObject
     //TODO: Right now can infinite jump
     public bool ValidateHold()
     {
-        return true;
+        ContactFilter2D filter = new ContactFilter2D();
+        filter.useLayerMask = true;
+        filter.layerMask = LayerMask.GetMask("Draw", "Platform");
+        List<ContactPoint2D> contactPoints = new List<ContactPoint2D>();
+
+        if (col.GetContacts(filter, contactPoints) > 0)
+        {
+            foreach (ContactPoint2D point in contactPoints)
+            {
+                if (point.normal.y > 0.2f)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
