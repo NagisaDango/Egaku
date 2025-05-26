@@ -10,7 +10,7 @@ public class ElectricDoor : MonoBehaviour, IElectricControl
         DOTween.To(
             ()=> controllingDoor.transform.localScale,
             scale => controllingDoor.transform.localScale = scale,
-            Vector3.zero,
+            new Vector3(controllingDoor.transform.localScale.x, 0),
             1f).SetEase(Ease.Linear)
             .OnComplete(() => { controllingDoor.GetComponent<Collider2D>().enabled = false; });
     }
@@ -21,7 +21,7 @@ public class ElectricDoor : MonoBehaviour, IElectricControl
         DOTween.To(
                 ()=> controllingDoor.transform.localScale,
                 scale => controllingDoor.transform.localScale = scale,
-                Vector3.one,
+                new Vector3(controllingDoor.transform.localScale.x, 1),
                 1f).SetEase(Ease.Linear)
             .OnComplete(() => { controllingDoor.GetComponent<Collider2D>().enabled = true; });
     }
