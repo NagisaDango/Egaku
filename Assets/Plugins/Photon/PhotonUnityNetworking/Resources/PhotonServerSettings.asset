@@ -84,6 +84,7 @@ MonoBehaviour:
   - RPC_ReleaseBattery
   - RPC_SetHoldingEyes
   - RPC_PlayGameBGM
+  - RPC_QueueDialogue
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

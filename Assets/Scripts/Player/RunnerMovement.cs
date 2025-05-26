@@ -13,6 +13,8 @@ public class RunnerMovement
     Rigidbody2D rb;
     RaycastHit2D hit;
     private int extraJump;
+    private float lastGroundTime;
+    private float jumpBufferTime = 0.1f;
 
     public RunnerMovement(Rigidbody2D rg2d, float speed, int maxSpeed)
     {
@@ -36,7 +38,7 @@ public class RunnerMovement
 
     public void Jump(int jumpForce, bool directAllowance)
     {
-        if (directAllowance || GroundDetect())
+        if (directAllowance || GroundDetect() || lastGroundTime > Time.time - jumpBufferTime)
         {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce + extraJump);
             PhotonNetwork.RaiseEvent(AudioManager.PlayAudioEventCode, new object[] { AudioManager.JUMPSFX, false },
@@ -80,6 +82,7 @@ public class RunnerMovement
             return false;
         }
         
+        lastGroundTime = Time.time;
         return true;
     }
 }

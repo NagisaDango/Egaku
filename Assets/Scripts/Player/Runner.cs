@@ -168,6 +168,13 @@ public class Runner : MonoBehaviourPunCallbacks
                 }
                 else if (holdGO.CompareTag("Battery") || holdingObject is Battery)
                 {
+                    if (inBattery)
+                    {
+                        print("Getting battery from gate");
+                        inBattery = false;
+                        Battery battery = holdingObject as Battery;
+                        battery.DisconnectFromElectric();
+                    }
                     photonView.RPC("RPC_HoldBattery", RpcTarget.All);
                 }
             }
@@ -444,7 +451,14 @@ public class Runner : MonoBehaviourPunCallbacks
         extraJumpForce = 0;
         holding = false;
     }
+    
+    
+    private bool inBattery = false;
 
+    private void TakeOutBattery(GameObject battery)
+    {
+        holdingObjectID = battery.GetPhotonView().ViewID;
+    }
 
     [PunRPC]
     private void RPC_HoldBattery()
@@ -502,12 +516,20 @@ public class Runner : MonoBehaviourPunCallbacks
     {
         if (other.tag == "DeathDesuwa")
         {
+            holdingObjectID = other.gameObject.GetPhotonView().ViewID;
             Revive();
         }
     }
-
+    
+    
     private void OnTriggerStay2D(Collider2D other)
     {
+        if (other.CompareTag("Battery") && holdingObjectID == -1)
+        {
+            holdingObjectID = other.gameObject.GetPhotonView().ViewID;
+            inBattery = true;
+        }
+        
         if (other.tag.StartsWith("Electric") && !other.CompareTag("Electric"))
         {
             inElectric = true;
@@ -516,7 +538,13 @@ public class Runner : MonoBehaviourPunCallbacks
     }
 
     private void OnTriggerExit2D(Collider2D other)
-    {
+    {        
+        if (other.CompareTag("Battery"))
+        {
+            // TODO: Might cause error here since everytime passby would be set to -1, even when holding other object
+            holdingObjectID = -1;
+            inBattery = false;
+        }
         if (other.tag.StartsWith("Electric") && !movingAlongElectric)
         {
             inElectric = false;

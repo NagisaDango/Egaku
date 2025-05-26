@@ -10,7 +10,7 @@ public class Battery : MonoBehaviour, HoldableObject
     private bool simulatedStatus;
     private float ogMass;
     [SerializeField] public float radius;
-    [SerializeField] private GameObject controlObj; 
+    [SerializeField] private IElectricControl controlObj; 
     public float distance = 10f; // Define a max distance for visualization
     public LayerMask playerLayer; // Assign this in the Inspector
 
@@ -127,6 +127,20 @@ public class Battery : MonoBehaviour, HoldableObject
         }
     }
 
+    public void DisconnectFromElectric()
+    {
+        controlObj.BatteryOut();
+        rb.bodyType = RigidbodyType2D.Dynamic;
+        col.isTrigger = false;
+        controlObj = null;
+    }
+
+    public void ConnectToElectric(IElectricControl obj)
+    {
+        controlObj = obj;
+        rb.bodyType = RigidbodyType2D.Static;
+        col.isTrigger = true;
+    }
     
     public void Reset()
     {

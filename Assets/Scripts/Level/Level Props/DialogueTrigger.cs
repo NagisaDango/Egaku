@@ -10,6 +10,7 @@ public class DialogueTrigger : MonoBehaviourPun
     [SerializeField] private TMP_Text textDisplay;
     [SerializeField] private List<string> sentences;
     [SerializeField] private GameObject iconImage;
+    public static LevelTip tipsGO;
 
     private int index = 0;
     private bool displaying = false;
@@ -22,7 +23,10 @@ public class DialogueTrigger : MonoBehaviourPun
     
     }
 
-
+    public static void InitBinding(LevelTip tip)
+    {
+        tipsGO = tip;
+    }
 
     // Method to trigger the event
     public void TriggerEvent()
@@ -38,6 +42,7 @@ public class DialogueTrigger : MonoBehaviourPun
         {
             displaying = true;
             textDisplay.transform.parent.gameObject.SetActive(true);
+            StopAllCoroutines();
             StartCoroutine(DisplaySentence());
         }
     }
@@ -70,7 +75,11 @@ public class DialogueTrigger : MonoBehaviourPun
     {
         if (other.CompareTag("Player"))
         {
-            photonView.RPC("RPC_ShowDialogue", RpcTarget.All);
+            object[] sentenceArray = sentences.ToArray();
+            TriggerEvent();
+            tipsGO.photonView.RPC("RPC_QueueDialogue", RpcTarget.AllBuffered, sentenceArray);
+            Destroy(this.gameObject);
+            //photonView.RPC("RPC_ShowDialogue", RpcTarget.All);
             //ShowDialogue();
         }
     }

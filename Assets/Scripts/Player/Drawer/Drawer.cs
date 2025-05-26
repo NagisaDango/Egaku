@@ -58,7 +58,7 @@ public class Drawer : MonoBehaviourPun
         //}
         //inkSlider = GameObject.Find("Canvas/Slider").GetComponent<Slider>();
 
-
+        currentPenType = PenUI.PenType.None;
         if (photonView.IsMine)
         {
             GameObject UI = Instantiate(drawerPanelPrefab).transform.GetChild(0).gameObject;
@@ -107,7 +107,7 @@ public class Drawer : MonoBehaviourPun
 
     void Update()
     {
-        if(!photonView.IsMine)
+        if(!photonView.IsMine || currentPenType == PenUI.PenType.None)
             return;
 
         if (Input.GetMouseButtonDown(0))//&& !EventSystem.current.IsPointerOverGameObject())

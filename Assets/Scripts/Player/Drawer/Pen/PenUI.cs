@@ -26,7 +26,8 @@ public class PenUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, I
       Cloud,
       Electric,
       Steel,
-      Eraser
+      Eraser,
+      None
     };
 
     private void Start()
