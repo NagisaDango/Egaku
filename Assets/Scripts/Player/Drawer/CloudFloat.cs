@@ -6,8 +6,10 @@ public class CloudFloat : MonoBehaviour
 {
     public float amplitude = 0.5f; // 摆动幅度（上下移动的最大距离）
     public float speed = 2.0f;     // 摆动速度（控制摆动的快慢）
-    public float bounceMagnitude = 150.0f;
-    
+    public float bounceMagnitude = 200.0f;
+    public float bounceMagnitudeSteel = 500.0f;
+
+
     private Vector3 startPos;
     private PhotonView photonView;
     private float timeSinceLastValidSurface = 0f;
@@ -46,12 +48,20 @@ public class CloudFloat : MonoBehaviour
             Vector3 bounceDirection = - contact.normal;
             
             //Only bounce if going up
-            if(bounceDirection.y > 0.15f)
-                rb.AddForce(bounceDirection * bounceMagnitude, ForceMode2D.Impulse);
+            //if(bounceDirection.y > 0.15f)
+            //    rb.AddForce(bounceDirection * bounceMagnitude, ForceMode2D.Impulse);
+
 
             if (other.gameObject.tag == "Steel")
             {
+                if (bounceDirection.y > 0.15f)
+                    rb.AddForce(bounceDirection * bounceMagnitudeSteel, ForceMode2D.Impulse);
                 this.GetComponent<DrawMesh>().SelfDestroy();
+            }
+            else
+            {
+                if (bounceDirection.y > 0.15f)
+                    rb.AddForce(bounceDirection * bounceMagnitude, ForceMode2D.Impulse);
             }
         }
     }
