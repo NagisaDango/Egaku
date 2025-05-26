@@ -16,6 +16,7 @@ TagManager:
   - ClickToErase
   - Final
   - Battery
+  - Bound
   layers:
   - Default
   - TransparentFX

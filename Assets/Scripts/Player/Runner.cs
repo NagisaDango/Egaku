@@ -348,8 +348,8 @@ public class Runner : MonoBehaviourPunCallbacks
         revivePos = pos;
     }
 
-
-    private void Revive()
+    
+    public void Revive()
     {
         photonView.RPC("RPC_ReleaseWood", RpcTarget.All);
         rb.linearVelocity = Vector2.zero;

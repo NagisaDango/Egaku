@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.Splines;
 using UnityEngine.U2D;
 using Spline = UnityEngine.Splines.Spline;
+using Allan;
 
 public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
 {
@@ -81,7 +82,7 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
             InteractSetting();
         
         
-        if (photonView.IsMine)
+        if (photonView.IsMine && !GameManager.Instance.devSpawn)
         {
             GetComponent<Rigidbody2D>().simulated = false;
         }

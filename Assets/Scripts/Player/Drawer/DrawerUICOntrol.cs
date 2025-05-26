@@ -3,6 +3,7 @@ using DG.Tweening;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class DrawerUICOntrol : MonoBehaviour
 {
@@ -10,10 +11,15 @@ public class DrawerUICOntrol : MonoBehaviour
     Dictionary<PenUI.PenType, PenUI> penUI = new Dictionary<PenUI.PenType, PenUI>();
     [SerializeField] private Transform penHolder;
     public bool panelStatus;
+
+    [SerializeField] private Button unLockBtn;
+
+
     private void Awake()
     {
         //OpenDrawerPanel();
         InitDictionary();
+        CloseDrawerPanel();
     }
 
     private void InitDictionary()
@@ -35,7 +41,17 @@ public class DrawerUICOntrol : MonoBehaviour
             penUI[penType].penImage.enabled = false;
         }
     }
-    
+
+    public void UnlockAllPen()
+    {
+        TogglePenStatus(PenUI.PenType.Wood, true);
+        TogglePenStatus(PenUI.PenType.Cloud, true);
+        TogglePenStatus(PenUI.PenType.Steel, true);
+        TogglePenStatus(PenUI.PenType.Electric, true);
+
+    }
+
+
     private void Update()
     {
         if (Input.GetMouseButtonDown(0)) // Left-click detection
