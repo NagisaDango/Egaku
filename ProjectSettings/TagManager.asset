@@ -15,6 +15,7 @@ TagManager:
   - Holding
   - ClickToErase
   - Final
+  - Bound
   layers:
   - Default
   - TransparentFX

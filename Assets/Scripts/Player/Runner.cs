@@ -126,7 +126,7 @@ public class Runner : MonoBehaviourPunCallbacks
         _RunnerMovement.Update();
         if(runnerMouse)
             RunnerMouseUpdate();
-        print("Run update");
+        //print("Run update");
         if (moveAction.ReadValue<Vector2>() != Vector2.zero)
         {
             Vector2 movement = moveAction.ReadValue<Vector2>();
@@ -272,7 +272,7 @@ public class Runner : MonoBehaviourPunCallbacks
     }
 
     
-    private void Revive()
+    public void Revive()
     {
         photonView.RPC("RPC_ReleaseWood", RpcTarget.All);
         rb.linearVelocity = Vector2.zero;
