@@ -124,7 +124,7 @@ public class Runner : MonoBehaviourPunCallbacks
         _RunnerMovement.Update();
         if (runnerMouse)
             RunnerMouseUpdate();
-        print("Run update");
+        //print("Run update");
         if (moveAction.ReadValue<Vector2>() != Vector2.zero)
         {
             Vector2 movement = moveAction.ReadValue<Vector2>();
@@ -141,7 +141,8 @@ public class Runner : MonoBehaviourPunCallbacks
 
         if (Input.GetKeyDown(KeyCode.E) && inElectric && interactingObject != null)
         {
-            MoveAlongElectric();
+            if(DetectElectricField())
+                MoveAlongElectric();
         }
 
         if (jumpAction.triggered)
@@ -175,6 +176,28 @@ public class Runner : MonoBehaviourPunCallbacks
                 photonView.RPC("RPC_ReleaseBattery", RpcTarget.All);
         }
 
+        if (movingAlongElectric)
+        {
+            if (!DetectElectricField())
+            {
+                col.enabled = true;
+                rb.simulated = true;
+                if (holdingObject != null)
+                {
+                    holdingObject.ToggleCollider(true);
+                    holdingObject.ToggleRbSimulated();
+                }
+                if (reversed)
+                {
+                    splineAnimate.Container.ReverseFlow(0);
+                    reversed = false;
+                }
+                splineAnimate = null;
+                movingAlongElectric = false;
+                photonView.RPC("RPC_SetParent", RpcTarget.AllBuffered, -1);
+            }
+        }
+        
         if (splineAnimate != null && splineAnimate.NormalizedTime >= 1)
         {
             col.enabled = true;
@@ -300,6 +323,10 @@ public class Runner : MonoBehaviourPunCallbacks
     {
         //setting 200 as the longest radius just cuz no battery can exceed that
         //可優化: 現在為每次調用，改為當超出第一次檢測時得到的radius後再重新Raycast檢測
+        if (holdingObject is Battery)
+        {
+            return true;
+        }
         RaycastHit2D hit = Physics2D.CircleCast(transform.position, 200, Vector2.zero, 0, batteryLayer); 
         if (hit.collider == null)
         {
