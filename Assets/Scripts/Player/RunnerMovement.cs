@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using ExitGames.Client.Photon;
 using Photon.Pun;
 using Photon.Realtime;
+using Unity.VisualScripting.FullSerializer;
 using UnityEngine;
 
 public class RunnerMovement
@@ -63,8 +64,11 @@ public class RunnerMovement
     
     public bool GroundDetect()
     {
-        hit = Physics2D.Raycast(rb.transform.position, Vector2.down, 1.5f, LayerMask.GetMask("Platform", "Draw", "Battery")); 
-        
+        hit = Physics2D.Raycast(rb.transform.position - new Vector3(0,0.5f,0), Vector2.down, 1f, LayerMask.GetMask("Platform", "Draw", "Battery")); 
+        //RaycastHit2D[] hitAll = new RaycastHit2D[10];
+        //var size = Physics2D.RaycastNonAlloc(rb.transform.position, Vector2.down, hitAll, 1.5f, LayerMask.GetMask("Platform", "Draw", "Battery")); 
+        if (hit.collider != null)
+            Debug.Log(hit.collider.tag);
         if (hit.collider == null || (hit.collider.isTrigger && !hit.collider.gameObject.CompareTag("Holding")))
         {
             rb.linearDamping = 0;

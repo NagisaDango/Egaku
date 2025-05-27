@@ -75,7 +75,8 @@ public class DialogueTrigger : MonoBehaviourPun
     {
         if (other.CompareTag("Player"))
         {
-            object[] sentenceArray = sentences.ToArray();
+            string[] sentenceArray = sentences.ToArray();
+            print(sentenceArray.GetType() + " typeeeeee");
             TriggerEvent();
             tipsGO.photonView.RPC("RPC_QueueDialogue", RpcTarget.AllBuffered, sentenceArray);
             Destroy(this.gameObject);

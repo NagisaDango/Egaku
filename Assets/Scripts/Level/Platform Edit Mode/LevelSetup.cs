@@ -7,7 +7,10 @@ public class LevelSetup : MonoBehaviour
     [SerializeField] private Vector2 revivePos;
     private DrawerUICOntrol drawerUI;
     [SerializeField] private CinemachineCamera _camera;
-    
+    [SerializeField] private bool WoodEnable;
+    [SerializeField] private bool CloudEnable;
+    [SerializeField] private bool SteelEnable;
+    [SerializeField] private bool ElectricEnable;
     public void Init(Runner runner)
     {
         runner.GetComponent<Runner>().SetRevivePos(revivePos);
@@ -35,10 +38,10 @@ public class LevelSetup : MonoBehaviour
     {
         if (drawerUI != null)
         {
-            drawerUI.TogglePenStatus(PenUI.PenType.Wood, false);
-            drawerUI.TogglePenStatus(PenUI.PenType.Cloud, false);
-            drawerUI.TogglePenStatus(PenUI.PenType.Electric, false);
-            drawerUI.TogglePenStatus(PenUI.PenType.Steel, false);
+            if(!WoodEnable) drawerUI.TogglePenStatus(PenUI.PenType.Wood, false);
+            if(!CloudEnable) drawerUI.TogglePenStatus(PenUI.PenType.Cloud, false);
+            if(!ElectricEnable) drawerUI.TogglePenStatus(PenUI.PenType.Electric, false);
+            if(!SteelEnable) drawerUI.TogglePenStatus(PenUI.PenType.Steel, false);
         }
         else
         {

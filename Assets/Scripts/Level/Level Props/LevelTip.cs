@@ -24,6 +24,8 @@ public class LevelTip : MonoBehaviourPun
     {
         foreach (string s in dialogue)
         {
+            if(s == "")
+                continue;
             dialogueQueue.Enqueue(s);
         }
 
