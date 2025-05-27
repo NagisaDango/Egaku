@@ -8,6 +8,7 @@ public class Battery : MonoBehaviour, HoldableObject
     private Collider2D col;
     private Rigidbody2D rb;
     private bool simulatedStatus;
+    private Vector2 lastContactPoint;
     private float ogMass;
     [SerializeField] public float radius;
     [SerializeField] private IElectricControl controlObj; 
@@ -140,6 +141,11 @@ public class Battery : MonoBehaviour, HoldableObject
         controlObj = obj;
         rb.bodyType = RigidbodyType2D.Static;
         col.isTrigger = true;
+    }    
+    
+    private void OnCollisionStay2D(Collision2D other)
+    {
+        lastContactPoint = other.contacts[0].point;
     }
     
     public void Reset()
@@ -147,6 +153,7 @@ public class Battery : MonoBehaviour, HoldableObject
         this.gameObject.tag = "Battery";
         this.transform.SetParent(null);
         rb.mass = ogMass;
+        lastContactPoint = Vector2.negativeInfinity;
     }
 
     public void ToggleCollider(bool status)
@@ -181,6 +188,15 @@ public class Battery : MonoBehaviour, HoldableObject
                 {
                     return true;
                 }
+            }
+        }        
+        if (lastContactPoint != Vector2.negativeInfinity)
+        {
+            RaycastHit2D hit = Physics2D.Raycast(lastContactPoint, Vector2.up, 0.5f, LayerMask.GetMask( "Battery"));
+            if (hit.collider != null)
+            {
+                print("Layer " + hit.collider.gameObject.name);
+                return true;
             }
         }
         return false;

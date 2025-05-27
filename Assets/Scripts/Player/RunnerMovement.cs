@@ -65,9 +65,13 @@ public class RunnerMovement
     {
         hit = Physics2D.Raycast(rb.transform.position, Vector2.down, 1.5f, LayerMask.GetMask("Platform", "Draw", "Battery")); 
         
-        if (hit.collider == null)
+        if (hit.collider == null || (hit.collider.isTrigger && !hit.collider.gameObject.CompareTag("Holding")))
         {
             rb.linearDamping = 0;
+            return false;
+        }
+        if (hit.collider.gameObject.CompareTag("Holding"))
+        {
             return false;
         }
 
@@ -76,12 +80,8 @@ public class RunnerMovement
         else
             extraJump = 0;
 
-        rb.linearDamping = 5;
-        if (hit.collider.gameObject.CompareTag("Holding"))
-        {
-            return false;
-        }
         
+        rb.linearDamping = 5;
         lastGroundTime = Time.time;
         return true;
     }

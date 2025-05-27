@@ -132,8 +132,9 @@ public class Runner : MonoBehaviourPunCallbacks
         if (moveAction.ReadValue<Vector2>() != Vector2.zero)
         {
             Vector2 movement = moveAction.ReadValue<Vector2>();
+            
             //print("Run input update: " + movement);
-            _RunnerMovement.Move(movement);
+            _RunnerMovement.Move(new Vector2(movement.x, 0));
             /*
             if (movement.x > 0)
                 face.localScale = Vector3.one;
@@ -168,14 +169,16 @@ public class Runner : MonoBehaviourPunCallbacks
                 }
                 else if (holdGO.CompareTag("Battery") || holdingObject is Battery)
                 {
+                    photonView.RPC("RPC_HoldBattery", RpcTarget.All);
                     if (inBattery)
                     {
                         print("Getting battery from gate");
                         inBattery = false;
                         Battery battery = holdingObject as Battery;
                         battery.DisconnectFromElectric();
+                        Vector3 temp = holdGO.transform.localPosition;
+                        holdGO.transform.localPosition = temp.normalized;
                     }
-                    photonView.RPC("RPC_HoldBattery", RpcTarget.All);
                 }
             }
         }
