@@ -9,6 +9,7 @@ using ExitGames.Client.Photon;
 using System.Collections.Generic;
 using WebSocketSharp;
 using Hashtable = ExitGames.Client.Photon.Hashtable;
+using JetBrains.Annotations;
 
 
 
@@ -101,7 +102,52 @@ namespace Allan
             //go.UpdateProperty(roomSelection, roleSelection, levelSelection, gridLayout, nameField);
             leaveGameButton.onClick.AddListener(() => { LeaveRoom(); });
         }
+        void Start()
+        {
+            //if(Instance == null)
+            //{
+            //    Instance = this;
+            //}
+            //else
+            //{
+            //    Destroy(this);
+            //}
 
+            if (runnerPrefab == null || drawerPrefab == null)
+            {
+                Debug.LogError("<Color=Red><a>Missing</a></Color> playerPrefab Reference. Please set it up in GameObject 'Game Manager'", this);
+            }
+            else
+            {
+                if (Runner.LocalPlayerInstance == null)
+                {
+                    Debug.LogFormat("We are Instantiating LocalPlayer from {0}", SceneManagerHelper.ActiveSceneName);
+                    // we're in a room. spawn a character for the local player. it gets synced by using PhotonNetwork.Instantiate
+                    //PhotonNetwork.Instantiate(this.playerPrefab.name, new Vector3(0f, 5f, 0f), Quaternion.identity, 0);
+                }
+                else
+                {
+                    Debug.LogFormat("Ignoring scene load for {0}", SceneManagerHelper.ActiveSceneName);
+                }
+            }
+            //DontDestroyOnLoad(this.gameObject);
+            //Instance = this;
+        }
+
+        public override void OnEnable()
+        {
+            base.OnEnable();
+            SceneManager.sceneLoaded += OnSceneLoaded;
+            //EventHandler.ReachDestinationEvent += OnReachDestination;
+        }
+
+        public override void OnDisable()
+        {
+            base.OnDisable();
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            //EventHandler.ReachDestinationEvent -= OnReachDestination;
+
+        }
 
 
 
@@ -176,52 +222,24 @@ namespace Allan
 
 
 
-        public override void OnEnable()
+
+
+
+        public void BackToHomePage()
         {
-            base.OnEnable();
-            SceneManager.sceneLoaded += OnSceneLoaded;
-            //EventHandler.ReachDestinationEvent += OnReachDestination;
+            PhotonNetwork.LoadLevel("AllanLaunch");
         }
 
-        public override void OnDisable()
+        public void BackToRoomSelectionPage()
         {
-            base.OnDisable();
-            SceneManager.sceneLoaded -= OnSceneLoaded;
-            //EventHandler.ReachDestinationEvent -= OnReachDestination;
-
+            PhotonNetwork.LoadLevel("RoleSelection");
+            //LoadLevelSelection();
         }
 
-
-        void Start()
+        public void ExitGame()
         {
-            //if(Instance == null)
-            //{
-            //    Instance = this;
-            //}
-            //else
-            //{
-            //    Destroy(this);
-            //}
-
-            if (runnerPrefab == null || drawerPrefab == null)
-            {
-                Debug.LogError("<Color=Red><a>Missing</a></Color> playerPrefab Reference. Please set it up in GameObject 'Game Manager'", this);
-            }
-            else
-            {
-                if (Runner.LocalPlayerInstance == null)
-                {
-                    Debug.LogFormat("We are Instantiating LocalPlayer from {0}", SceneManagerHelper.ActiveSceneName);
-                    // we're in a room. spawn a character for the local player. it gets synced by using PhotonNetwork.Instantiate
-                    //PhotonNetwork.Instantiate(this.playerPrefab.name, new Vector3(0f, 5f, 0f), Quaternion.identity, 0);
-                }
-                else
-                {
-                    Debug.LogFormat("Ignoring scene load for {0}", SceneManagerHelper.ActiveSceneName);
-                }
-            }
-            //DontDestroyOnLoad(this.gameObject);
-            //Instance = this;
+            LeaveRoom();
+            Application.Quit();
         }
 
 
@@ -230,9 +248,15 @@ namespace Allan
             print("Enter OnReachDestination");
             if(true)//PhotonNetwork.IsMasterClient)
             {
-                if (currentLevel == levelUnlocked)
+                if (currentLevel+1 == levelUnlocked)
                 {
                     levelUnlocked++;
+
+                    if(levelUnlocked >= levelCounts)
+                    {
+                        PhotonNetwork.LoadLevel("FinishGame");
+                    }
+
                     currentLevel = levelUnlocked;
                     //LoadLevel(currentLevel);
                     photonView.RPC("RPC_LoadLevel", RpcTarget.All, currentLevel);
@@ -302,41 +326,6 @@ namespace Allan
         /// <summary>
         /// Called when the local player left the room. We need to load the launcher scene.
         /// </summary>
-        public override void OnLeftRoom()
-        {
-            Debug.Log("Enter Callback OnLeftRoom");
-            PhotonNetwork.LoadLevel("RoleSelection");
-            /*
-            UpdateProperty();
-
-            SceneManager.LoadScene(0);
-            if (PhotonNetwork.InLobby)
-            {
-                Debug.Log("OnLeftRoom: go back to room selection page");
-                roomSelection.SetActive(true);
-                roleSelection.SetActive(false);
-                levelSelection.SetActive(false);
-
-            }
-            */
-
-
-
-            //Hashtable roomProperties = currentRoom.CustomProperties;
-
-            //if (roomProperties["p1"] == PhotonNetwork.NickName)
-            //    roomProperties["p1"] = "";
-            //if (roomProperties["p2"] == PhotonNetwork.NickName)
-            //    roomProperties["p2"] = "";
-
-            //currentRoom.SetCustomProperties(roomProperties);
-
-            //PhotonNetwork.LeaveLobby();
-            //PhotonNetwork.JoinLobby();
-            //JoinLobbyAfterDelay();
-            //Invoke("JoinLobbyAfterDelay", 0.5f);
-
-        }
 
 
         private Room currentRoom;
@@ -349,34 +338,34 @@ namespace Allan
 
         public void LeaveRoom()
         {
-            currentRoom = PhotonNetwork.CurrentRoom;
+            //currentRoom = PhotonNetwork.CurrentRoom;
 
-            Hashtable roomProperties = PhotonNetwork.CurrentRoom.CustomProperties;
-            photonView.RPC("RPC_RemoveRoomInfoSet", RpcTarget.All, PhotonNetwork.CurrentRoom.Name);
-            Debug.Log($"Cleaning {roomProperties["p1"]}， {roomProperties["p2"]}， {PhotonNetwork.NickName}");
+            //Hashtable roomProperties = PhotonNetwork.CurrentRoom.CustomProperties;
+            //photonView.RPC("RPC_RemoveRoomInfoSet", RpcTarget.All, PhotonNetwork.CurrentRoom.Name);
+            //Debug.Log($"Cleaning {roomProperties["p1"]}， {roomProperties["p2"]}， {PhotonNetwork.NickName}");
 
-            if ((string)roomProperties["p1"] == PhotonNetwork.NickName)
-            {
-                Debug.Log("Cleaning p1");
-                roomProperties["p1"] = "";
-            }
-            if ((string)roomProperties["p2"] == PhotonNetwork.NickName)
-            {
-                Debug.Log("Cleaning p2");
-                roomProperties["p2"] = "";
-            }
+            //if ((string)roomProperties["p1"] == PhotonNetwork.NickName)
+            //{
+            //    Debug.Log("Cleaning p1");
+            //    roomProperties["p1"] = "";
+            //}
+            //if ((string)roomProperties["p2"] == PhotonNetwork.NickName)
+            //{
+            //    Debug.Log("Cleaning p2");
+            //    roomProperties["p2"] = "";
+            //}
 
-            if((string) roomProperties["p1"] == "" && (string)roomProperties["p2"] == "")
-            {
-                roomProperties["show"] = false;
-            }
-            else
-            {
-                roomProperties["show"] = true;
-            }
+            //if((string) roomProperties["p1"] == "" && (string)roomProperties["p2"] == "")
+            //{
+            //    roomProperties["show"] = false;
+            //}
+            //else
+            //{
+            //    roomProperties["show"] = true;
+            //}
 
 
-            PhotonNetwork.CurrentRoom.SetCustomProperties(roomProperties);
+            //PhotonNetwork.CurrentRoom.SetCustomProperties(roomProperties);
             //RefreshRoomList();
             PhotonNetwork.LeaveRoom();
             //PhotonNetwork.LeaveLobby();
@@ -384,46 +373,6 @@ namespace Allan
             //PhotonNetwork.JoinLobby();
         }
 
-        public override void OnConnectedToMaster()
-        {
-            Debug.Log("Enter Callback OnConnectedToMaster");
-            JoinLobbyAfterDelay();
-            //RefreshRoomList();
-
-            //PhotonNetwork.LeaveLobby();
-            //PhotonNetwork.JoinLobby();
-        }
-
-        public override void OnPlayerEnteredRoom(Player other)
-        {
-            Debug.Log("Enter Callback OnPlayerEnteredRoom");
-
-            Debug.LogFormat("OnPlayerEnteredRoom() {0}", other.NickName); // not seen if you're the player connecting
-
-            if (PhotonNetwork.IsMasterClient)
-            {
-                Debug.LogFormat("OnPlayerEnteredRoom IsMasterClient {0}", PhotonNetwork.IsMasterClient); // called before OnPlayerLeftRoom
-
-                //LoadArena();
-            }
-
-
-        }
-
-        public override void OnPlayerLeftRoom(Player other)
-        {
-            Debug.LogFormat("Enter Callback OnPlayerLeftRoom: {0} left room", other.NickName); // seen when other disconnects
-
-            if (PhotonNetwork.IsMasterClient)
-            {
-                Debug.LogFormat("OnPlayerLeftRoom IsMasterClient {0}", PhotonNetwork.IsMasterClient); // called before OnPlayerLeftRoom
-
-                //LoadArena();
-            }
-
-            PhotonNetwork.LeaveRoom();
-            PhotonNetwork.JoinLobby();
-        }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
@@ -445,7 +394,7 @@ namespace Allan
                 else SpawnPlayer();
 
             }
-            else if(scene.name == "RoleSelection")
+            else if (scene.name == "RoleSelection")
             {
                 Debug.Log("Scene RoleSelection loaded");
                 UpdateProperty();
@@ -462,6 +411,11 @@ namespace Allan
                     levelSelection.SetActive(false);
                 }
 
+            }
+            else if (scene.name == "AllanLauncher")
+            {
+                GameManager.Instance = null;
+                Destroy(gameObject);
             }
         }
 
@@ -508,20 +462,6 @@ namespace Allan
 
         }
 
-        public override void OnJoinedLobby()
-        {
-            Debug.Log("ding zhengasds");
-            List<Transform> childs = new List<Transform>();
-            foreach(Transform child in gridLayout)
-            {
-                childs.Add(child);
-            }
-
-            foreach(Transform child in childs)
-            {
-                DestroyImmediate(child.gameObject);
-            }
-        }
 
         string test = "";
 
@@ -602,36 +542,6 @@ namespace Allan
         }
 
 
-        public override void OnJoinedRoom()
-        {
-
-            Debug.Log("Enter Callback OnJoinedRoom");
-            Debug.Log($"Room successfully created! Now joining the room...");
-            roomSelection.SetActive(false);
-            roleSelection.SetActive(true);
-            levelSelection.SetActive(false);
-
-
-            UpdateRoomPlayerList(PhotonNetwork.CurrentRoom.Players);
-
-
-            print("Room X" + PhotonNetwork.CurrentRoom.Name);
-            photonView.RPC("RPC_AddRoomInfoSet", RpcTarget.All, PhotonNetwork.CurrentRoom.Name);
-            Debug.Log("PUN Basics Tutorial/Launcher: OnJoinedRoom() called by PUN. Now this client is in a room.");
-            // #Critical: We only load if we are the first player, else we rely on `PhotonNetwork.AutomaticallySyncScene` to sync our instance scene.
-            if (PhotonNetwork.CurrentRoom.PlayerCount == 1)
-            {
-                Debug.Log("We load the RoleSelection with host: ");
-
-                //PhotonNetwork.LoadLevel("RoleSelection");
-                roomSelection.SetActive(false);
-                roleSelection.SetActive(true);
-                levelSelection.SetActive(false);
-
-            }
-            //RefreshRoomList();
-
-        }
 
         [PunRPC]
         public void RPC_AddRoomInfoSet(string roomName)
@@ -678,14 +588,171 @@ namespace Allan
 
 
         private List<RoomInfo> roomInfoList = new List<RoomInfo>();
+
+        #region Pun Callbacks
+        public override void OnConnectedToMaster()
+        {
+            Debug.Log("Enter Callback OnConnectedToMaster");
+            //JoinLobbyAfterDelay();
+            //RefreshRoomList();
+
+            //PhotonNetwork.LeaveLobby();
+            PhotonNetwork.JoinLobby();
+        }
+        public override void OnJoinedLobby()
+        {
+            Debug.Log("Enter Callback OnJoinedLobby");
+
+            //Debug.Log("ding zhengasds");
+            List<Transform> childs = new List<Transform>();
+            foreach (Transform child in gridLayout)
+            {
+                childs.Add(child);
+            }
+
+            foreach (Transform child in childs)
+            {
+                DestroyImmediate(child.gameObject);
+            }
+        }
+
+        public override void OnJoinedRoom()
+        {
+
+            Debug.Log("Enter Callback OnJoinedRoom");
+            Debug.Log($"Room successfully created! Now joining the room...");
+            roomSelection.SetActive(false);
+            roleSelection.SetActive(true);
+            levelSelection.SetActive(false);
+
+
+            UpdateRoomPlayerList(PhotonNetwork.CurrentRoom.Players);
+
+
+            print("Room X" + PhotonNetwork.CurrentRoom.Name);
+            photonView.RPC("RPC_AddRoomInfoSet", RpcTarget.All, PhotonNetwork.CurrentRoom.Name);
+            Debug.Log("PUN Basics Tutorial/Launcher: OnJoinedRoom() called by PUN. Now this client is in a room.");
+            // #Critical: We only load if we are the first player, else we rely on `PhotonNetwork.AutomaticallySyncScene` to sync our instance scene.
+            if (PhotonNetwork.CurrentRoom.PlayerCount == 1)
+            {
+                Debug.Log("We load the RoleSelection with host: ");
+
+                //PhotonNetwork.LoadLevel("RoleSelection");
+                //roomSelection.SetActive(false);
+                //roleSelection.SetActive(true);
+                //levelSelection.SetActive(false);
+
+            }
+            //RefreshRoomList();
+
+        }
+
+        public override void OnLeftRoom()
+        {
+            Debug.Log("Enter Callback OnLeftRoom");
+
+            if (SceneManager.GetActiveScene().name == "FinishGame")
+            {
+                PhotonNetwork.LeaveLobby();
+                PhotonNetwork.LoadLevel("AllanLauncher");
+            }
+            else
+            {
+                PhotonNetwork.LoadLevel("RoleSelection");
+            }
+            //PhotonNetwork.LoadLevel("RoleSelection");
+            /*
+            UpdateProperty();
+
+            SceneManager.LoadScene(0);
+            if (PhotonNetwork.InLobby)
+            {
+                Debug.Log("OnLeftRoom: go back to room selection page");
+                roomSelection.SetActive(true);
+                roleSelection.SetActive(false);
+                levelSelection.SetActive(false);
+
+            }
+            */
+
+
+
+            //Hashtable roomProperties = currentRoom.CustomProperties;
+
+            //if (roomProperties["p1"] == PhotonNetwork.NickName)
+            //    roomProperties["p1"] = "";
+            //if (roomProperties["p2"] == PhotonNetwork.NickName)
+            //    roomProperties["p2"] = "";
+
+            //currentRoom.SetCustomProperties(roomProperties);
+
+            //PhotonNetwork.LeaveLobby();
+            //PhotonNetwork.JoinLobby();
+            //JoinLobbyAfterDelay();
+            //Invoke("JoinLobbyAfterDelay", 0.5f);
+
+        }
+        public override void OnPlayerEnteredRoom(Player other)
+        {
+            Debug.Log("Enter Callback OnPlayerEnteredRoom");
+
+            Debug.LogFormat("OnPlayerEnteredRoom() {0}", other.NickName); // not seen if you're the player connecting
+
+            if (PhotonNetwork.IsMasterClient)
+            {
+                Debug.LogFormat("OnPlayerEnteredRoom IsMasterClient {0}", PhotonNetwork.IsMasterClient); // called before OnPlayerLeftRoom
+
+                //LoadArena();
+            }
+
+
+        }
+
+        public override void OnPlayerLeftRoom(Player other)
+        {
+            Debug.LogFormat("Enter Callback OnPlayerLeftRoom: {0} left room", other.NickName); // seen when other disconnects
+
+            //if (SceneManager.GetActiveScene().name == "FinishGame")
+            //{
+            //    //PhotonNetwork.LeaveLobby();
+            //    //PhotonNetwork.LoadLevel("AllanLauncher");
+            //}
+            //else
+            //{
+            //    if (PhotonNetwork.IsMasterClient)
+            //    {
+            //        Debug.LogFormat("OnPlayerLeftRoom IsMasterClient {0}", PhotonNetwork.IsMasterClient); // called before OnPlayerLeftRoom
+            //        PhotonNetwork.LoadLevel("RoleSelection");
+            //        //LoadArena();
+            //    }
+            //    else
+            //    {
+            //        PhotonNetwork.SetMasterClient(PhotonNetwork.LocalPlayer);
+            //        PhotonNetwork.LoadLevel("RoleSelection");
+            //    }
+
+            //}
+
+            LeaveRoom();
+            //PhotonNetwork.LeaveRoom();
+            //PhotonNetwork.JoinLobby();
+        }
+
         public override void OnRoomListUpdate(List<RoomInfo> roomList)
         {
             Debug.Log("Enter Callback OnRoomListUpdate");
+
+            //foreach (Transform child in gridLayout)
+            //{
+            //    DestroyImmediate(child.gameObject);
+            //}
+
+
             List<string> activeRooms = new List<string>();
             List<string> removingRooms = new List<string>();
             foreach (RoomInfo room in roomList)
             {
-                if(room.RemovedFromList)
+                if (room.RemovedFromList)
                 {
                     print("Removing room: " + room.Name);
                     removingRooms.Add(room.Name);
@@ -697,12 +764,11 @@ namespace Allan
                 }
             }
 
-            roomList.RemoveAll(room => room.RemovedFromList);
 
             List<Transform> toRemove = new List<Transform>();
             foreach (Transform child in gridLayout)
             {
-                if(removingRooms.Contains(child.name) || activeRooms.Contains(child.name))
+                if (removingRooms.Contains(child.name) || activeRooms.Contains(child.name))
                 {
                     toRemove.Add(child);
 
@@ -714,7 +780,13 @@ namespace Allan
                 DestroyImmediate(child.gameObject);
             }
 
-            print("__");
+            foreach (RoomInfo r in roomList)
+            {
+                print(r.Name + r.RemovedFromList);
+            }
+
+            roomList.RemoveAll(room => room.RemovedFromList);
+            print("____");
             foreach (RoomInfo room in roomList)
             {
 
@@ -755,9 +827,8 @@ namespace Allan
 
             }
 
+
         }
-
-
         public override void OnRoomPropertiesUpdate(Hashtable propertiesThatChanged)
         {
             Debug.Log("Enter Callback OnRoomPropertiesUpdate");
@@ -766,5 +837,6 @@ namespace Allan
                 Debug.Log($"Room Properly changed:{key} ->{propertiesThatChanged[key]}, ROOM:{PhotonNetwork.CurrentRoom.Name}");
             }
         }
+        #endregion
     }
 }

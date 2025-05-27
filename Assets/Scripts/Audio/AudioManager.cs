@@ -7,6 +7,9 @@ using ExitGames.Client.Photon;
 
 public class AudioManager : MonoBehaviour, IOnEventCallback
 {
+
+    public static AudioManager Instance;
+
     public static byte PlayAudioEventCode = 1;
 
     public const string GAMEBGM = "GameBgm";
@@ -54,6 +57,15 @@ public class AudioManager : MonoBehaviour, IOnEventCallback
 
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+
+            Destroy(this.gameObject);
+            return;
+        }
+        Instance = this;
+
+
         channels = new Channel[AUDIO_CHANNEL_LIMIT];
         for (int i = 0; i < channels.Length; i++)
         {
