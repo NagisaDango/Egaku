@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.VisualScripting;
@@ -5,6 +6,7 @@ using UnityEngine;
 
 public class Battery : MonoBehaviour, HoldableObject
 {
+    [SerializeField] private Vector2 originalPos;
     private Collider2D col;
     private Rigidbody2D rb;
     private bool simulatedStatus;
@@ -19,6 +21,7 @@ public class Battery : MonoBehaviour, HoldableObject
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        originalPos = transform.position;
         col = GetComponent<Collider2D>();
         rb = GetComponent<Rigidbody2D>();
         simulatedStatus = rb.simulated;
@@ -141,8 +144,16 @@ public class Battery : MonoBehaviour, HoldableObject
         controlObj = obj;
         rb.bodyType = RigidbodyType2D.Static;
         col.isTrigger = true;
-    }    
-    
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.CompareTag("DeathDesuwa"))
+        {
+            this.transform.position = originalPos;
+        }
+    }
+
     private void OnCollisionStay2D(Collision2D other)
     {
         lastContactPoint = other.contacts[0].point;
@@ -201,4 +212,6 @@ public class Battery : MonoBehaviour, HoldableObject
         }
         return false;
     }
+    
+    
 }

@@ -254,6 +254,9 @@ public class Drawer : MonoBehaviourPun
 
     private void SpawnParticles(string erasingTagName, Vector3 centerPos)
     {
+        //TODO: Error prone here, should not be changing tag of holding object to holding, stay as what type it is
+        if (erasingTagName == "Holding")
+            erasingTagName = "Wood";
         Instantiate(Resources.Load("EraseEffect" + erasingTagName, typeof(GameObject)),  new Vector3(centerPos.x, centerPos.y, 0), Quaternion.identity);
         Instantiate(Resources.Load("EraseEffect", typeof(GameObject)),  new Vector3(centerPos.x, centerPos.y, -6), Quaternion.identity);
         //PhotonNetwork.Instantiate("EraseEffect" + erasingTagName, new Vector3(centerPos.x, centerPos.y, 0), Quaternion.identity).GetComponent<ParticleAttractor>();

@@ -185,10 +185,13 @@ public class Runner : MonoBehaviourPunCallbacks
 
         if (holding && Input.GetKeyUp(KeyCode.LeftShift))
         {
+            photonView.RPC("RPC_Release", RpcTarget.All);
+            /*
             if (holdingObject is WoodPen)
                 photonView.RPC("RPC_ReleaseWood", RpcTarget.All);
             else if (holdingObject is Battery)
                 photonView.RPC("RPC_ReleaseBattery", RpcTarget.All);
+            */
         }
 
         if (movingAlongElectric)
@@ -380,7 +383,7 @@ public class Runner : MonoBehaviourPunCallbacks
     
     public void Revive()
     {
-        photonView.RPC("RPC_ReleaseWood", RpcTarget.All);
+        //photonView.RPC("RPC_Release", RpcTarget.All);
         rb.linearVelocity = Vector2.zero;
         //this.transform.position = revivePos;
         photonView.transform.position = revivePos;
@@ -436,7 +439,7 @@ public class Runner : MonoBehaviourPunCallbacks
     {
         ResetAppearance();
         //fixedJoint2D.gameObject.layer = LayerMask.NameToLayer("Draw");
-        _RunnerMovement.SetJumpAllowance(true);
+        //_RunnerMovement.SetJumpAllowance(true);
         // TODO: only setting to wood here cuz its the only one that can be hold, might want to change, have a buffer holding the original tag name
         if (holdingObject != null)
         {
@@ -444,9 +447,6 @@ public class Runner : MonoBehaviourPunCallbacks
             holdingObject.Reset();
             holdingObject = null;
 
-            fixedJoint2D.connectedBody.gameObject.tag = "Wood";
-            fixedJoint2D.connectedBody.gameObject.GetComponent<WoodPen>().holder = null;
-            fixedJoint2D.connectedBody.mass = 20;
             fixedJoint2D.connectedBody.gameObject.transform.SetParent(null);
             fixedJoint2D.connectedBody = rb;
         }
@@ -492,6 +492,24 @@ public class Runner : MonoBehaviourPunCallbacks
         extraJumpForce = 0;
         holding = false;
     }
+    
+    [PunRPC]
+    private void RPC_Release()
+    {
+        ResetAppearance();
+        // TODO: only setting to wood here cuz its the only one that can be hold, might want to change, have a buffer holding the original tag name
+        if (holdingObject != null && holdGO != null)
+        {
+            holdingObject.ToggleCollider(true);
+            holdingObject.Reset();
+            holdingObject = null;
+
+            fixedJoint2D.connectedBody = rb;
+        }
+        validHoldJump = false;
+        extraJumpForce = 0;
+        holding = false;
+    }
     #endregion
 
 
@@ -519,7 +537,8 @@ public class Runner : MonoBehaviourPunCallbacks
     {
         if (other.tag == "DeathDesuwa")
         {
-            holdingObjectID = other.gameObject.GetPhotonView().ViewID;
+            //holdingObjectID = other.gameObject.GetPhotonView().ViewID;
+            photonView.RPC("RPC_Release", RpcTarget.All);
             Revive();
         }
     }
