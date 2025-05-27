@@ -255,6 +255,8 @@ MonoBehaviour:
   rightEye: {fileID: 2443265915237834379}
   mouth: {fileID: 2417230046153093449}
   body: {fileID: 1755296568063184767}
+  isMine: 1
+  isFinal: 0
 --- !u!114 &6782199713512732787
 MonoBehaviour:
   m_ObjectHideFlags: 0

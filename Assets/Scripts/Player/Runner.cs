@@ -519,7 +519,7 @@ public class Runner : MonoBehaviourPunCallbacks
     {
         if (other.tag == "DeathDesuwa")
         {
-            holdingObjectID = other.gameObject.GetPhotonView().ViewID;
+            //holdingObjectID = other.gameObject.GetPhotonView().ViewID;
             Revive();
         }
     }

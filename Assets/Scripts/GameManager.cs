@@ -19,7 +19,7 @@ namespace Com.MyCompany.MyGame
         /// </summary>
         public override void OnLeftRoom()
         {
-            SceneManager.LoadScene(0);
+            //SceneManager.LoadScene(0);
         }
 
         #endregion
@@ -28,7 +28,7 @@ namespace Com.MyCompany.MyGame
 
         public void LeaveRoom()
         {
-            PhotonNetwork.LeaveRoom();
+            //PhotonNetwork.LeaveRoom();
         }
 
         #endregion

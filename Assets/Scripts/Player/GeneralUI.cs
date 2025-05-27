@@ -9,8 +9,8 @@ public class GeneralUI : MonoBehaviourPunCallbacks
     public void LeaveRoom()
     {
         print("Enter LeaveRoom");
-
-        PhotonNetwork.LeaveRoom();
+        GameManager.Instance.LeaveRoom();
+        //PhotonNetwork.LeaveRoom();
     }
 
     public void ResetGame()
