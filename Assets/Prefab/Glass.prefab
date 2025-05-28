@@ -77,6 +77,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   breakThreshhold: 40
+  hittenCount: 0
+  hittenThres: 2
+  glassHitten: {fileID: 2100000, guid: c0cc2aaae0b326e4297f001d4db5bd85, type: 2}
 --- !u!114 &8238662891555840441
 MonoBehaviour:
   m_ObjectHideFlags: 0

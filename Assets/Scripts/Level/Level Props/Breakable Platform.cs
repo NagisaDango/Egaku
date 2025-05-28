@@ -7,6 +7,11 @@ public class BreakablePlatform : MonoBehaviourPun
 {
     [SerializeField] private float breakThreshhold = 40f;
 
+    [SerializeField] private int hittenCount = 0;
+    [SerializeField] private int hittenThres = 2;
+    [SerializeField] private Material glassHitten;
+
+
     public IEnumerator SplitMesh(bool destroy)
     {
 
@@ -96,6 +101,19 @@ public class BreakablePlatform : MonoBehaviourPun
     {
         StartCoroutine(SplitMesh(true));
     }
+
+    public void HitGlass()
+    {
+        hittenCount++;
+        if (hittenCount == 1) GetComponent<MeshRenderer>().material = glassHitten;
+
+        if (hittenCount >= hittenThres)
+        {
+            photonView.RPC("RPC_BreakEffect", RpcTarget.All);
+            //Destroy(gameObject);
+        }
+    }
+
 
     private void OnCollisionEnter2D(Collision2D other)
     {
