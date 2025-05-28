@@ -19,7 +19,7 @@ public class ButtonTrigger : MonoBehaviour
         {
             print("Button Trigger Pressed");
 
-
+             
         }
     }
 }

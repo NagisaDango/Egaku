@@ -30,7 +30,7 @@ public class Bullet : MonoBehaviour
 
         if (type == BulletType.Follow)
         {
-            transform.Translate((target.position-transform.position).normalized * Time.deltaTime * speed );
+            transform.Translate(direction * Time.deltaTime * speed );
         }
         else if (type == BulletType.Set)
         {
@@ -46,6 +46,10 @@ public class Bullet : MonoBehaviour
         direction = _direction;
         speed = _speed;
 
+        if (type == BulletType.Follow)
+        {
+            direction = (target.position - transform.position).normalized;
+        }
         initialized = true;
     }
 
@@ -60,7 +64,19 @@ public class Bullet : MonoBehaviour
         }
         else if (collision.gameObject.layer == LayerMask.NameToLayer("Platform"))
         {
+            print("Bullet hitting Platform, Destroying self");
+            BreakablePlatform glass = collision.gameObject.GetComponent<BreakablePlatform>();
+            if (glass)
+            {
+                glass.HitGlass();
+            }
+
+        }
+        else if (collision.gameObject.layer == LayerMask.NameToLayer("Draw"))
+        {
             //print("Bullet hitting Platform, Destroying self");
+            Destroy(collision.gameObject);
+
         }
         Destroy(gameObject);
 

@@ -5,7 +5,7 @@ using UnityEngine;
 public class Shooter : MonoBehaviour
 {
     public GameObject bulletPrefab;
-    private float interval = 2.0f;
+    [SerializeField] private float interval = 2.0f;
     private float timer;
     public bool shooting;
     [SerializeField] private Transform spawnPos;
@@ -23,7 +23,7 @@ public class Shooter : MonoBehaviour
     public Color color_w;
 
 
-
+    private Transform runner;
 
 
 
@@ -31,13 +31,14 @@ public class Shooter : MonoBehaviour
     {
         sprd = transform.GetChild(0).GetComponent<SpriteRenderer>();
         sprd.color = color_b;
+        runner = Runner.Instance.gameObject.transform;
 
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (shooting)
+        if (shooting && runner)
         {
             //if ()
             
@@ -46,7 +47,9 @@ public class Shooter : MonoBehaviour
             {
                 timer = 0;
                 Bullet go = Instantiate(bulletPrefab, spawnPos.position, Quaternion.identity, bulletParent).GetComponent<Bullet>();
-                go.Init(bulletType, Runner.Instance.gameObject.transform, direction, speed);
+
+
+                go.Init(bulletType, runner, direction, speed);
                 go.transform.localScale *= scale;
                 //go.SetType(bulletType);
 
