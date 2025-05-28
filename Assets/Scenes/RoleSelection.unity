@@ -977,11 +977,11 @@ PrefabInstance:
       objectReference: {fileID: 440783166}
     - target: {fileID: 5547718730598762755, guid: a1bc6ab01b35cc144b9557a7bc598dcf, type: 3}
       propertyPath: levelCounts
-      value: 7
+      value: 18
       objectReference: {fileID: 0}
     - target: {fileID: 5547718730598762755, guid: a1bc6ab01b35cc144b9557a7bc598dcf, type: 3}
       propertyPath: levelUnlocked
-      value: 7
+      value: 18
       objectReference: {fileID: 0}
     - target: {fileID: 5547718730598762755, guid: a1bc6ab01b35cc144b9557a7bc598dcf, type: 3}
       propertyPath: roleSelection

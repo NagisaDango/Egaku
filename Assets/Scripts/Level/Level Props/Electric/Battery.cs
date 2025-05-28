@@ -163,6 +163,7 @@ public class Battery : MonoBehaviour, HoldableObject
     {
         this.gameObject.tag = "Battery";
         this.transform.SetParent(null);
+        ToggleRbSimulated();
         rb.mass = ogMass;
         lastContactPoint = Vector2.negativeInfinity;
     }

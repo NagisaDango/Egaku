@@ -99,7 +99,7 @@ public class BreakablePlatform : MonoBehaviourPun
 
     private void OnCollisionEnter2D(Collision2D other)
     {
-        if (other.gameObject.layer == LayerMask.NameToLayer("Draw") && other.rigidbody.mass >= breakThreshhold)
+        if ((other.gameObject.layer == LayerMask.NameToLayer("Draw") && other.rigidbody.mass >= breakThreshhold) || other.gameObject.CompareTag("Steel"))
         {
             photonView.RPC("RPC_BreakEffect", RpcTarget.All);
             //PhotonNetwork.Destroy(this.gameObject);
