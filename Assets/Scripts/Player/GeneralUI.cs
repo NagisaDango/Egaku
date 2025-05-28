@@ -26,4 +26,10 @@ public class GeneralUI : MonoBehaviourPunCallbacks
     {
         GameManager.Instance.LoadLevel(GameManager.Instance.currentLevel);
     }
+
+
+    public void SkipLevel()
+    {
+        EventHandler.CallReachDestinationEvent();
+    }
 }
