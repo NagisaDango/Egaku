@@ -70,6 +70,7 @@ public class RunnerMovement
         {
             rb.linearDamping = 5;
             lastGroundTime = Time.time;
+            extraJump = 0;
             return true;
         }
         

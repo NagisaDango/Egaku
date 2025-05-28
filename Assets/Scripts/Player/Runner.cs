@@ -359,7 +359,36 @@ public class Runner : MonoBehaviourPunCallbacks
         {
             return true;
         }
-        RaycastHit2D hit = Physics2D.CircleCast(transform.position, 200, Vector2.zero, 0, batteryLayer); 
+        RaycastHit2D[] hits = Physics2D.CircleCastAll(transform.position, 50, Vector2.zero, 0, batteryLayer);
+        if (hits.Length == 0)
+        {
+            Debug.Log("Currently Not in any electric zone, cannot or stop travel thru electric spline");
+            return false;
+        }
+
+        // Iterate through all the colliders hit
+        foreach (RaycastHit2D hit in hits)
+        {
+            Battery batteryComponent = hit.collider.gameObject.GetComponent<Battery>();
+
+            // Check if the hit object has a Battery component
+            if (batteryComponent != null)
+            {
+                // Check if the distance to this battery is within its specific radius
+                if (Vector2.Distance(this.transform.position, hit.collider.transform.position) <= batteryComponent.radius)
+                {
+                    // Found a battery whose field we are inside
+                    return true;
+                }
+            }
+        }
+
+        // If we've checked all hits and none were within their battery's radius
+        Debug.Log("Detected batteries, but not within any of their effective radii.");
+        return false;
+        
+        /*
+        RaycastHit2D hit = Physics2D.CircleCast(transform.position, 50, Vector2.zero, 0, batteryLayer); 
         if (hit.collider == null)
         {
             Debug.Log("Currently Not in any electric zone, cannot or stop travel thru electric spline");
@@ -373,6 +402,7 @@ public class Runner : MonoBehaviourPunCallbacks
             }
         }
         return false;
+        */
     }
 
     public void SetRevivePos(Vector2 pos)
