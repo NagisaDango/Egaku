@@ -39,7 +39,7 @@ public class Drawer : MonoBehaviourPun
     {
         //DontDestroyOnLoad(this.gameObject);
         Instance = this;
-        inkSlider = GameObject.Find("Canvas/Slider").GetComponent<Slider>();
+        inkSlider = GameObject.Find("GameCanvas/Panel/Slider").GetComponent<Slider>();
         //if(inkSlider == null)
         //    inkSlider = GameObject.Find("Canvas/Slider").GetComponent<Slider>();
         //DontDestroyOnLoad(this.gameObject);
