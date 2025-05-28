@@ -64,11 +64,18 @@ public class RunnerMovement
     
     public bool GroundDetect()
     {
-        hit = Physics2D.Raycast(rb.transform.position - new Vector3(0,0.5f,0), Vector2.down, 1f, LayerMask.GetMask("Platform", "Draw", "Battery")); 
+        
+        hit = Physics2D.Raycast(rb.transform.position - new Vector3(0,0.5f,0), Vector2.down, 1f, LayerMask.GetMask("Platform"));
+        if (hit.collider != null)
+        {
+            rb.linearDamping = 5;
+            lastGroundTime = Time.time;
+            return true;
+        }
+        
+        hit = Physics2D.Raycast(rb.transform.position - new Vector3(0,0.5f,0), Vector2.down, 1f, LayerMask.GetMask("Draw", "Battery")); 
         //RaycastHit2D[] hitAll = new RaycastHit2D[10];
         //var size = Physics2D.RaycastNonAlloc(rb.transform.position, Vector2.down, hitAll, 1.5f, LayerMask.GetMask("Platform", "Draw", "Battery")); 
-        if (hit.collider != null)
-            Debug.Log(hit.collider.tag);
         if (hit.collider == null || (hit.collider.isTrigger && !hit.collider.gameObject.CompareTag("Holding")))
         {
             rb.linearDamping = 0;
