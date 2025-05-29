@@ -23,7 +23,7 @@ public class LevelManager : MonoBehaviourPunCallbacks
         int levelUnlocked = GameManager.Instance.levelUnlocked;
 
 
-        for (int i = 0; i < levelCount; i++)
+        for (int i = 1; i < levelCount; i++)
         {
             GameObject go = Instantiate(levelDisplayPrefab, grid);
             go.name = "LevelDisplay_" + i;
