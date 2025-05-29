@@ -874,7 +874,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 537632698}
   m_HandleRect: {fileID: 537632697}
   m_Direction: 2
-  m_Value: 1
+  m_Value: 0
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -1068,11 +1068,11 @@ PrefabInstance:
       objectReference: {fileID: 440783166}
     - target: {fileID: 5547718730598762755, guid: a1bc6ab01b35cc144b9557a7bc598dcf, type: 3}
       propertyPath: levelCounts
-      value: 18
+      value: 21
       objectReference: {fileID: 0}
     - target: {fileID: 5547718730598762755, guid: a1bc6ab01b35cc144b9557a7bc598dcf, type: 3}
       propertyPath: levelUnlocked
-      value: 18
+      value: 21
       objectReference: {fileID: 0}
     - target: {fileID: 5547718730598762755, guid: a1bc6ab01b35cc144b9557a7bc598dcf, type: 3}
       propertyPath: roleSelection
