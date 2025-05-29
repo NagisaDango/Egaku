@@ -36,20 +36,26 @@ public class CloudFloat : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D other)
     {
-        if ((other.gameObject.tag == "Steel" || other.gameObject.tag == "Wood") && photonView.IsMine)
+        if ((other.gameObject.tag == "Steel" || other.gameObject.tag == "Wood" || other.gameObject.tag == "Bullet") && photonView.IsMine)
         {
             Rigidbody2D rb = other.gameObject.GetComponent<Rigidbody2D>();
             //If the object is being hold by the player
+            ContactPoint2D contact = other.contacts[0];
+            Vector3 bounceDirection = - contact.normal;
+            if (other.gameObject.tag == "Bullet")
+            {
+                other.gameObject.GetComponent<Bullet>().ChangeDirection(bounceDirection.normalized);
+                return;
+            }
             if (rb.mass < 5.0f)
             {
                 return;
             }
-            ContactPoint2D contact = other.contacts[0];
-            Vector3 bounceDirection = - contact.normal;
             
             //Only bounce if going up
             //if(bounceDirection.y > 0.15f)
             //    rb.AddForce(bounceDirection * bounceMagnitude, ForceMode2D.Impulse);
+
 
 
             if (other.gameObject.tag == "Steel")
