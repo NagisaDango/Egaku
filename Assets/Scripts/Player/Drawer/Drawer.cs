@@ -42,7 +42,7 @@ public class Drawer : MonoBehaviourPun
     [SerializeField] public PenProperty electricPen;
     public List<PenProperty> penProperties;
     public static bool[] penStatus = new bool[4];
-    
+    public static bool multipleEraseMode;
     private void Awake()
     {
         //DontDestroyOnLoad(this.gameObject);
@@ -129,6 +129,29 @@ public class Drawer : MonoBehaviourPun
                 }
             }
         }
+
+        if (Input.GetMouseButtonDown(1))
+        {
+            if (eraserMode)
+            {
+                SetPenProperties(lastPenType);
+                
+            }
+            else
+            {
+                SetPenProperties(PenUI.PenType.Eraser);
+                RaycastHit2D hit = Physics2D.Raycast((Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition),
+                    Vector2.zero, Mathf.Infinity, LayerMask.GetMask("Draw"));
+
+                photonView.RPC("EraseDrawnObj", RpcTarget.All,
+                    (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition));
+                if (hit.collider != null)
+                {
+                    print(hit.collider.gameObject.name);
+                    print("erase mode: " + multipleEraseMode);
+                }
+            }
+        }
         if (Input.GetMouseButtonDown(0))//&& !EventSystem.current.IsPointerOverGameObject())
         {
             if (eraserMode) //&& EventSystem.current.IsPointerOverGameObject())
@@ -141,7 +164,9 @@ public class Drawer : MonoBehaviourPun
                 if (hit.collider != null)
                 {
                     print(hit.collider.gameObject.name);
-                    SetPenProperties(lastPenType);
+                    print("erase mode: " + multipleEraseMode);
+                    //if(!multipleEraseMode)
+                        //SetPenProperties(lastPenType);
                 }
                 //EraseDrawnObj();
             }
@@ -229,16 +254,13 @@ public class Drawer : MonoBehaviourPun
                 break;
             case PenUI.PenType.Eraser:
                 lastPenType = currentPenType;
+                eraserMode = true;
                 Cursor.SetCursor(eraserCursorTexture, new Vector2(0, eraserCursorTexture.height), CursorMode.Auto);
                 break;
         }
         currentPenType = penType;
         
-        if (penType == PenUI.PenType.Eraser)
-        {
-            eraserMode = true;
-        }
-        else
+        if (penType != PenUI.PenType.Eraser)
         {
             eraserMode = false;
         }

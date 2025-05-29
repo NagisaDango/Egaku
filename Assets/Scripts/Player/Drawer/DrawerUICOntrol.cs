@@ -13,6 +13,7 @@ public class DrawerUICOntrol : MonoBehaviour
     public bool panelStatus;
 
     [SerializeField] private Button unLockBtn;
+    [SerializeField] private Toggle eraseModeToggle;
 
 
     private void Awake()
@@ -20,6 +21,11 @@ public class DrawerUICOntrol : MonoBehaviour
         //OpenDrawerPanel();
         InitDictionary();
         CloseDrawerPanel();
+    }
+
+    public void ToggleErase()
+    {
+        Drawer.multipleEraseMode = eraseModeToggle;
     }
 
     private void InitDictionary()

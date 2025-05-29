@@ -63,24 +63,27 @@ public class LevelSetup : MonoBehaviour
     {
         if(drawerUI == null) 
             return;
-        Drawer.OnPenSelect.Invoke(initPenType);
         switch (penType)
         {
             case "Wood":
                 drawerUI.TogglePenStatus(PenUI.PenType.Wood, true);
+                Drawer.penStatus[0] = true;
                 Drawer.OnPenSelect.Invoke(PenUI.PenType.Wood);
                 break;
             case "Cloud":
                 drawerUI.TogglePenStatus(PenUI.PenType.Cloud, true);
                 Drawer.OnPenSelect.Invoke(PenUI.PenType.Cloud);
-                break;
-            case "Electric":
-                drawerUI.TogglePenStatus(PenUI.PenType.Electric, true);
-                Drawer.OnPenSelect.Invoke(PenUI.PenType.Electric);
+                Drawer.penStatus[1] = true;
                 break;
             case "Steel":
                 drawerUI.TogglePenStatus(PenUI.PenType.Steel, true);
                 Drawer.OnPenSelect.Invoke(PenUI.PenType.Steel);
+                Drawer.penStatus[2] = true;
+                break;
+            case "Electric":
+                drawerUI.TogglePenStatus(PenUI.PenType.Electric, true);
+                Drawer.OnPenSelect.Invoke(PenUI.PenType.Electric);
+                Drawer.penStatus[3] = true;
                 break;
             default:
                 Debug.LogWarning(penType + "Unknown type");

@@ -116,6 +116,7 @@ public class Runner : MonoBehaviourPunCallbacks
         _RunnerMovement = new RunnerMovement(rb, 10f, maxSpeed);
     }
 
+    private bool holdingShift;
     private void Update()
     {
         AdjustFaceRotation();
@@ -154,7 +155,7 @@ public class Runner : MonoBehaviourPunCallbacks
         }
 
 
-        if (Input.GetKeyDown(KeyCode.LeftShift))
+        if (Input.GetKey(KeyCode.LeftShift))
         {
             if (holdingObjectID != -1)
             {

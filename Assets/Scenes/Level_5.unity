@@ -478,7 +478,7 @@ MonoBehaviour:
   m_StreamingVersion: 20241001
   m_LegacyPriority: 0
   Target:
-    TrackingTarget: {fileID: 1613995935}
+    TrackingTarget: {fileID: 0}
     LookAtTarget: {fileID: 0}
     CustomLookAtTarget: 0
   Lens:
@@ -1910,6 +1910,7 @@ MonoBehaviour:
   CloudEnable: 1
   SteelEnable: 0
   ElectricEnable: 0
+  initPenType: 0
 --- !u!4 &1360188186
 Transform:
   m_ObjectHideFlags: 0
