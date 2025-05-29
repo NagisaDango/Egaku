@@ -687,11 +687,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8231145940359877139, guid: e641e9c9615108346b2fc9bbe1da0ecc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 5.53
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8231145940359877139, guid: e641e9c9615108346b2fc9bbe1da0ecc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.22
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8606382777775034389, guid: e641e9c9615108346b2fc9bbe1da0ecc, type: 3}
       propertyPath: interval
@@ -1763,11 +1763,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8231145940359877139, guid: e641e9c9615108346b2fc9bbe1da0ecc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 5.25
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8231145940359877139, guid: e641e9c9615108346b2fc9bbe1da0ecc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.37
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8606382777775034389, guid: e641e9c9615108346b2fc9bbe1da0ecc, type: 3}
       propertyPath: interval
@@ -1825,6 +1825,7 @@ MonoBehaviour:
   CloudEnable: 0
   SteelEnable: 0
   ElectricEnable: 0
+  initPenType: 0
 --- !u!4 &1360188186
 Transform:
   m_ObjectHideFlags: 0
