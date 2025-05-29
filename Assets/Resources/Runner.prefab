@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8751165460414628079}
   - component: {fileID: 7514584370489218643}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: mouth
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -99,7 +99,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7570195492145582928}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: GameObject (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -132,7 +132,7 @@ GameObject:
   - component: {fileID: 603251600481299503}
   - component: {fileID: 6461997419049973357}
   - component: {fileID: 3182336086051820209}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: RunnerVisual (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -343,7 +343,7 @@ GameObject:
   - component: {fileID: 1547168585396090828}
   - component: {fileID: 7538241954510342772}
   - component: {fileID: 1805093843337505971}
-  m_Layer: 9
+  m_Layer: 13
   m_Name: FogCircleSec
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -491,7 +491,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3549697999365910642}
   - component: {fileID: 4979028730459587245}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: eye (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -581,7 +581,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8328586914570304572}
   - component: {fileID: 2174589979212135281}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: RightEye
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -671,7 +671,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5140283128204788845}
   - component: {fileID: 473712637998911065}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: LeftEye
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -762,7 +762,7 @@ GameObject:
   - component: {fileID: 6538816218709523776}
   - component: {fileID: 6694653156011969018}
   - component: {fileID: 3286991045538591646}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: GameObject
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -874,7 +874,7 @@ GameObject:
   - component: {fileID: 530124913488223632}
   - component: {fileID: 7239380617049265528}
   - component: {fileID: -657758394431120120}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: Runner
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -1123,7 +1123,7 @@ GameObject:
   - component: {fileID: 5946090722918354136}
   - component: {fileID: 78705072221844766}
   - component: {fileID: 7731215708629199247}
-  m_Layer: 8
+  m_Layer: 13
   m_Name: FogCircleMain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1270,7 +1270,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6665149993856065429}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: face
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1306,7 +1306,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3628156709264406864}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: GameObject (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1339,7 +1339,7 @@ GameObject:
   - component: {fileID: 1114405967576601809}
   - component: {fileID: 1835077723966152671}
   - component: {fileID: 3176588071401868507}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: RunnerVisual
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1548,7 +1548,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6473473152643627640}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: GameObject (3)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1580,7 +1580,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8061914583390050910}
   - component: {fileID: 6896718946337582245}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: eye (3)
   m_TagString: Untagged
   m_Icon: {fileID: 0}

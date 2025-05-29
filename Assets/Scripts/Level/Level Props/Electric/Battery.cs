@@ -41,7 +41,7 @@ public class Battery : MonoBehaviour, HoldableObject
 
         if (hit.collider != null)
         {
-            Debug.Log("CircleCast hit: " + hit.collider.name);
+            //Debug.Log("CircleCast hit: " + hit.collider.name);
         }
     }
 

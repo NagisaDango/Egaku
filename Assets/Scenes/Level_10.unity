@@ -359,7 +359,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.93333334, g: 0.7137255, b: 0.49019608, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -519,13 +519,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7725884053085685676, guid: dde8e16ef839aca45a168e5364481617, type: 3}
       propertyPath: 'sentences.Array.data[0]'
-      value: There will be electric gate, where you have to put the battery in the
-        gate to open up the door.
+      value: There will be electric gate that needs battery in the gate to open door.
       objectReference: {fileID: 0}
     - target: {fileID: 7725884053085685676, guid: dde8e16ef839aca45a168e5364481617, type: 3}
       propertyPath: 'sentences.Array.data[1]'
-      value: Just putting the battery beside the gate then it will be put into the
-        gate!
+      value: 
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -977,7 +975,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.93333334, g: 0.7137255, b: 0.49019608, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -1167,9 +1165,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   textDisplay: {fileID: 0}
   sentences:
-  - New type of pen!!! It's "Electric"!!!
-  - It is a more complex pen, Runner can press "E" to interact with the head or tail
-    of electric wires to travel through it.
+  - New type of pen! It's "Electric"!
+  - Runner can press "E" to interact with the head or tail of electric wires to travel
+    through it.
   - However, it can only work in the electric zone given by the battery.
   iconImage: {fileID: 1968824669}
   onCustomEvent:
@@ -1432,7 +1430,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.93333334, g: 0.7137255, b: 0.49019608, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -1573,7 +1571,7 @@ Camera:
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 21631
+    m_Bits: 31871
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -2030,10 +2028,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   revivePos: {x: -38.64, y: -8.06}
   _camera: {fileID: 58214893}
-  WoodEnable: 1
-  CloudEnable: 1
+  WoodEnable: 0
+  CloudEnable: 0
   SteelEnable: 0
   ElectricEnable: 0
+  initPenType: 5
 --- !u!4 &1360188186
 Transform:
   m_ObjectHideFlags: 0
@@ -2176,7 +2175,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.93333334, g: 0.7137255, b: 0.49019608, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -2375,7 +2374,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.93333334, g: 0.7137255, b: 0.49019608, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -2824,7 +2823,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.93333334, g: 0.7137255, b: 0.49019608, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0

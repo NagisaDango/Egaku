@@ -85,8 +85,9 @@ public class Bullet : MonoBehaviourPun
         {
             return;
         }
+        
         Destroy(gameObject);
-
+        Instantiate(Resources.Load("BulletEffect", typeof(GameObject)),  new Vector3(collision.contacts[0].point.x, collision.contacts[0].point.y, -6), Quaternion.identity);
         
         //PhotonNetwork.Destroy(gameObject);
 

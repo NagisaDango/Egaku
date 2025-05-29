@@ -49,7 +49,7 @@ public class Runner : MonoBehaviourPunCallbacks
     GameObject holdGO;
     private bool holding;
     private HoldableObject holdingObject;
-    private int holdingObjectID;
+    private int holdingObjectID = -1;
 
     [Header("Appearance")]
     private GameObject runnerMouse;

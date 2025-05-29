@@ -17,12 +17,11 @@ public class AudioManager : MonoBehaviour, IOnEventCallback
     public const string CLICKSFX = "ClickSfx";
 
     public const string JUMPSFX = "JumpSfx";
-    public const string FALLSFX = "FallSfx";
-    public const string HOLDSFX = "HoldSfx";
     public const string DRAWSFX = "DrawSfx";
     public const string CLOUDBOUNCESFX = "CloudBounceSfx"; 
     public const string GLASSBREAKSFX = "GlassBreakSfx";
     public const string ERASESFX = "EraseSfx";
+    public const string COLLECTSFX = "CollectSfx";
 
     [Header("General Music")]
     public AudioClip playBgm;
@@ -33,8 +32,7 @@ public class AudioManager : MonoBehaviour, IOnEventCallback
 
     [Header("Runner Sound Effects")]
     public AudioClip jumpSFX;
-    public AudioClip fallSFX;
-    public AudioClip holdSFX;
+    public AudioClip collectSFX;
 
     [Header("Drawer Sound Effects")]
     public AudioClip drawSFX;
@@ -75,6 +73,7 @@ public class AudioManager : MonoBehaviour, IOnEventCallback
         BGMChannel.channel = this.gameObject.AddComponent<AudioSource>();
         BGMChannel.lastPlayed = 0;
         BGMChannel.channel.loop = true;
+        BGMChannel.channel.volume = 0.1f;
 
         m_photonView = GetComponent<PhotonView>();
         InitAudioDict();
@@ -103,8 +102,7 @@ public class AudioManager : MonoBehaviour, IOnEventCallback
 
         // Runner Sound Effects
         NameAudioPair[JUMPSFX] = jumpSFX;
-        NameAudioPair[FALLSFX] = fallSFX;
-        NameAudioPair[HOLDSFX] = holdSFX;
+        NameAudioPair[COLLECTSFX] = collectSFX;
 
         // Drawer Sound Effects
         NameAudioPair[DRAWSFX] = drawSFX;

@@ -36,12 +36,14 @@ public class CloudFloat : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D other)
     {
-        if ((other.gameObject.tag == "Steel" || other.gameObject.tag == "Wood" || other.gameObject.tag == "Bullet") && photonView.IsMine)
+        if ((other.gameObject.tag == "Steel" || other.gameObject.tag == "Wood" || other.gameObject.tag == "Bullet" || other.gameObject.tag == "Battery") && photonView.IsMine)
         {
+            print(other.gameObject.tag  + " bouce tag");
             Rigidbody2D rb = other.gameObject.GetComponent<Rigidbody2D>();
             //If the object is being hold by the player
             ContactPoint2D contact = other.contacts[0];
             Vector3 bounceDirection = - contact.normal;
+            AudioManager.PlayOne(AudioManager.CLOUDBOUNCESFX);
             if (other.gameObject.tag == "Bullet")
             {
                 other.gameObject.GetComponent<Bullet>().ChangeDirection(bounceDirection.normalized);
@@ -66,6 +68,7 @@ public class CloudFloat : MonoBehaviour
             }
             else
             {
+                
                 if (bounceDirection.y > 0.15f)
                     rb.AddForce(bounceDirection * bounceMagnitude, ForceMode2D.Impulse);
             }

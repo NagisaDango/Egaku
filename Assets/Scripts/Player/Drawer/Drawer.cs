@@ -135,7 +135,6 @@ public class Drawer : MonoBehaviourPun
             if (eraserMode)
             {
                 SetPenProperties(lastPenType);
-                
             }
             else
             {
@@ -321,6 +320,7 @@ public class Drawer : MonoBehaviourPun
 
             Debug.Log("Hit: " + hit.collider.gameObject.name);
             //hit.collider.gameObject.GetComponent<DrawMesh>().photonView.TransferOwnership(actorNum);
+            AudioManager.PlayOne(AudioManager.ERASESFX);
             DrawMesh erasingMesh = hit.collider.gameObject.GetComponent<DrawMesh>();
             photonView.RPC("RPC_DirectErase", RpcTarget.All, erasingMesh.drawStrokes, mousePos, hit.collider.gameObject.tag);
             erasingMesh.earsingSelf = true;
