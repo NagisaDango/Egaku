@@ -2375,7 +2375,7 @@ MonoBehaviour:
   WoodEnable: 1
   CloudEnable: 0
   SteelEnable: 0
-  ElectricEnable: 1
+  ElectricEnable: 0
   initPenType: 0
 --- !u!4 &1360188186
 Transform:

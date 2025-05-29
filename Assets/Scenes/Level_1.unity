@@ -1652,7 +1652,7 @@ MonoBehaviour:
   textDisplay: {fileID: 0}
   sentences:
   - Welcome to the game! The runner move with AD Key and Space to jump!
-  - Jump to the next platform to collect the pencil for your partner!
+  - Jump to the next platform to collect the pencil!
   iconImage: {fileID: 0}
   onCustomEvent:
     m_PersistentCalls:

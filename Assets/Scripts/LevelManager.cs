@@ -28,7 +28,7 @@ public class LevelManager : MonoBehaviourPunCallbacks
             GameObject go = Instantiate(levelDisplayPrefab, grid);
             go.name = "LevelDisplay_" + i;
             go.GetComponentInChildren<TMP_Text>().text = "Level " + i;
-
+            go.transform.Find("Image").GetComponent<Image>().sprite = Resources.Load<Sprite>("LevelSS/" + i);
             levelDisplays.Add(go);
             
             if (i >= levelUnlocked)
