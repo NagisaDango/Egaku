@@ -1,4 +1,6 @@
 using Allan;
+using Photon.Pun;
+using Unity.VisualScripting;
 using UnityEngine;
 
 
@@ -8,7 +10,7 @@ public enum BulletType
     Set
 }
 
-public class Bullet : MonoBehaviour
+public class Bullet : MonoBehaviourPun
 {
     [SerializeField] private BulletType type;
     [SerializeField] private Transform target;
@@ -26,7 +28,7 @@ public class Bullet : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!initialized) return;
+        if (!initialized || !photonView.IsMine) return;
 
         if (type == BulletType.Follow)
         {
@@ -72,14 +74,27 @@ public class Bullet : MonoBehaviour
             }
 
         }
-        else if (collision.gameObject.layer == LayerMask.NameToLayer("Draw"))
+        else if (collision.gameObject.layer == LayerMask.NameToLayer("Draw") && collision.gameObject.tag != "Cloud")
         {
             //print("Bullet hitting Platform, Destroying self");
-            Destroy(collision.gameObject);
+            //Destroy(collision.gameObject);
+            PhotonNetwork.Destroy(collision.gameObject);
 
+        }
+        else if(collision.gameObject.layer == LayerMask.NameToLayer("Draw") && collision.gameObject.tag == "Cloud")
+        {
+            return;
         }
         Destroy(gameObject);
 
+        
+        //PhotonNetwork.Destroy(gameObject);
+
+    }
+
+    public void ChangeDirection(Vector2 dir)
+    {
+        direction = dir;
     }
 
 

@@ -3,6 +3,7 @@ using Photon.Pun;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GeneralUI : MonoBehaviourPunCallbacks
 {
@@ -31,5 +32,6 @@ public class GeneralUI : MonoBehaviourPunCallbacks
     public void SkipLevel()
     {
         EventHandler.CallReachDestinationEvent();
+        GameObject.Find("GameCanvas/Panel/SkipBtn").GetComponent<Button>().interactable = false;
     }
 }
