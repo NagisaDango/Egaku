@@ -35,12 +35,41 @@ public class Shooter : MonoBehaviour
 
     }
 
+    private bool IsSpriteVisible(Camera cam, Transform spriteTransform)
+    {
+        Vector3 viewportPos = cam.WorldToViewportPoint(spriteTransform.position);
+
+        // Check if the sprite is within the screen bounds (0 to 1 in viewport space)
+        return viewportPos.x >= 0 && viewportPos.x <= 1 &&
+               viewportPos.y >= 0 && viewportPos.y <= 1 &&
+               viewportPos.z >= 0; // in front of the camera
+    }
+
     // Update is called once per frame
     void Update()
     {
         if (shooting && runner)
         {
             //if ()
+            if(bulletType == BulletType.Follow)
+            {
+                if (IsSpriteVisible(Camera.main, transform))
+                {
+                    Vector2 dir = runner.position - transform.position;
+                    float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+                    print("angle");
+
+                    sprd.transform.rotation = Quaternion.AngleAxis(runner.position.x >= transform.position.x ? angle : angle + 180, Vector3.forward);
+
+                }
+                else
+                {
+                    //print("NOT IN SCREEN");
+                    return;
+                }
+            }
+
+
             
             timer += Time.deltaTime;
             if (timer > interval)
@@ -58,6 +87,8 @@ public class Shooter : MonoBehaviour
                 //else if (bulletType == BulletType.Set)
                 //    go.SetDirection(direction);
             }
+
+
         }
 
     

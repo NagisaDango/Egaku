@@ -106,6 +106,37 @@ namespace Phantom
 
         }
 
+
+        public void OfflineConnect()
+        {
+            progressLabel.SetActive(true);
+            controlPanel.SetActive(false);
+            facePanel.SetActive(false);
+            AudioManager.PlayOne(AudioManager.CLICKSFX, false);
+            // we check if we are connected or not, we join if we are , else we initiate the connection to the server.
+
+            PhotonNetwork.OfflineMode = true;
+            //RoomOptions roomOptions = new RoomOptions();
+            //PhotonNetwork.CreateRoom("OfflineRoom", roomOptions);
+            //PhotonNetwork.JoinRoom("OfflineRoom");
+
+            //if (PhotonNetwork.IsConnected)
+            //{
+            //    // #Critical we need at this point to attempt joining a Random Room. If it fails, we'll get notified in OnJoinRandomFailed() and we'll create one.
+            //    //PhotonNetwork.JoinRandomRoom();
+            //    Debug.Log("Launcher: Join Lobby After Cliking Connect Button");
+            //    PhotonNetwork.JoinLobby();
+            //}
+            //else
+            //{
+            //    Debug.Log("Launcher: Connecting");
+            //    // #Critical, we must first and foremost connect to Photon Online Server.
+            //    // keep track of the will to join a room, because when we come back from the game we will get a callback that we are connected, so we need to know what to do then
+            //    isConnecting = PhotonNetwork.ConnectUsingSettings();
+            //    //PhotonNetwork.GameVersion = gameVersion;
+            //}
+        }
+
         #endregion
 
 
@@ -119,6 +150,15 @@ namespace Phantom
             // we don't want to do anything if we are not attempting to join a room.
             // this case where isConnecting is false is typically when you lost or quit the game, when this level is loaded, OnConnectedToMaster will be called, in that case
             // we don't want to do anything.
+            if (PhotonNetwork.OfflineMode)
+            {
+                RoomOptions roomOptions = new RoomOptions();
+                PhotonNetwork.CreateRoom("OfflineRoom", roomOptions);
+                PhotonNetwork.LoadLevel("RoleSelection");
+                return;
+            }
+
+
             if (isConnecting)
             {
                 // #Critical: The first we try to do is to join a potential existing room. If there is, good, else, we'll be called back with OnJoinRandomFailed()
