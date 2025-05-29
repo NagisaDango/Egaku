@@ -80,12 +80,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Shooter
   bulletPrefab: {fileID: 8713912086642454207, guid: 86750125fbd308e41a14ed934e7f7606, type: 3}
+  interval: 2
   shooting: 1
   spawnPos: {fileID: 274325808634117681}
   bulletParent: {fileID: 4603549087550652719}
   bulletType: 1
   direction: {x: 1, y: 0}
-  speed: 20
+  speed: 15
   scale: 0.5
   saki_b: {fileID: 3176405110930526241, guid: 43d09267152959544b6dfde56946f131, type: 3}
   saki_w: {fileID: -6399543990170442592, guid: 9b6e08344c94fb2499d2917e89e08738, type: 3}

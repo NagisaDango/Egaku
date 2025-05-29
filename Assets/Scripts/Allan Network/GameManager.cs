@@ -48,7 +48,7 @@ namespace Allan
         public int levelUnlocked = 3;
         public int currentLevel = 0;
 
-
+        public bool offline = false;
         private void Awake()
         {
             //if (Instance == null)

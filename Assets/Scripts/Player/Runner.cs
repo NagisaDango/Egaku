@@ -135,13 +135,11 @@ public class Runner : MonoBehaviourPunCallbacks
             
             //print("Run input update: " + movement);
             _RunnerMovement.Move(new Vector2(movement.x, 0));
-            /*
             if (movement.x > 0)
                 face.localScale = Vector3.one;
             else
                 face.localScale = new Vector3(-1, 1, 1);
-            */
-            photonView.RPC("AdjustScale", RpcTarget.All, movement);
+            //photonView.RPC("AdjustScale", RpcTarget.All, movement);
         }
 
         if (Input.GetKeyDown(KeyCode.E) && inElectric && interactingObject != null)
