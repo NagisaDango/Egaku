@@ -172,6 +172,16 @@ namespace Allan
 
         public void Back2RoleSelection()
         {
+            if (PhotonNetwork.OfflineMode)
+            {
+                PhotonNetwork.LeaveRoom();
+                //PhotonNetwork.LoadLevel("AllanLauncher");
+
+
+                return;
+            }
+
+
             roomSelection.SetActive(false);
             roleSelection.SetActive(true);
             levelSelection.SetActive(false);
@@ -367,6 +377,12 @@ namespace Allan
 
             //PhotonNetwork.CurrentRoom.SetCustomProperties(roomProperties);
             //RefreshRoomList();
+
+            if (PhotonNetwork.OfflineMode)
+            {
+                PhotonNetwork.LoadLevel("RoleSelection");
+                return;
+            }
             PhotonNetwork.LeaveRoom();
             //PhotonNetwork.LeaveLobby();
             //PhotonNetwork.JoinLobby();
@@ -396,8 +412,21 @@ namespace Allan
             }
             else if (scene.name == "RoleSelection")
             {
+
+
                 Debug.Log("Scene RoleSelection loaded");
                 UpdateProperty();
+
+                if (PhotonNetwork.OfflineMode)
+                {
+                    //roomSelection.SetActive(false);
+                    //roleSelection.SetActive(false);
+                    //levelSelection.SetActive(true);
+                    DevSpawnPlayers();
+                    return;
+                }
+
+
                 if (PhotonNetwork.InRoom)
                 {
                     roomSelection.SetActive(false);
@@ -650,6 +679,13 @@ namespace Allan
         public override void OnLeftRoom()
         {
             Debug.Log("Enter Callback OnLeftRoom");
+
+            if (PhotonNetwork.OfflineMode)
+            {
+                PhotonNetwork.LoadLevel("AllanLauncher");
+                return;
+            }
+
 
             if (SceneManager.GetActiveScene().name == "FinishGame")
             {

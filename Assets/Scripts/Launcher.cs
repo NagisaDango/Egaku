@@ -115,6 +115,7 @@ namespace Phantom
             AudioManager.PlayOne(AudioManager.CLICKSFX, false);
             // we check if we are connected or not, we join if we are , else we initiate the connection to the server.
 
+            PhotonNetwork.Disconnect();
             PhotonNetwork.OfflineMode = true;
             //RoomOptions roomOptions = new RoomOptions();
             //PhotonNetwork.CreateRoom("OfflineRoom", roomOptions);
