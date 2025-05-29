@@ -1,4 +1,6 @@
 using System;
+using NUnit.Framework.Internal;
+using System.Text;
 using Photon.Pun;
 using UnityEngine;
 
@@ -44,7 +46,7 @@ public class CloudFloat : MonoBehaviour
             Vector3 bounceDirection = - contact.normal;
             if (other.gameObject.tag == "Bullet")
             {
-                other.gameObject.GetComponent<Bullet>().ChangeDirection(bounceDirection.normalized);
+                other.gameObject.GetComponent<Bullet>().ChangeDirection(bounceDirection);
                 return;
             }
             if (rb.mass < 5.0f)

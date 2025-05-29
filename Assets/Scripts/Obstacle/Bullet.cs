@@ -1,5 +1,6 @@
 using Allan;
 using Photon.Pun;
+using System.Text;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -92,9 +93,10 @@ public class Bullet : MonoBehaviourPun
 
     }
 
-    public void ChangeDirection(Vector2 dir)
+    public void ChangeDirection(Vector2 normal)
     {
-        direction = dir;
+        direction = Vector2.Reflect(direction, normal).normalized;
+        //direction = dir;
     }
 
 
