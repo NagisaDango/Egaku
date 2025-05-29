@@ -670,8 +670,43 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 9119051853346678931, guid: 78163b4932c6bf849b347f0edf176713, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 192007425}
   m_SourcePrefab: {fileID: 100100000, guid: 78163b4932c6bf849b347f0edf176713, type: 3}
+--- !u!1 &192007424 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9119051853346678931, guid: 78163b4932c6bf849b347f0edf176713, type: 3}
+  m_PrefabInstance: {fileID: 192007423}
+  m_PrefabAsset: {fileID: 0}
+--- !u!50 &192007425
+Rigidbody2D:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 192007424}
+  m_BodyType: 2
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_GravityScale: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 0
 --- !u!1 &204962651
 GameObject:
   m_ObjectHideFlags: 0
@@ -2590,6 +2625,7 @@ MonoBehaviour:
   CloudEnable: 1
   SteelEnable: 0
   ElectricEnable: 0
+  initPenType: 0
 --- !u!4 &1360188186
 Transform:
   m_ObjectHideFlags: 0
@@ -3794,6 +3830,6 @@ SceneRoots:
   - {fileID: 591040141}
   - {fileID: 1103087918}
   - {fileID: 1346720966}
-  - {fileID: 70849462}
   - {fileID: 192007423}
+  - {fileID: 70849462}
   - {fileID: 1609068156}

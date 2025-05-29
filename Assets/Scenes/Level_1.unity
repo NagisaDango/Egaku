@@ -2839,6 +2839,7 @@ MonoBehaviour:
   CloudEnable: 0
   SteelEnable: 0
   ElectricEnable: 0
+  initPenType: 5
 --- !u!4 &1360188186
 Transform:
   m_ObjectHideFlags: 0

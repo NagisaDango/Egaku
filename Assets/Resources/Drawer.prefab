@@ -17,7 +17,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &8439793229549411747
 Transform:
   m_ObjectHideFlags: 0
@@ -50,7 +50,11 @@ MonoBehaviour:
   eraserMode: 0
   interactable: 0
   drawerPanelPrefab: {fileID: 8702785834451653974, guid: e8f1197e6f8defb4cae72e54989399da, type: 3}
-  cursorTexture: {fileID: 2800000, guid: 49eb52455b1e41a4b808cb60e6125092, type: 3}
+  woodCursorTexture: {fileID: 2800000, guid: 49eb52455b1e41a4b808cb60e6125092, type: 3}
+  cloudCursorTexture: {fileID: 2800000, guid: e5def13af78800b47a8f5a866f4c9e85, type: 3}
+  electricCursorTexture: {fileID: 2800000, guid: 7a7e930e3d4277d4199352e356980cd9, type: 3}
+  steelCursorTexture: {fileID: 2800000, guid: b515c9ce0fe668b4088a965a229f38d7, type: 3}
+  eraserCursorTexture: {fileID: 2800000, guid: 2c839905c9ce95f40869c9f9f6ee0cc5, type: 3}
   drawSize: 0
   inkSlider: {fileID: 0}
   time: 3
@@ -86,6 +90,7 @@ MonoBehaviour:
     size: 0.3
     maxStrokes: -1
     material: {fileID: 2100000, guid: 9bcdb5499083f79478cd2f69c9101779, type: 2}
+  penProperties: []
 --- !u!114 &1436348200338379537
 MonoBehaviour:
   m_ObjectHideFlags: 0

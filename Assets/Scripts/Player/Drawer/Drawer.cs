@@ -17,10 +17,16 @@ public class Drawer : MonoBehaviourPun
     [SerializeField] private bool eraserMode;
     [SerializeField] private bool interactable;
     [SerializeField] private GameObject drawerPanelPrefab;
-    [SerializeField] private Texture2D cursorTexture;
-
+    [Header("Cursor")]
+    [SerializeField] private Texture2D woodCursorTexture;
+    [SerializeField] private Texture2D cloudCursorTexture;
+    [SerializeField] private Texture2D electricCursorTexture;
+    [SerializeField] private Texture2D steelCursorTexture;
+    [SerializeField] private Texture2D eraserCursorTexture;
+    
     public static Action<PenUI.PenType> OnPenSelect;
     private PenUI.PenType currentPenType;
+    private int currentPenIndex;
     public float drawSize;
     private int drawStrokeLimit = 300;
     private int drawStrokeTotal = 300;
@@ -34,39 +40,22 @@ public class Drawer : MonoBehaviourPun
     [SerializeField] public PenProperty cloudPen;
     [SerializeField] public PenProperty steelPen;
     [SerializeField] public PenProperty electricPen;
+    public List<PenProperty> penProperties;
+    public static bool[] penStatus = new bool[4];
     
     private void Awake()
     {
         //DontDestroyOnLoad(this.gameObject);
         Instance = this;
         inkSlider = GameObject.Find("GameCanvas/Panel/Slider").GetComponent<Slider>();
-        //if(inkSlider == null)
-        //    inkSlider = GameObject.Find("Canvas/Slider").GetComponent<Slider>();
-        //DontDestroyOnLoad(this.gameObject);
-        //if (Instance == null)
-        //{
-        //    Instance = this;
-        //}
-        //else if(Instance == this)
-        //{
-
-        //}
-        //else
-        //{
-        //    Debug.LogWarning("Drawer is already active and set, destroying this drawer.");
-        //    Destroy(this.gameObject);
-        //}
-        //inkSlider = GameObject.Find("Canvas/Slider").GetComponent<Slider>();
-
         currentPenType = PenUI.PenType.None;
-        if (photonView.IsMine)
-        {
-            GameObject UI = Instantiate(drawerPanelPrefab).transform.GetChild(0).gameObject;
-            GameObject.Find("LevelSetup").GetComponent<LevelSetup>().Init(UI.GetComponent<DrawerUICOntrol>());
-            Cursor.SetCursor(cursorTexture, new Vector2(0, cursorTexture.height), CursorMode.Auto);
-        }
+        penProperties = 
+            new List<PenProperty>
+            {
+                woodPen, cloudPen, steelPen, electricPen
+            };
     }
-
+    
     private void Start()
     {
         //if (Instance == null)
@@ -83,33 +72,63 @@ public class Drawer : MonoBehaviourPun
             actorNum = PhotonNetwork.LocalPlayer.ActorNumber;
             print("This is the draweer spawning UI");
             OnPenSelect += SetPenProperties;
+            GameObject UI = Instantiate(drawerPanelPrefab).transform.GetChild(0).gameObject;
+            GameObject.Find("LevelSetup").GetComponent<LevelSetup>().Init(UI.GetComponent<DrawerUICOntrol>());
         }
     }
 
-    private void OnEnable()
+    private void OnDisable()
     {
-        //DontDestroyOnLoad(this.gameObject);
-        //if (Instance == null)
-        //{
-        //    Instance = this;
-        //}
-        //else if (Instance == this)
-        //{
-
-        //}
-        //else
-        //{
-        //    Debug.LogWarning("Drawer is already active and set, destroying this drawer.");
-        //    Destroy(this.gameObject);
-        //}
-        //inkSlider = GameObject.Find("Canvas/Slider").GetComponent<Slider>();
+        print("Wtf");
     }
+    
+    
 
     void Update()
     {
         if(!photonView.IsMine || currentPenType == PenUI.PenType.None)
             return;
-
+        if(Input.GetAxis("Mouse ScrollWheel") != 0)
+        {
+            eraserMode = false;
+            // TODO: hard code 4 length here
+            if (Input.GetAxis("Mouse ScrollWheel") > 0)
+            {
+                int tempIndex = (currentPenIndex - 1 + 4) % 4;
+                while (tempIndex != currentPenIndex)
+                {
+                    print(tempIndex + "  " + penStatus[tempIndex]);
+                    if (penStatus[tempIndex] == true)
+                    {
+                        SetPenProperties(penProperties[tempIndex].penType);
+                        break;
+                    }
+                    else
+                    {
+                        tempIndex--;
+                        tempIndex = (tempIndex + 4) % 4;
+                    }
+                }
+            }
+            if (Input.GetAxis("Mouse ScrollWheel") < 0)
+            {
+                int tempIndex = (currentPenIndex + 1 + 4) % 4;
+                while (tempIndex != currentPenIndex)
+                {
+                    print(tempIndex + "  " + penStatus[tempIndex]);
+                    if (penStatus[tempIndex] == true)
+                    {
+                        SetPenProperties(penProperties[tempIndex].penType);
+                        break;
+                    }
+                    else
+                    {
+                        tempIndex++;
+                        tempIndex = (tempIndex + 4) % 4;
+                    }
+                }
+            }
+        }
         if (Input.GetMouseButtonDown(0))//&& !EventSystem.current.IsPointerOverGameObject())
         {
             if (eraserMode) //&& EventSystem.current.IsPointerOverGameObject())
@@ -122,6 +141,7 @@ public class Drawer : MonoBehaviourPun
                 if (hit.collider != null)
                 {
                     print(hit.collider.gameObject.name);
+                    SetPenProperties(lastPenType);
                 }
                 //EraseDrawnObj();
             }
@@ -183,10 +203,37 @@ public class Drawer : MonoBehaviourPun
             currentDrawer = null;
         }
     }
-
+    private PenUI.PenType lastPenType;
     private void SetPenProperties(PenUI.PenType penType)
     {
+        switch (penType)
+        {
+            case PenUI.PenType.None:
+                Cursor.SetCursor(null, new Vector2(0, 0), CursorMode.Auto);
+                break;
+            case PenUI.PenType.Wood:
+                currentPenIndex = 0;
+                Cursor.SetCursor(woodCursorTexture, new Vector2(0, woodCursorTexture.height), CursorMode.Auto);
+                break;
+            case PenUI.PenType.Cloud:
+                currentPenIndex = 1;
+                Cursor.SetCursor(cloudCursorTexture, new Vector2(0, cloudCursorTexture.height), CursorMode.Auto);
+                break;
+            case PenUI.PenType.Steel:
+                currentPenIndex = 2;
+                Cursor.SetCursor(steelCursorTexture, new Vector2(0, steelCursorTexture.height), CursorMode.Auto);
+                break;
+            case PenUI.PenType.Electric:
+                currentPenIndex = 3;
+                Cursor.SetCursor(electricCursorTexture, new Vector2(0, electricCursorTexture.height), CursorMode.Auto);
+                break;
+            case PenUI.PenType.Eraser:
+                lastPenType = currentPenType;
+                Cursor.SetCursor(eraserCursorTexture, new Vector2(0, eraserCursorTexture.height), CursorMode.Auto);
+                break;
+        }
         currentPenType = penType;
+        
         if (penType == PenUI.PenType.Eraser)
         {
             eraserMode = true;
@@ -194,6 +241,32 @@ public class Drawer : MonoBehaviourPun
         else
         {
             eraserMode = false;
+        }
+    }
+    private void SetPenProperties(PenProperty.PenType penType)
+    {
+        switch (penType)
+        {
+            case PenProperty.PenType.Wood:
+                currentPenIndex = 0;
+                currentPenType = PenUI.PenType.Wood;
+                Cursor.SetCursor(woodCursorTexture, new Vector2(0, woodCursorTexture.height), CursorMode.Auto);
+                break;
+            case PenProperty.PenType.Cloud:
+                currentPenIndex = 1;
+                currentPenType = PenUI.PenType.Cloud;
+                Cursor.SetCursor(cloudCursorTexture, new Vector2(0, cloudCursorTexture.height), CursorMode.Auto);
+                break;
+            case PenProperty.PenType.Steel:
+                currentPenIndex = 2;
+                currentPenType = PenUI.PenType.Steel;
+                Cursor.SetCursor(steelCursorTexture, new Vector2(0, steelCursorTexture.height), CursorMode.Auto);
+                break;
+            case PenProperty.PenType.Electric:
+                currentPenIndex = 3;
+                currentPenType = PenUI.PenType.Electric;
+                Cursor.SetCursor(electricCursorTexture, new Vector2(0, electricCursorTexture.height), CursorMode.Auto);
+                break;
         }
     }
     
