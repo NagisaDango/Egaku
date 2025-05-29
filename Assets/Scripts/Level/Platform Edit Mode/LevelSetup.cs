@@ -27,8 +27,10 @@ public class LevelSetup : MonoBehaviour
 
     public void SetUpCamera(Runner runner)
     {
+        //Debug.LogError("ENTER SET UP CAMERA" );
         _camera.PreviousStateIsValid = false;
         _camera.Follow = runner.transform;
+        //Debug.LogError(_camera.Follow.gameObject.name);
     }
 
     public Vector2 GetRevivePos()
