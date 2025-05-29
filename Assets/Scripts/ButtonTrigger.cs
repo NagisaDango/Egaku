@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,7 +10,7 @@ public class ButtonTrigger : MonoBehaviour
     public LayerMask layerMask;
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if(collision.gameObject.CompareTag("Player") || collision.gameObject.layer == layerMask)
+        if(collision.gameObject.CompareTag("Player") || layerMask == (layerMask | (1 << collision.gameObject.layer)))
         {
             pressed = true;
             if (otherRequire.Count > 0)

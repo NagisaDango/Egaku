@@ -36,7 +36,7 @@ public class CloudFloat : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D other)
     {
-        if ((other.gameObject.tag == "Steel" || other.gameObject.tag == "Wood") && photonView.IsMine)
+        if ((other.gameObject.tag == "Steel" || other.gameObject.tag == "Wood" || other.gameObject.tag == "Battery" || other.gameObject.CompareTag("Bullet")) && photonView.IsMine)
         {
             Rigidbody2D rb = other.gameObject.GetComponent<Rigidbody2D>();
             //If the object is being hold by the player

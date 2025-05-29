@@ -155,7 +155,7 @@ public class Runner : MonoBehaviourPunCallbacks
         }
 
 
-        if (Input.GetKey(KeyCode.LeftShift))
+        if (Input.GetKey(KeyCode.LeftShift) && !holding)
         {
             if (holdingObjectID != -1)
             {
@@ -559,7 +559,8 @@ public class Runner : MonoBehaviourPunCallbacks
 
     private void OnCollisionExit2D(Collision2D other)
     {
-        holdingObjectID = -1;
+        if(!holding)
+            holdingObjectID = -1;
     }
 
     private void OnTriggerEnter2D(Collider2D other)
