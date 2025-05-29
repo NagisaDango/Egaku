@@ -91,6 +91,7 @@ public class BreakablePlatform : MonoBehaviourPun
         //yield return new WaitForSeconds(1.0f);
         if (destroy == true)
         {
+            AudioManager.PlayOne(AudioManager.GLASSBREAKSFX);
             Destroy(gameObject);
         }
 

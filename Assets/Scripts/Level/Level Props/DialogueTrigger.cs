@@ -19,8 +19,11 @@ public class DialogueTrigger : MonoBehaviourPun
 
     public void RemoveIconImage()
     {
-        iconImage.SetActive(false);
-    
+        if (iconImage != null)
+        {
+            iconImage.SetActive(false);
+            AudioManager.PlayOne(AudioManager.COLLECTSFX);
+        }
     }
 
     public static void InitBinding(LevelTip tip)

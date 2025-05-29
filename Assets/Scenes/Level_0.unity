@@ -1765,7 +1765,7 @@ Camera:
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 21631
+    m_Bits: 29823
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -2674,6 +2674,7 @@ MonoBehaviour:
   CloudEnable: 0
   SteelEnable: 0
   ElectricEnable: 0
+  initPenType: 0
 --- !u!4 &1360188186
 Transform:
   m_ObjectHideFlags: 0

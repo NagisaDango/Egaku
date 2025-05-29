@@ -48,7 +48,10 @@ public class LevelTip : MonoBehaviourPun
         while (dialogueQueue.Count > 0)
         {
             textDisplay.text = dialogueQueue.Dequeue();
-            yield return new WaitForSeconds(2f);
+            textDisplay.ForceMeshUpdate();
+            print(textDisplay.textInfo.characterCount + " Text count");
+            //TODO: Not working here, keep use the time from last time
+            yield return new WaitForSeconds(textDisplay.textInfo.characterCount * 0.05f + 0.6f);
         }
         courutineRunning = false;
         FinishSentence();
