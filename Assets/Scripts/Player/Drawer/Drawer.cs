@@ -31,7 +31,7 @@ public class Drawer : MonoBehaviourPun
     private int drawStrokeLimit = 300;
     private int drawStrokeTotal = 300;
     [SerializeField] private Slider inkSlider;
-    public float time = 3;
+    public float time = 0.2f;
 
     private int actorNum;
 
@@ -54,6 +54,8 @@ public class Drawer : MonoBehaviourPun
             {
                 woodPen, cloudPen, steelPen, electricPen
             };
+
+        time = 0.2f;
     }
     
     private void Start()
@@ -342,7 +344,8 @@ public class Drawer : MonoBehaviourPun
     {
         drawStrokeTotal += drawStrokes;
         float value = drawStrokeTotal * 1.0f / drawStrokeLimit;
-        StartCoroutine(AddSliderValue(value, time));
+        EnqueueCoroutine(AddSliderValue(value, time));
+        //StartCoroutine(AddSliderValue(value, time));
         SpawnParticles(name, centerPos);
         //ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", new Vector3(centerPos.x, centerPos.y, 0), Quaternion.identity).GetComponent<ParticleAttractor>();
     }
@@ -369,6 +372,31 @@ public class Drawer : MonoBehaviourPun
         }
 
     }
+
+    private Queue<IEnumerator> coroutineQueue = new Queue<IEnumerator>();
+    private bool isCoroutineRunning = false;
+
+    public void EnqueueCoroutine(IEnumerator coroutine)
+    {
+        coroutineQueue.Enqueue(coroutine);
+
+        if (!isCoroutineRunning)
+            StartCoroutine(RunQueue());
+    }
+
+    private IEnumerator RunQueue()
+    {
+        isCoroutineRunning = true;
+
+        while (coroutineQueue.Count > 0)
+        {
+            yield return StartCoroutine(coroutineQueue.Dequeue());
+        }
+
+        isCoroutineRunning = false;
+    }
+
+
 }
 
 [System.Serializable]
