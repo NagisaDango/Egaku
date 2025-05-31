@@ -146,7 +146,7 @@ Transform:
   m_GameObject: {fileID: 27525891}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: 0.57648265, w: 0.81710935}
-  m_LocalPosition: {x: -14.86, y: 5.51, z: 0}
+  m_LocalPosition: {x: -16.6, y: 6.13, z: 0}
   m_LocalScale: {x: 3.5882995, y: 1.4381806, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -1639,8 +1639,8 @@ Transform:
   m_GameObject: {fileID: 854762312}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: 0.98262686, w: -0.18559228}
-  m_LocalPosition: {x: 9.17, y: 3.76, z: 0}
-  m_LocalScale: {x: 2.9230201, y: 1.4381806, z: 1}
+  m_LocalPosition: {x: 10.3468, y: 4.221, z: 0}
+  m_LocalScale: {x: 5.4508476, y: 1.4381806, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 753035061}
@@ -2208,7 +2208,7 @@ Transform:
   m_GameObject: {fileID: 991298204}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: 0.8260554, w: 0.5635889}
-  m_LocalPosition: {x: 10.83, y: 5.5700006, z: 0}
+  m_LocalPosition: {x: 12.8, y: 6.3, z: 0}
   m_LocalScale: {x: 3.5882995, y: 1.4381806, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -3058,7 +3058,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   revivePos: {x: -17.64, y: 14.75}
   _camera: {fileID: 58214893}
-  WoodEnable: 0
+  WoodEnable: 1
   CloudEnable: 0
   SteelEnable: 0
   ElectricEnable: 1
@@ -3439,8 +3439,8 @@ Transform:
   m_GameObject: {fileID: 1769646761}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: 0.9854183, w: 0.17014955}
-  m_LocalPosition: {x: -13.19, y: 3.75, z: 0}
-  m_LocalScale: {x: 2.9230201, y: 1.4381806, z: 1}
+  m_LocalPosition: {x: -14.5103, y: 4.2199, z: 0}
+  m_LocalScale: {x: 5.725904, y: 1.4381806, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 753035061}
