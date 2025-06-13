@@ -3,6 +3,9 @@ https://nagisadango.itch.io/egaku
 
 Egaku is a two-player cooperative platformer game where teamwork is key. One player takes on the role of the "Runner" controlling a character to navigate and reach the goal, while the other player acts as the "Drawer" drawing platforms on the screen to help the Runner overcome obstacles and progress through the level.
 
+![Your paragraph text](https://github.com/user-attachments/assets/8c35e1ff-63f4-4989-a1e0-40c748b02a71)
+
+
 Victory Condition
 
 The game is won when the Runner successfully reaches the goal.
