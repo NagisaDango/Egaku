@@ -63,7 +63,6 @@ public class AudioManager : MonoBehaviour, IOnEventCallback
         }
         Instance = this;
 
-
         channels = new Channel[AUDIO_CHANNEL_LIMIT];
         for (int i = 0; i < channels.Length; i++)
         {
@@ -84,6 +83,9 @@ public class AudioManager : MonoBehaviour, IOnEventCallback
     {
         PlayBGM(MENUBGM);
     }
+
+
+
 
     [PunRPC]
     public void RPC_PlayOne(string name, bool randomPitch)

@@ -31,6 +31,8 @@ public class GeneralUI : MonoBehaviourPunCallbacks
 
     public void SkipLevel()
     {
+        print("Enter SkipLevel");
+
         EventHandler.CallReachDestinationEvent();
         GameObject.Find("GameCanvas/Panel/SkipBtn").GetComponent<Button>().interactable = false;
     }

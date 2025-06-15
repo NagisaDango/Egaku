@@ -2,6 +2,7 @@ using Photon.Pun;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using Allan;
 
 public class DebugCanvas : MonoBehaviour
 {
@@ -13,7 +14,9 @@ public class DebugCanvas : MonoBehaviour
     public UnityEngine.UI.Toggle isConnected;
     public UnityEngine.UI.Toggle inLobbyToggle;
     public UnityEngine.UI.Toggle inRoomToggle;
-    
+    public TMP_Text levelIndexText;
+
+
 
     private void Awake()
     {
@@ -53,6 +56,12 @@ public class DebugCanvas : MonoBehaviour
 
             t.text = "In Room: " + PhotonNetwork.CurrentRoom.Name + " , " + t0  + " , " + t1;
         }
+
+        if (GameManager.Instance)
+        {
+            levelIndexText.text = "current level: " + GameManager.Instance.currentLevel.ToString();
+        }
+
 
     }
 
