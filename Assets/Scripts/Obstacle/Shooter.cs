@@ -77,7 +77,7 @@ public class Shooter : MonoBehaviour
             {
                 timer = 0;
                 Bullet go = PhotonNetwork.Instantiate(bulletPrefab.name, spawnPos.position, Quaternion.identity).GetComponent<Bullet>();
-                go.transform.SetParent(bulletParent);
+                //go.transform.SetParent(bulletParent);
                 go.Init(bulletType, runner, direction, speed);
                 go.transform.localScale *= scale;
                 //go.SetType(bulletType);
