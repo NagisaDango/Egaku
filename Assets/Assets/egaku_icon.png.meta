@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      egaku_icon_0: -6756526273495108585
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

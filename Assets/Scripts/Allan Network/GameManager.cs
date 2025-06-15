@@ -163,11 +163,21 @@ namespace Allan
 
         [PunRPC] public void RPC_LoadLevel(int level)
         {
-            if (true)//(PhotonNetwork.IsMasterClient)
+            //if (true)//(PhotonNetwork.IsMasterClient)
+            //{
+            //    LoadLevel(level);
+
+            //}
+
+            if(PhotonNetwork.OfflineMode)
             {
                 LoadLevel(level);
-
             }
+            else if (PhotonNetwork.IsMasterClient)
+            {
+                LoadLevel(level);
+            }
+
         }
 
         public void Back2RoleSelection()
@@ -231,10 +241,6 @@ namespace Allan
         }
 
 
-
-
-
-
         public void BackToHomePage()
         {
             PhotonNetwork.LoadLevel("AllanLaunch");
@@ -252,11 +258,12 @@ namespace Allan
             Application.Quit();
         }
 
-
         public void OnReachDestination()
         {
             print("Enter OnReachDestination");
-            if(true)//PhotonNetwork.IsMasterClient)
+
+
+            if(PhotonNetwork.OfflineMode ||  PhotonNetwork.IsMasterClient)//PhotonNetwork.IsMasterClient)
             {
                 if (currentLevel+1 == levelUnlocked)
                 {
@@ -288,8 +295,6 @@ namespace Allan
             roleSelection.SetActive(false);
             levelSelection.SetActive(true);
         }
-
-
 
         public void DevSpawnPlayers()
         {
@@ -332,11 +337,6 @@ namespace Allan
             LoadLevel(currentLevel);
             //SpawnPlayer();
         }
-
-        /// <summary>
-        /// Called when the local player left the room. We need to load the launcher scene.
-        /// </summary>
-
 
         private Room currentRoom;
 
@@ -389,9 +389,11 @@ namespace Allan
             //PhotonNetwork.JoinLobby();
         }
 
-
+        // Based on Loaded Scene, act differently
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
+            Debug.Log("Enter OnSceneLoaded " + scene.name);
+
             if (scene.name.Contains("Level_"))
             {
                 EventHandler.CallLevelStartEvent();
