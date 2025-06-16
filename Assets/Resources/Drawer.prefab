@@ -91,6 +91,7 @@ MonoBehaviour:
     maxStrokes: -1
     material: {fileID: 2100000, guid: 9bcdb5499083f79478cd2f69c9101779, type: 2}
   penProperties: []
+  minEraseDis: 1
 --- !u!114 &1436348200338379537
 MonoBehaviour:
   m_ObjectHideFlags: 0
