@@ -1,3 +1,4 @@
+using System;
 using Allan;
 using Photon.Pun;
 using System.Text;
@@ -75,23 +76,17 @@ public class Bullet : MonoBehaviourPun
             }
 
         }
-        else if (collision.gameObject.layer == LayerMask.NameToLayer("Draw") && collision.gameObject.tag != "Cloud")
-        {
-            //print("Bullet hitting Platform, Destroying self");
-            //Destroy(collision.gameObject);
-            PhotonNetwork.Destroy(collision.gameObject);
-
-        }
         else if(collision.gameObject.layer == LayerMask.NameToLayer("Draw") && collision.gameObject.tag == "Cloud")
         {
             return;
         }
         
         //Destroy(gameObject);
-        Instantiate(Resources.Load("BulletEffect", typeof(GameObject)),  new Vector3(collision.contacts[0].point.x, collision.contacts[0].point.y, -6), Quaternion.identity);
-        
-        if(photonView.IsMine)
+
+        if (photonView.IsMine)
+        {
             PhotonNetwork.Destroy(gameObject);
+        }
 
     }
 
@@ -110,5 +105,9 @@ public class Bullet : MonoBehaviourPun
         }
     }
 
+    private void OnDestroy()
+    {
+        Instantiate(Resources.Load("BulletEffect", typeof(GameObject)),  new Vector3(this.transform.position.x, transform.position.y, -6), Quaternion.identity);
+    }
 }
 

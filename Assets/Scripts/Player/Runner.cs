@@ -168,7 +168,7 @@ public class Runner : MonoBehaviourPunCallbacks
                 }
                 else if (holdGO.CompareTag("Battery") || holdingObject is Battery)
                 {
-                    photonView.RPC("RPC_HoldBattery", RpcTarget.All);
+                    photonView.RPC("RPC_HoldBattery", RpcTarget.All, holdingObjectID);
                     if (inBattery)
                     {
                         print("Getting battery from gate");
@@ -452,6 +452,8 @@ public class Runner : MonoBehaviourPunCallbacks
     {
         if (viewID != -1)
         {
+            if(holdGO == null)
+                holdGO = PhotonView.Find(viewID).gameObject;
             //_RunnerMovement.SetJumpAllowance(false);
             holdGO.tag = "Holding";
             holdGO.transform.SetParent(this.transform);
@@ -470,6 +472,7 @@ public class Runner : MonoBehaviourPunCallbacks
         //fixedJoint2D.gameObject.layer = LayerMask.NameToLayer("Draw");
         //_RunnerMovement.SetJumpAllowance(true);
         // TODO: only setting to wood here cuz its the only one that can be hold, might want to change, have a buffer holding the original tag name
+        holdGO.transform.SetParent(null);
         if (holdingObject != null)
         {
             holdingObject.ToggleCollider(true);
@@ -493,8 +496,10 @@ public class Runner : MonoBehaviourPunCallbacks
     }
 
     [PunRPC]
-    private void RPC_HoldBattery()
+    private void RPC_HoldBattery(int viewID)
     {
+        if(holdGO == null)
+            holdGO = PhotonView.Find(viewID).gameObject;
         holdGO.tag = "Holding";
         holdGO.transform.SetParent(this.transform);
         Rigidbody2D holdingRb = holdGO.GetComponent<Rigidbody2D>();
@@ -527,7 +532,12 @@ public class Runner : MonoBehaviourPunCallbacks
     {
         ResetAppearance();
         // TODO: only setting to wood here cuz its the only one that can be hold, might want to change, have a buffer holding the original tag name
-        if (holdingObject != null && holdGO != null)
+        if (holdGO != null)
+        {
+            holdGO.transform.SetParent(null);
+        }
+        
+        if (holdingObject != null)
         {
             holdingObject.ToggleCollider(true);
             holdingObject.Reset();
@@ -538,6 +548,7 @@ public class Runner : MonoBehaviourPunCallbacks
         validHoldJump = false;
         extraJumpForce = 0;
         holding = false;
+        holdGO = null;
     }
     #endregion
 

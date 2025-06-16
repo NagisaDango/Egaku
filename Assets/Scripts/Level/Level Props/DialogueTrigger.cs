@@ -21,9 +21,15 @@ public class DialogueTrigger : MonoBehaviourPun
     {
         if (iconImage != null)
         {
-            iconImage.SetActive(false);
-            AudioManager.PlayOne(AudioManager.COLLECTSFX);
+            photonView.RPC("RPC_RemoveIconImage", RpcTarget.All);
         }
+    }
+    
+    [PunRPC]
+    private void RPC_RemoveIconImage()
+    {
+        AudioManager.PlayOne(AudioManager.COLLECTSFX);
+        iconImage.SetActive(false);
     }
 
     public static void InitBinding(LevelTip tip)
@@ -71,7 +77,7 @@ public class DialogueTrigger : MonoBehaviourPun
         textDisplay.transform.parent.gameObject.SetActive(false);
         displaying = false;
         if(photonView.IsMine)
-            Destroy(this.gameObject);
+            PhotonNetwork.Destroy(this.gameObject);
     }
 
     private void OnTriggerEnter2D(Collider2D other)

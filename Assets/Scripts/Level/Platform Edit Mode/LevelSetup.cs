@@ -1,8 +1,9 @@
 using System;
+using Photon.Pun;
 using Unity.Cinemachine;
 using UnityEngine;
 
-public class LevelSetup : MonoBehaviour
+public class LevelSetup : MonoBehaviourPun
 {
     [SerializeField] private Vector2 revivePos;
     private DrawerUICOntrol drawerUI;
@@ -63,8 +64,15 @@ public class LevelSetup : MonoBehaviour
 
     public void EnablePenStatus(string penType)
     {
-        if(drawerUI == null) 
-            return;
+        if (drawerUI != null)
+            RPC_EnablePen(penType);
+        else
+            photonView.RPC("RPC_EnablePen", RpcTarget.OthersBuffered, penType);
+    }
+
+    [PunRPC]
+    private void RPC_EnablePen(string penType)
+    {
         switch (penType)
         {
             case "Wood":

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Photon.Pun;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -26,6 +27,12 @@ public class Battery : MonoBehaviour, HoldableObject
         rb = GetComponent<Rigidbody2D>();
         simulatedStatus = rb.simulated;
         ogMass = rb.mass;
+
+        if ((RolesManager.PlayerRole)(int)PhotonNetwork.LocalPlayer.CustomProperties["Role"] ==
+            RolesManager.PlayerRole.Drawer)
+        {
+            this.rb.simulated = false;
+        }
     }
 
     void Update()

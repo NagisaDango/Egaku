@@ -2,9 +2,8 @@ using System;
 using Photon.Pun;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.EventSystems;
 using UnityEngine;
-using UnityEditor;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class Drawer : MonoBehaviourPun
@@ -57,6 +56,7 @@ public class Drawer : MonoBehaviourPun
 
         time = 0.2f;
     }
+    
     
     private void Start()
     {
