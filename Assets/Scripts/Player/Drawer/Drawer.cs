@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.Net;
 
 public class Drawer : MonoBehaviourPun
 {
@@ -181,15 +182,34 @@ public class Drawer : MonoBehaviourPun
                 currentDrawer.photonView.RPC("RPC_InitializedDrawProperty", RpcTarget.All, mousePos, currentPenType.ToString(), interactable);
             }
         }
-        if (Input.GetMouseButton(0) && currentDrawer != null)
+        if (Input.GetMouseButton(0))
         {
             Vector3 mousePos = GetMouseWorldPosition();
+            if (eraserMode)
+            {
+                RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero, 0, LayerMask.GetMask("Draw"));
+                print("ERASE");
+                print("ERASE" + hit.collider.gameObject.name +  mousePos);
+
+                photonView.RPC("EraseDrawnObj", RpcTarget.All, hit, (Vector2)mousePos);
+
+
+                return;                    
+            }
+
+            if(currentDrawer == null)
+            {
+                goto SkipDrawMesh;
+            }
+
+
             if (currentDrawer.ValidateMouseMovement(mousePos))
             {
                 int djj = drawStrokeTotal - currentDrawer.drawStrokes;
                 photonView.RPC("UpdateSlider", RpcTarget.All, djj * 1.0f / drawStrokeLimit);
 
-                RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero, 0, LayerMask.GetMask("DrawProhibited"));
+                RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero, 0, LayerMask.GetMask("DrawProhibited","Draw", "Platform"));
+                //RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero, 0, LayerMask.GetMask("DrawProhibited", "Draw", "Platform"));
                 //hit = Physics2D.Raycast(mousePos, Vector2.zero);
 
 
@@ -199,7 +219,7 @@ public class Drawer : MonoBehaviourPun
                     drawStrokeTotal -= currentDrawer.drawStrokes;
                     currentDrawer = null;
                 }
-                else if(hit.collider != null)
+                else if(hit.collider != null && hit.collider.tag != "Electric")
                 {
                     print(hit.collider.name);
                     drawStrokeTotal -= currentDrawer.drawStrokes;
@@ -217,7 +237,9 @@ public class Drawer : MonoBehaviourPun
 
 
             }
+
         }
+        SkipDrawMesh:
         if (Input.GetMouseButtonUp(0))
         {
             if (currentDrawer)
@@ -338,6 +360,28 @@ public class Drawer : MonoBehaviourPun
             //ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", new Vector3(mousePos.x, mousePos.y, 0), Quaternion.identity).GetComponent<ParticleAttractor>();
         }
     }
+
+    [PunRPC]
+    private void EraseDrawnObj(RaycastHit2D hit, Vector2 mousePos)
+    {
+        if (hit.collider != null)
+        {
+            if (hit.collider.gameObject.tag == "ClickToErase")
+            {
+                Destroy(hit.collider.gameObject.transform.parent.gameObject);
+                return;
+            }
+
+            Debug.Log("Hit: " + hit.collider.gameObject.name);
+            AudioManager.PlayOne(AudioManager.ERASESFX);
+            DrawMesh erasingMesh = hit.collider.gameObject.GetComponent<DrawMesh>();
+            photonView.RPC("RPC_DirectErase", RpcTarget.All, erasingMesh.drawStrokes, mousePos, hit.collider.gameObject.tag);
+            erasingMesh.earsingSelf = true;
+            PhotonNetwork.Destroy(hit.collider.gameObject);
+        }
+    }
+
+
 
     [PunRPC]
     public void RPC_DirectErase(int drawStrokes, Vector2 centerPos, string name)
