@@ -16,6 +16,8 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
 {
     [SerializeField] float minDistance = .1f;
     [SerializeField] float lineThickness = 1f;
+    [SerializeField] float curveThresholdAngle = 90f;
+
 
     [SerializeField] GameObject splinePrefab;
     
@@ -145,241 +147,238 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
 
     //RPC: Draw mesh according to the mosuePos
    [PunRPC]
-void RPC_StartDraw(Vector3 mousePos)
-{
-    Vector3 direction = (mousePos - lastMousePosition).normalized;
-    float distance = Vector3.Distance(lastMousePosition, mousePos);
-    
-    if (((drawStrokes < maxStrokes) || maxStrokes <= 0) && _DrawPathValidate((Vector2)lastMousePosition, (Vector2)direction, distance))
+    void RPC_StartDraw(Vector3 mousePos)
     {
-        if (((drawStrokes < maxStrokes) || maxStrokes <= 0))
-        {
-            drawStrokes++;
-            if(pointList != null) pointList.Add(mousePos); // Assuming pointList is for other logic like ElectricSpline
-
-            PhotonNetwork.RaiseEvent(AudioManager.PlayAudioEventCode, new object[] { AudioManager.DRAWSFX, false }, new RaiseEventOptions { Receivers = ReceiverGroup.All }, ExitGames.Client.Photon.SendOptions.SendReliable);
-
-            Vector3[] vertices = new Vector3[mesh.vertices.Length + 2];
-            Vector2[] uv = new Vector2[mesh.uv.Length + 2]; // UV array also needs to be expanded
-            int[] triangles = new int[mesh.triangles.Length + 6];
+        Vector3 direction = (mousePos - lastMousePosition).normalized;
+        float distance = Vector3.Distance(lastMousePosition, mousePos);
         
-            mesh.vertices.CopyTo(vertices, 0);
-            mesh.uv.CopyTo(uv, 0); // Copy existing UVs
-            mesh.triangles.CopyTo(triangles, 0);
-
-            // vIndex0 and vIndex1 point to the last two vertices of the previous segment
-            // Their indices in the 'vertices' array (which is mesh.vertices.Length + 2 long)
-            // are effectively mesh.vertices.Length - 2 and mesh.vertices.Length - 1 if we consider the old mesh state.
-            // However, the script uses indices relative to the *new, expanded* 'vertices' array length
-            // to access the *copied old* vertices.
-            int vIndex = vertices.Length - 4; // Base index for the previous quad's end vertices in the *new* array
-            int vIndex0 = vIndex + 0; // Previous segment's "up" (relative to its forward direction)
-            int vIndex1 = vIndex + 1; // Previous segment's "down"
-            int vIndex2 = vIndex + 2; // New segment's "up"
-            int vIndex3 = vIndex + 3; // New segment's "down"
-
-            Vector3 mouseForwardVector = (mousePos - lastMousePosition).normalized;
-            // If mouseForwardVector is zero (mouse hasn't moved enough), handle to avoid issues
-            if (mouseForwardVector == Vector3.zero) {
-                mouseForwardVector = Vector3.right; // Or some other default, or skip drawing this segment
-            }
-
-            Vector3 normal2D = new Vector3(0, 0, -drawSize); // Used to get a perpendicular vector in XY plane
-            //float lineThickness = 1f; // You can adjust this thickness
-            Vector3 newVertexUp = mousePos + Vector3.Cross(mouseForwardVector, normal2D).normalized * lineThickness;
-            Vector3 newVertexDown = mousePos + Vector3.Cross(mouseForwardVector, normal2D * -1f).normalized * lineThickness;
-
-            if(vIndex == 2)
+        if (((drawStrokes < maxStrokes) || maxStrokes <= 0) && _DrawPathValidate((Vector2)lastMousePosition, (Vector2)direction, distance))
+        {
+            if (((drawStrokes < maxStrokes) || maxStrokes <= 0))
             {
-                print("start of mesh");
-                vertices[vIndex0] = vertices[vIndex0] + Vector3.Cross(mouseForwardVector, normal2D).normalized * lineThickness;
-                vertices[vIndex1] = vertices[vIndex1] + Vector3.Cross(mouseForwardVector, normal2D * -1f).normalized * lineThickness;
-
-            }
-
-
-            float angle = 180;
-            if(lastMouseDir != null && lastMouseDir != Vector3.zero)
-            {
-                float dot = Vector2.Dot(lastMouseDir.normalized, mouseForwardVector.normalized);
-                angle = 180 - Mathf.Acos(Mathf.Clamp(dot, -1f, 1f)) * Mathf.Rad2Deg;
-
-                // Use the 2D cross product (scalar in 2D)
-                float cross = lastMouseDir.x * mouseForwardVector.y - lastMouseDir.y * mouseForwardVector.x;
-
-                // If cross < 0, b is clockwise from a ⇒ negative angle
-                //angle = cross >= 0 ? angle : -angle;
-                print("DrawMesh-- " + angle);
-            }
-
-            if (angle < 90f)
-            {
-                float a = lineThickness;
-                float c = a / Mathf.Sin(angle * Mathf.Deg2Rad);
-                float b = Mathf.Sqrt(Mathf.Pow(c, 2) - Mathf.Pow(a, 2));
-
-                float cutoff = b + c;
-
-
-                vertices[vIndex1] = vertices[vIndex1] - lastMouseDir.normalized * cutoff;
-                vertices[vIndex0] = vertices[vIndex0] - lastMouseDir.normalized * cutoff;
-
-                print("DrawMesh--" + " cutoff:" + cutoff + " vertices[vIndex1]:" + vertices[vIndex1]);
-
-                vertices[vIndex2] = newVertexUp;
-                vertices[vIndex3] = newVertexDown;
-
-
-                int curves = 5;
-
-                int newVerticesSize = vertices.Length + curves;
-
-                Vector3[] new_vertices = new Vector3[newVerticesSize];
-                Array.Copy(vertices, new_vertices, vertices.Length);
-                vertices = new_vertices;
-
-
-
-                int vIndexAfterCurve = vertices.Length - curves;
-
-                vertices[newVerticesSize-1] = vertices[vIndex1] + Quaternion.AngleAxis(90, Vector3.forward) * mouseForwardVector * lineThickness * 2;
-
-
-                //for (int i = 0; i < curves - 1; i++)
-                //{
-                //    vertices[vIndexAfterCurve + i] = vertices[vIndex0];
-                //}
-
-                Vector3 vStart = vertices[vIndex0] - vertices[vIndex1];
-                Vector3 vEnd = vertices[newVerticesSize - 1] - vertices[vIndex1];
-
-                float totalAngle = Vector3.SignedAngle(vStart, vEnd, Vector3.forward);
-                float angleStep = totalAngle / curves;
-
-
-                for (int i = 1; i < curves; i++)
-                {
-                    float angleIncrement = angleStep * i;
-                    Vector3 dir = Quaternion.AngleAxis(angleIncrement, Vector3.forward) * vStart;
-                    vertices[vIndexAfterCurve + i - 1] = vertices[vIndex1] + dir;
+                drawStrokes++;
+                if(pointList != null) pointList.Add(mousePos); // Assuming pointList is for other logic like ElectricSpline
+    
+                PhotonNetwork.RaiseEvent(AudioManager.PlayAudioEventCode, new object[] { AudioManager.DRAWSFX, false }, new RaiseEventOptions { Receivers = ReceiverGroup.All }, ExitGames.Client.Photon.SendOptions.SendReliable);
+    
+                Vector3[] vertices = new Vector3[mesh.vertices.Length + 2];
+                Vector2[] uv = new Vector2[mesh.uv.Length + 2]; // UV array also needs to be expanded
+                int[] triangles = new int[mesh.triangles.Length + 6];
+            
+                mesh.vertices.CopyTo(vertices, 0);
+                mesh.uv.CopyTo(uv, 0); // Copy existing UVs
+                mesh.triangles.CopyTo(triangles, 0);
+    
+                // vIndex0 and vIndex1 point to the last two vertices of the previous segment
+                // Their indices in the 'vertices' array (which is mesh.vertices.Length + 2 long)
+                // are effectively mesh.vertices.Length - 2 and mesh.vertices.Length - 1 if we consider the old mesh state.
+                // However, the script uses indices relative to the *new, expanded* 'vertices' array length
+                // to access the *copied old* vertices.
+                int vIndex = vertices.Length - 4; // Base index for the previous quad's end vertices in the *new* array
+                int vIndex0 = vIndex + 0; // Previous segment's "up" (relative to its forward direction)
+                int vIndex1 = vIndex + 1; // Previous segment's "down"
+                int vIndex2 = vIndex + 2; // New segment's "up"
+                int vIndex3 = vIndex + 3; // New segment's "down"
+    
+                Vector3 mouseForwardVector = (mousePos - lastMousePosition).normalized;
+                // If mouseForwardVector is zero (mouse hasn't moved enough), handle to avoid issues
+                if (mouseForwardVector == Vector3.zero) {
+                    mouseForwardVector = Vector3.right; // Or some other default, or skip drawing this segment
                 }
-
-                int tIndex = triangles.Length - 6;
-                // Triangle 1: (vIndex0, vIndex2, vIndex1)
-                triangles[tIndex + 0] = newVerticesSize - 1;
-                triangles[tIndex + 1] = vIndex2;
-                triangles[tIndex + 2] = vIndex1;
-
-                // Triangle 2: (vIndex1, vIndex2, vIndex3)
-                triangles[tIndex + 3] = vIndex1;
-                triangles[tIndex + 4] = vIndex2;
-                triangles[tIndex + 5] = vIndex3;
-
-
-                int newTriangleSize = triangles.Length + 3 * curves;
-                int[] new_triangles = new int[newTriangleSize];
-                Array.Copy(triangles, new_triangles, triangles.Length);
-                triangles = new_triangles;
-
-                int tIndexAfterCurve = triangles.Length - 3 * curves;
-
-                triangles[tIndexAfterCurve + 0] = vIndex1;
-                triangles[tIndexAfterCurve + 1] = vIndex0;
-                triangles[tIndexAfterCurve + 2] = vIndexAfterCurve;
-
-                for (int i = 1; i < curves; i++)
+    
+                Vector3 normal2D = new Vector3(0, 0, -drawSize); // Used to get a perpendicular vector in XY plane
+                //float lineThickness = 1f; // You can adjust this thickness
+                Vector3 newVertexUp = mousePos + Vector3.Cross(mouseForwardVector, normal2D).normalized * lineThickness;
+                Vector3 newVertexDown = mousePos + Vector3.Cross(mouseForwardVector, normal2D * -1f).normalized * lineThickness;
+    
+                if(vIndex == 2)
                 {
-                    triangles[tIndexAfterCurve + i * 3 + 0] = vIndex1;
-                    triangles[tIndexAfterCurve + i * 3 + 1] = vIndexAfterCurve + i-1;
-                    triangles[tIndexAfterCurve + i * 3 + 2] = vIndexAfterCurve + i;
+                    print("start of mesh");
+                    vertices[vIndex0] = vertices[vIndex0] + Vector3.Cross(mouseForwardVector, normal2D).normalized * lineThickness;
+                    vertices[vIndex1] = vertices[vIndex1] + Vector3.Cross(mouseForwardVector, normal2D * -1f).normalized * lineThickness;
+    
                 }
+    
+    
+                float angle = 180;
+                if(lastMouseDir != null && lastMouseDir != Vector3.zero)
+                {
+                    float dot = Vector2.Dot(lastMouseDir.normalized, mouseForwardVector.normalized);
+                    angle = 180 - Mathf.Acos(Mathf.Clamp(dot, -1f, 1f)) * Mathf.Rad2Deg;
+                    print("DrawMesh-- " + angle);
+                }
+    
+                if (angle < curveThresholdAngle)
+                {
+                    float cross = -lastMouseDir.x * mouseForwardVector.y - -lastMouseDir.y * mouseForwardVector.x;
+
+                    if (cross < 0)
+                    {
+                        var temp = vIndex1;
+                        vIndex1 = vIndex0;
+                        vIndex0 = temp;
+                    }
+
+    
+    
+                    int curves = 5;
+    
+                    int newVerticesSize = vertices.Length + curves + 2 ;
+    
+                    Vector3[] new_vertices = new Vector3[newVerticesSize];
+                    Array.Copy(vertices, new_vertices, vertices.Length);
+                    vertices = new_vertices;
+    
+    
+                    int vIndexAfterCurve = vertices.Length - curves + 1 - 4;
+
+                    vertices[newVerticesSize - 4] = newVertexUp - mouseForwardVector * distance;
+                    vertices[newVerticesSize - 3] = newVertexDown - mouseForwardVector * distance;
+                    vertices[newVerticesSize - 2] = newVertexUp;
+                    vertices[newVerticesSize - 1] = newVertexDown;
+
+                    vertices[vIndex2] = lastMousePosition;
 
 
-                int newUVSize = uv.Length + curves;
-
-                Vector2[] new_uv = new Vector2[newUVSize];
-                Array.Copy(uv, new_uv, uv.Length);
-                uv = new_uv;
 
 
-                float previousV = uv[vIndex0].y;
-                uv[vIndex2] = new Vector2(0, previousV + 1.0f);
-                uv[vIndex3] = new Vector2(1, previousV + 1.0f);
-                uv[vIndex3 + 1] = new Vector2(1, previousV + 1.0f);
-                uv[vIndex3 + 2] = new Vector2(1, previousV + 1.0f);
-                uv[vIndex3 + 3] = new Vector2(1, previousV + 1.0f);
-                uv[vIndex3 + 4] = new Vector2(1, previousV + 1.0f);
-                uv[vIndex3 + 5] = new Vector2(1, previousV + 1.0f);
+                    Vector3 vStart = vertices[vIndex0] - vertices[vIndex2];
+                    Vector3 vEnd = (cross > 0 ? vertices[newVerticesSize - 4] : vertices[newVerticesSize - 3]) - vertices[vIndex2];
 
+                    float totalAngle = Vector3.SignedAngle(vStart, vEnd, Vector3.forward);
+                    float angleStep = totalAngle / curves;
+
+
+                    for (int i = 1; i < curves; i++)
+                    {
+                        float angleIncrement = angleStep * i;
+                        //Vector3 dir = Quaternion.AngleAxis(cross > 0 ? angleIncrement : -angleIncrement, Vector3.forward) * vStart;
+                        Vector3 dir = Quaternion.AngleAxis(angleIncrement, Vector3.forward) * vStart;
+
+                        vertices[vIndexAfterCurve + i - 1] = vertices[vIndex2] + dir;
+                    }
+
+
+                    int newTriangleSize = triangles.Length + 3 * curves;
+                    int[] new_triangles = new int[newTriangleSize];
+                    Array.Copy(triangles, new_triangles, triangles.Length);
+                    triangles = new_triangles;
+    
+                    int tIndexAfterCurve = triangles.Length - 3 * curves - 6;
+    
+                    triangles[tIndexAfterCurve + 0] = vIndex2;
+                    triangles[tIndexAfterCurve + 1] = cross > 0 ? vIndex0 : vIndexAfterCurve;
+                    triangles[tIndexAfterCurve + 2] = cross > 0 ? vIndexAfterCurve : vIndex0;
+
+
+                    for (int i = 1; i < curves; i++)
+                    {
+                        triangles[tIndexAfterCurve + i * 3 + 0] = vIndex2;
+                        triangles[tIndexAfterCurve + i * 3 + 1] = cross > 0 ? vIndexAfterCurve + i - 1 : i == curves - 1 ? vIndexAfterCurve + i + 1 : vIndexAfterCurve + i;
+                        triangles[tIndexAfterCurve + i * 3 + 2] = cross > 0 ? vIndexAfterCurve + i : vIndexAfterCurve + i -1;
+                    }
+
+
+                    int tIndex = triangles.Length - 6;
+                    // Triangle 1: (vIndex0, vIndex2, vIndex1)
+                    triangles[tIndex + 0] = newVerticesSize - 3;
+                    triangles[tIndex + 1] = newVerticesSize - 2;
+                    triangles[tIndex + 2] = newVerticesSize - 1;
+
+                    // Triangle 2: (vIndex1, vIndex2, vIndex3)
+                    triangles[tIndex + 3] = newVerticesSize - 3;
+                    triangles[tIndex + 4] = newVerticesSize - 4;
+                    triangles[tIndex + 5] = newVerticesSize - 2;
+
+
+                    //triangles[tIndex + 3] = vIndex1;
+                    //triangles[tIndex + 4] = cross > 0 ? newVerticesSize - 3 : newVerticesSize - 1;
+                    //triangles[tIndex + 5] = cross > 0 ? newVerticesSize - 2 : newVerticesSize - 3;
+
+
+                    int newUVSize = uv.Length + curves;
+    
+                    Vector2[] new_uv = new Vector2[newUVSize];
+                    Array.Copy(uv, new_uv, uv.Length);
+                    uv = new_uv;
+                    float previousV = uv[vIndex0].y;
+                    uv[vIndex2] = new Vector2(0, previousV + 1.0f);
+                    uv[vIndex3] = new Vector2(1, previousV + 1.0f);
+                    uv[vIndex3 + 1] = new Vector2(1, previousV + 1.0f);
+                    uv[vIndex3 + 2] = new Vector2(1, previousV + 1.0f);
+                    uv[vIndex3 + 3] = new Vector2(1, previousV + 1.0f);
+                    uv[vIndex3 + 4] = new Vector2(1, previousV + 1.0f);
+                    uv[vIndex3 + 5] = new Vector2(1, previousV + 1.0f);
+    
+                }
+                else
+                {
+                    vertices[vIndex2] = newVertexUp;
+                    vertices[vIndex3] = newVertexDown;
+    
+                    // --- NEW UV CALCULATION ---
+                    // Assumes uv[vIndex0] and uv[vIndex1] hold the UVs of the end of the last segment.
+                    // U goes from 0 to 1 across the width.
+                    // V increments by 1 for each new segment, allowing textures to tile along the length.
+                    float previousV = uv[vIndex0].y; // Get V from one of the previous segment's end points
+                                                     // (assuming U-coordinates differ but V-coordinates are the same for that edge)
+    
+                    uv[vIndex2] = new Vector2(0, previousV + 1.0f); // New "up" vertex UV
+                    uv[vIndex3] = new Vector2(1, previousV + 1.0f); // New "down" vertex UV
+                                                                    // --- END NEW UV CALCULATION ---
+    
+                    int tIndex = triangles.Length - 6;
+    
+                    // Triangles for the new quad. Ensure Counter-Clockwise (CCW) winding for front faces.
+                    // Quad formed by (vIndex0, vIndex1) and (vIndex2, vIndex3)
+                    // vIndex0 --- vIndex2
+                    //   |           |
+                    // vIndex1 --- vIndex3
+    
+                    // Triangle 1: (vIndex0, vIndex2, vIndex1)
+                    triangles[tIndex + 0] = vIndex0;
+                    triangles[tIndex + 1] = vIndex2;
+                    triangles[tIndex + 2] = vIndex1;
+    
+                    // Triangle 2: (vIndex1, vIndex2, vIndex3)
+                    triangles[tIndex + 3] = vIndex1;
+                    triangles[tIndex + 4] = vIndex2;
+                    triangles[tIndex + 5] = vIndex3;
+                }
+    
+                _vertices = vertices;
+                _uv = uv;
+                _triangles = triangles;
+    
+    
+                mesh.vertices = vertices;
+                mesh.uv = uv;
+                mesh.triangles = triangles;
+    
+                // --- RECALCULATE NORMALS AND BOUNDS ---
+                //mesh.RecalculateNormals(); // Crucial for lighting
+                //mesh.RecalculateBounds();  // Good for culling and other calculations
+                // --- END RECALCULATION ---
+    
+                lastMousePosition = mousePos;
+                lastMouseDir = mouseForwardVector;
+    
+                PolygonCollider2D polyCol = GetComponent<PolygonCollider2D>();
+                if (polyCol != null) // Check if the component exists
+                {
+                    // Ensure GetEdge returns valid points for PolygonCollider2D
+                    // The GetEdge method might need review if it's causing issues or not matching the visual mesh.
+                    Vector2[] colliderPoints = System.Array.ConvertAll(mesh.vertices, v3 => new Vector2(v3.x, v3.y));
+                    polyCol.points = GetEdge(colliderPoints);
+                }
+    
+    
+                //ClearDebugMeshes();
+                //InstantiateDebugMeshes(vertices);
             }
-            else
-            {
-                vertices[vIndex2] = newVertexUp;
-                vertices[vIndex3] = newVertexDown;
-
-                // --- NEW UV CALCULATION ---
-                // Assumes uv[vIndex0] and uv[vIndex1] hold the UVs of the end of the last segment.
-                // U goes from 0 to 1 across the width.
-                // V increments by 1 for each new segment, allowing textures to tile along the length.
-                float previousV = uv[vIndex0].y; // Get V from one of the previous segment's end points
-                                                 // (assuming U-coordinates differ but V-coordinates are the same for that edge)
-
-                uv[vIndex2] = new Vector2(0, previousV + 1.0f); // New "up" vertex UV
-                uv[vIndex3] = new Vector2(1, previousV + 1.0f); // New "down" vertex UV
-                                                                // --- END NEW UV CALCULATION ---
-
-                int tIndex = triangles.Length - 6;
-
-                // Triangles for the new quad. Ensure Counter-Clockwise (CCW) winding for front faces.
-                // Quad formed by (vIndex0, vIndex1) and (vIndex2, vIndex3)
-                // vIndex0 --- vIndex2
-                //   |           |
-                // vIndex1 --- vIndex3
-
-                // Triangle 1: (vIndex0, vIndex2, vIndex1)
-                triangles[tIndex + 0] = vIndex0;
-                triangles[tIndex + 1] = vIndex2;
-                triangles[tIndex + 2] = vIndex1;
-
-                // Triangle 2: (vIndex1, vIndex2, vIndex3)
-                triangles[tIndex + 3] = vIndex1;
-                triangles[tIndex + 4] = vIndex2;
-                triangles[tIndex + 5] = vIndex3;
-            }
-
-            _vertices = vertices;
-            _uv = uv;
-            _triangles = triangles;
-
-
-            mesh.vertices = vertices;
-            mesh.uv = uv;
-            mesh.triangles = triangles;
-
-            // --- RECALCULATE NORMALS AND BOUNDS ---
-            //mesh.RecalculateNormals(); // Crucial for lighting
-            //mesh.RecalculateBounds();  // Good for culling and other calculations
-            // --- END RECALCULATION ---
-
-            lastMousePosition = mousePos;
-            lastMouseDir = mouseForwardVector;
-
-            PolygonCollider2D polyCol = GetComponent<PolygonCollider2D>();
-            if (polyCol != null) // Check if the component exists
-            {
-                // Ensure GetEdge returns valid points for PolygonCollider2D
-                // The GetEdge method might need review if it's causing issues or not matching the visual mesh.
-                Vector2[] colliderPoints = System.Array.ConvertAll(mesh.vertices, v3 => new Vector2(v3.x, v3.y));
-                polyCol.points = GetEdge(colliderPoints);
-            }
-
-
-            ClearDebugMeshes();
-            InstantiateDebugMeshes(vertices);
+    
         }
-
     }
-}
 
     private bool _DrawPathValidate(Vector2 startPos, Vector2 direction, float distance)
     {
@@ -526,7 +525,7 @@ void RPC_StartDraw(Vector3 mousePos)
     {
         List<Vector2> v = new List<Vector2>();
 
-        int index = 3;
+        int index = 1;
 
         Stack<Vector2> stack = new Stack<Vector2>();
 
