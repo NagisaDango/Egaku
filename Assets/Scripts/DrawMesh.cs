@@ -356,8 +356,8 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
                 mesh.triangles = triangles;
     
                 // --- RECALCULATE NORMALS AND BOUNDS ---
-                //mesh.RecalculateNormals(); // Crucial for lighting
-                //mesh.RecalculateBounds();  // Good for culling and other calculations
+                mesh.RecalculateNormals(); // Crucial for lighting
+                mesh.RecalculateBounds();  // Good for culling and other calculations
                 // --- END RECALCULATION ---
     
                 lastMousePosition = mousePos;
