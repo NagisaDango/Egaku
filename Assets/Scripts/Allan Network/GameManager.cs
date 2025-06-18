@@ -446,6 +446,7 @@ namespace Allan
             else if (scene.name == "AllanLauncher")
             {
                 GameManager.Instance = null;
+                PhotonNetwork.OfflineMode = false;
                 Destroy(gameObject);
             }
         }
