@@ -53,6 +53,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minDistance: 1
   splinePrefab: {fileID: 1522651996897891101, guid: f1c3e6686ac59a74ab287dd03fcb12df, type: 3}
+  debugMesh: {fileID: 5032948484685333661, guid: 08a0883f6024a274b93887147ef0002f, type: 3}
   drawStrokes: 0
   rb2d: {fileID: 1433935798187040207}
   col2d: {fileID: 7309415233719333893}
