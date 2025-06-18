@@ -589,6 +589,11 @@ public class Runner : MonoBehaviourPunCallbacks
             photonView.RPC("RPC_Release", RpcTarget.All);
             Revive();
         }
+        if(other.tag == "Water")
+        {
+            photonView.RPC("RPC_Release", RpcTarget.All);
+            Revive();
+        }
     }
     
     
