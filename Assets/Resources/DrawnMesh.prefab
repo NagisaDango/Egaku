@@ -51,13 +51,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1c7aa8e9f682a274283d1acad838fc92, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minDistance: 1
+  minDistance: 10
+  lineThickness: 1
   splinePrefab: {fileID: 1522651996897891101, guid: f1c3e6686ac59a74ab287dd03fcb12df, type: 3}
   drawStrokes: 0
   rb2d: {fileID: 1433935798187040207}
   col2d: {fileID: 7309415233719333893}
   earsingSelf: 0
+  _vertices: []
+  _uv: []
+  _triangles: 
   spriteShapeController: {fileID: 0}
+  debugMesh: {fileID: 4341953823702223878, guid: 83c3187a5625eea40ae94ebabc10707c, type: 3}
 --- !u!33 &2449231605852471263
 MeshFilter:
   m_ObjectHideFlags: 0
