@@ -51,9 +51,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1c7aa8e9f682a274283d1acad838fc92, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minDistance: 1
-  lineThickness: 0.5
-  curveThresholdAngle: 90
+  minDistance: 0.2
+  lineThickness: 0.3
+  curveThresholdAngle: 180
   splinePrefab: {fileID: 1522651996897891101, guid: f1c3e6686ac59a74ab287dd03fcb12df, type: 3}
   drawStrokes: 0
   rb2d: {fileID: 1433935798187040207}

@@ -208,16 +208,9 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
                     print("DrawMesh-- " + angle);
                 }
     
-                if (angle < 90f)
+                if (angle < curveThresholdAngle)
                 {
                     float cross = -lastMouseDir.x * mouseForwardVector.y - -lastMouseDir.y * mouseForwardVector.x;
-                    //angle = cross >= 0 ? angle : -angle;
-    
-                    float a = lineThickness;
-                    float c = a / Mathf.Sin(Math.Abs(angle) * Mathf.Deg2Rad);
-                    float b = Mathf.Sqrt(Mathf.Pow(c, 2) - Mathf.Pow(a, 2));
-    
-                    float cutoff = b + c;
 
                     if (cross < 0)
                     {
@@ -226,43 +219,46 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
                         vIndex0 = temp;
                     }
 
-       
-                    vertices[vIndex1] = vertices[vIndex1] - lastMouseDir.normalized * cutoff;
-                    vertices[vIndex0] = vertices[vIndex0] - lastMouseDir.normalized * cutoff;
-    
-                    print("DrawMesh--" + " cross:" + cross +  " cutoff:" + cutoff + " vertices[vIndex1]:" + vertices[vIndex1]);
     
     
                     int curves = 5;
     
-                    int newVerticesSize = vertices.Length + curves;
+                    int newVerticesSize = vertices.Length + curves + 2 ;
     
                     Vector3[] new_vertices = new Vector3[newVerticesSize];
                     Array.Copy(vertices, new_vertices, vertices.Length);
                     vertices = new_vertices;
     
     
-                    int vIndexAfterCurve = vertices.Length - curves - 2;
-    
-                    vertices[vIndexAfterCurve + curves - 1] = vertices[vIndex1] + Quaternion.AngleAxis( cross > 0 ? 90 : 270, Vector3.forward) * mouseForwardVector * lineThickness * 2;
-    
-                    Vector3 vStart = vertices[vIndex0] - vertices[vIndex1];
-                    Vector3 vEnd = vertices[vIndexAfterCurve + curves - 1] - vertices[vIndex1];
-    
+                    int vIndexAfterCurve = vertices.Length - curves + 1 - 4;
+
+                    vertices[newVerticesSize - 4] = newVertexUp - mouseForwardVector * distance;
+                    vertices[newVerticesSize - 3] = newVertexDown - mouseForwardVector * distance;
+                    vertices[newVerticesSize - 2] = newVertexUp;
+                    vertices[newVerticesSize - 1] = newVertexDown;
+
+                    vertices[vIndex2] = lastMousePosition;
+
+
+
+
+                    Vector3 vStart = vertices[vIndex0] - vertices[vIndex2];
+                    Vector3 vEnd = (cross > 0 ? vertices[newVerticesSize - 4] : vertices[newVerticesSize - 3]) - vertices[vIndex2];
+
                     float totalAngle = Vector3.SignedAngle(vStart, vEnd, Vector3.forward);
                     float angleStep = totalAngle / curves;
-    
-    
+
+
                     for (int i = 1; i < curves; i++)
                     {
                         float angleIncrement = angleStep * i;
+                        //Vector3 dir = Quaternion.AngleAxis(cross > 0 ? angleIncrement : -angleIncrement, Vector3.forward) * vStart;
                         Vector3 dir = Quaternion.AngleAxis(angleIncrement, Vector3.forward) * vStart;
-                        vertices[vIndexAfterCurve + i - 1] = vertices[vIndex1] + dir;
+
+                        vertices[vIndexAfterCurve + i - 1] = vertices[vIndex2] + dir;
                     }
-    
-                    vertices[newVerticesSize-2] = newVertexUp;
-                    vertices[newVerticesSize-1] = newVertexDown;
-    
+
+
                     int newTriangleSize = triangles.Length + 3 * curves;
                     int[] new_triangles = new int[newTriangleSize];
                     Array.Copy(triangles, new_triangles, triangles.Length);
@@ -270,29 +266,34 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
     
                     int tIndexAfterCurve = triangles.Length - 3 * curves - 6;
     
-                    triangles[tIndexAfterCurve + 0] = vIndex1;
+                    triangles[tIndexAfterCurve + 0] = vIndex2;
                     triangles[tIndexAfterCurve + 1] = cross > 0 ? vIndex0 : vIndexAfterCurve;
                     triangles[tIndexAfterCurve + 2] = cross > 0 ? vIndexAfterCurve : vIndex0;
 
 
                     for (int i = 1; i < curves; i++)
                     {
-                        triangles[tIndexAfterCurve + i * 3 + 0] = vIndex1;
-                        triangles[tIndexAfterCurve + i * 3 + 1] = cross > 0 ? vIndexAfterCurve + i - 1 : vIndexAfterCurve + i;
-                        triangles[tIndexAfterCurve + i * 3 + 2] = cross > 0 ? vIndexAfterCurve + i : vIndexAfterCurve + i - 1;
+                        triangles[tIndexAfterCurve + i * 3 + 0] = vIndex2;
+                        triangles[tIndexAfterCurve + i * 3 + 1] = cross > 0 ? vIndexAfterCurve + i - 1 : i == curves - 1 ? vIndexAfterCurve + i + 1 : vIndexAfterCurve + i;
+                        triangles[tIndexAfterCurve + i * 3 + 2] = cross > 0 ? vIndexAfterCurve + i : vIndexAfterCurve + i -1;
                     }
-    
-    
+
+
                     int tIndex = triangles.Length - 6;
                     // Triangle 1: (vIndex0, vIndex2, vIndex1)
-                    triangles[tIndex + 0] = vIndex1;
+                    triangles[tIndex + 0] = newVerticesSize - 3;
                     triangles[tIndex + 1] = newVerticesSize - 2;
                     triangles[tIndex + 2] = newVerticesSize - 1;
 
                     // Triangle 2: (vIndex1, vIndex2, vIndex3)
-                    triangles[tIndex + 3] = vIndex1;
-                    triangles[tIndex + 4] = cross > 0 ? newVerticesSize - 3 : newVerticesSize - 1;
-                    triangles[tIndex + 5] = cross > 0 ? newVerticesSize - 2 : newVerticesSize - 3;
+                    triangles[tIndex + 3] = newVerticesSize - 3;
+                    triangles[tIndex + 4] = newVerticesSize - 4;
+                    triangles[tIndex + 5] = newVerticesSize - 2;
+
+
+                    //triangles[tIndex + 3] = vIndex1;
+                    //triangles[tIndex + 4] = cross > 0 ? newVerticesSize - 3 : newVerticesSize - 1;
+                    //triangles[tIndex + 5] = cross > 0 ? newVerticesSize - 2 : newVerticesSize - 3;
 
 
                     int newUVSize = uv.Length + curves;
