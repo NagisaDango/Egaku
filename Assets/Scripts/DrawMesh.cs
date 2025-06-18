@@ -257,6 +257,8 @@ void RPC_StartDraw(Vector3 mousePos)
             PhotonNetwork.Destroy(gameObject);
         else
         {
+            //Debug.LogError("vertices" + mesh.vertices.Length + "triangle" + mesh.triangles.Length + "uv" + mesh.uv.Length);
+            photonView.RPC("RPC_CutDownMesh", RpcTarget.Others, mesh.uv.Length, mesh.vertices.Length, mesh.triangles.Length);
             rb2d.centerOfMass = col2d.bounds.center;
             if (currProperty.gravity) rb2d.bodyType = RigidbodyType2D.Dynamic;
             if (currProperty.mass > 0) rb2d.mass = currProperty.mass;
@@ -268,15 +270,17 @@ void RPC_StartDraw(Vector3 mousePos)
             {
                 GetComponent<Rigidbody2D>().simulated = true;
             }
-            else
-            {
-                col2d.isTrigger = true;
-                rb2d.simulated = true;
-                rb2d.bodyType = RigidbodyType2D.Kinematic;
-            }
             
             this.gameObject.tag = SetUpObjectTag(currProperty.penType);
-            photonView.TransferOwnership(Runner.Instance.actorNum);
+            if (photonView.IsMine && PhotonNetwork.LocalPlayer.ActorNumber != Runner.Instance.actorNum)
+            {
+                Debug.LogError($"Transferring ownership to: {Runner.Instance.actorNum} self actor num is {PhotonNetwork.LocalPlayer.ActorNumber}" );
+                photonView.TransferOwnership(Runner.Instance.actorNum);
+            }
+            else
+            {
+                Debug.LogError("Self actor num is " + PhotonNetwork.LocalPlayer.ActorNumber + " While savbed is " + Runner.Instance.actorNum);
+            }
             //Electric
             if (currProperty.penType == PenProperty.PenType.Electric)
             {
@@ -296,6 +300,26 @@ void RPC_StartDraw(Vector3 mousePos)
             {
                 this.AddComponent<WoodPen>();
             }
+        }
+    }
+
+    [PunRPC]
+    private void RPC_CutDownMesh(int uv, int vert, int tri)
+    {
+        if (uv < mesh.uv.Length || vert < mesh.vertices.Length || tri < mesh.triangles.Length)
+        {
+            //Not efficient create new array and copies element
+            Vector3[] vertices = new Vector3[vert];
+            Vector2[] uv_arr = new Vector2[uv]; // UV array also needs to be expanded
+            int[] triangles = new int[tri];
+            
+            Array.Copy(mesh.triangles, triangles, tri);
+            Array.Copy(mesh.uv, uv_arr, uv);
+            Array.Copy(mesh.vertices, vertices, vert);
+            
+            mesh.vertices = vertices;
+            mesh.uv = uv_arr;
+            mesh.triangles = triangles;
         }
     }
 

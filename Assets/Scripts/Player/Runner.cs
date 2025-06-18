@@ -81,11 +81,18 @@ public class Runner : MonoBehaviourPunCallbacks
         if (photonView.IsMine)
         {
             PlayerManager.LocalPlayerInstance = this.gameObject;
+            photonView.RPC("RPC_InitDataSync", RpcTarget.AllBuffered, PhotonNetwork.LocalPlayer.ActorNumber);
             actorNum = PhotonNetwork.LocalPlayer.ActorNumber;
         }
         // #Critical
         // we flag as don't destroy on load so that instance survives level synchronization, thus giving a seamless experience when levels load.
         //DontDestroyOnLoad(this.gameObject);
+    }
+
+    [PunRPC]
+    private void RPC_InitDataSync(int num)
+    {
+        actorNum = num;
     }
 
     private void Start()

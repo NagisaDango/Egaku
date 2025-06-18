@@ -91,6 +91,8 @@ MonoBehaviour:
   - EraseDrawnObjCast
   - RPC_DrawPathValidate
   - RPC_ForceFinishDraw
+  - RPC_CutDownMesh
+  - RPC_InitDataSync
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1
