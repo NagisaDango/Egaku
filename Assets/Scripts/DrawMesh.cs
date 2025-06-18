@@ -119,11 +119,19 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
         return Vector3.Distance(mousePos, lastMousePosition) > minDistance;
     }
 
+    public Vector3 GetLastMousePosition()
+    {
+        return lastMousePosition;
+    }
+
     //RPC: Draw mesh according to the mosuePos
    [PunRPC]
 void RPC_StartDraw(Vector3 mousePos)
 {
-    if (((drawStrokes < maxStrokes) || maxStrokes <= 0))
+    Vector3 direction = (mousePos - lastMousePosition).normalized;
+    float distance = Vector3.Distance(lastMousePosition, mousePos);
+    
+    if (((drawStrokes < maxStrokes) || maxStrokes <= 0) && _DrawPathValidate((Vector2)lastMousePosition, (Vector2)direction, distance))
     {
         drawStrokes++;
         if(pointList != null) pointList.Add(mousePos); // Assuming pointList is for other logic like ElectricSpline
@@ -213,6 +221,18 @@ void RPC_StartDraw(Vector3 mousePos)
         }
     }
 }
+
+    private bool _DrawPathValidate(Vector2 startPos, Vector2 direction, float distance)
+    {
+        RaycastHit2D[] hits = Physics2D.RaycastAll(startPos, direction, distance,  LayerMask.GetMask("DrawProhibited","Draw", "Platform"));
+        if (hits.Length > 0)// && hit.collider.gameObject.layer == LayerMask.NameToLayer("Draw"))
+        {
+            photonView.RPC("RPC_FinishDraw", RpcTarget.All);
+            Drawer.Instance.photonView.RPC("RPC_ForceFinishDraw", RpcTarget.All);
+            return false;
+        }
+        return true;
+    }
     
     [PunRPC]
     private void RPC_DrawSpriteShape(Vector3 mousePos)
@@ -244,9 +264,19 @@ void RPC_StartDraw(Vector3 mousePos)
             if (currProperty.trigger)  //Destroy(col2d);
                 col2d.isTrigger = true;
                 
+            if (PhotonNetwork.OfflineMode ||  GameManager.Instance.devSpawn || (RolesManager.PlayerRole)(int)PhotonNetwork.LocalPlayer.CustomProperties["Role"] != RolesManager.PlayerRole.Drawer)
+            {
+                GetComponent<Rigidbody2D>().simulated = true;
+            }
+            else
+            {
+                col2d.isTrigger = true;
+                rb2d.simulated = true;
+                rb2d.bodyType = RigidbodyType2D.Kinematic;
+            }
+            
             this.gameObject.tag = SetUpObjectTag(currProperty.penType);
             photonView.TransferOwnership(Runner.Instance.actorNum);
-
             //Electric
             if (currProperty.penType == PenProperty.PenType.Electric)
             {

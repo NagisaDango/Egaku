@@ -89,6 +89,8 @@ MonoBehaviour:
   - RPC_EnablePen
   - RPC_RemoveIconImage
   - EraseDrawnObjCast
+  - RPC_DrawPathValidate
+  - RPC_ForceFinishDraw
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

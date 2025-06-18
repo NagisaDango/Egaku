@@ -101,7 +101,7 @@ public class Drawer : MonoBehaviourPun
                 int tempIndex = (currentPenIndex - 1 + 4) % 4;
                 while (tempIndex != currentPenIndex)
                 {
-                    print(tempIndex + "  " + penStatus[tempIndex]);
+                    //print(tempIndex + "  " + penStatus[tempIndex]);
                     if (penStatus[tempIndex] == true)
                     {
                         SetPenProperties(penProperties[tempIndex].penType);
@@ -119,7 +119,7 @@ public class Drawer : MonoBehaviourPun
                 int tempIndex = (currentPenIndex + 1 + 4) % 4;
                 while (tempIndex != currentPenIndex)
                 {
-                    print(tempIndex + "  " + penStatus[tempIndex]);
+                    //print(tempIndex + "  " + penStatus[tempIndex]);
                     if (penStatus[tempIndex] == true)
                     {
                         SetPenProperties(penProperties[tempIndex].penType);
@@ -191,14 +191,6 @@ public class Drawer : MonoBehaviourPun
             {
                 if (Vector3.Distance(mousePos, lastErasePos) >= minEraseDis)
                 {
-                    //RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero, 0, LayerMask.GetMask("Draw"));
-                    //print("ERASE");
-                    //print("ERASE" + hit.collider.gameObject.name +  mousePos);
-
-                    //photonView.RPC("EraseDrawnObj", RpcTarget.All, hit, (Vector2)mousePos);
-                    //photonView.RPC("EraseDrawnObj", RpcTarget.All,
-                    //    (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition));
-
                     Vector3 direction = (mousePos - lastErasePos).normalized;
                     float distance = Vector3.Distance(lastErasePos, mousePos);
                     photonView.RPC("EraseDrawnObjCast", RpcTarget.All, (Vector2)lastErasePos, (Vector2)direction,
@@ -221,27 +213,28 @@ public class Drawer : MonoBehaviourPun
                 photonView.RPC("UpdateSlider", RpcTarget.All, djj * 1.0f / drawStrokeLimit);
 
                 RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero, 0, LayerMask.GetMask("DrawProhibited","Draw", "Platform"));
-                //RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero, 0, LayerMask.GetMask("DrawProhibited", "Draw", "Platform"));
-                //hit = Physics2D.Raycast(mousePos, Vector2.zero);
 
+                Vector3 lastPos = currentDrawer.GetLastMousePosition();
+                Vector3 direction = (mousePos - lastPos).normalized;
+                float distance = Vector3.Distance(lastPos, mousePos);
+                //photonView.RPC("RPC_DrawPathValidate", RpcTarget.All, (Vector2)lastPos, (Vector2)direction,
+                //    distance);
+                
+                
 
                 if (djj <= 0)
                 {
                     print("stop drawing");
                     drawStrokeTotal -= currentDrawer.drawStrokes;
-                    currentDrawer = null;
-                }
-                else if(hit.collider != null && hit.collider.tag != "Electric")
-                {
-                    print(hit.collider.name);
-                    drawStrokeTotal -= currentDrawer.drawStrokes;
                     currentDrawer.photonView.RPC("RPC_FinishDraw", RpcTarget.All);
                     currentDrawer = null;
-
                 }
                 else
                 {
-                    currentDrawer.photonView.RPC("RPC_StartDraw", RpcTarget.All, mousePos);
+                    if (currentDrawer)
+                    {
+                        currentDrawer.photonView.RPC("RPC_StartDraw", RpcTarget.All, mousePos);
+                    }
                     //currentDrawer.photonView.RPC("RPC_DrawSpriteShape", RpcTarget.All, mousePos);
                     //currentDrawer.StartDraw();
                 }
@@ -404,6 +397,30 @@ public class Drawer : MonoBehaviourPun
             SpawnParticles(hit.collider.gameObject.tag, mousePos);
             */
             //ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", new Vector3(mousePos.x, mousePos.y, 0), Quaternion.identity).GetComponent<ParticleAttractor>();
+        }
+    }
+
+    [PunRPC]
+    private void RPC_DrawPathValidate(Vector2 startPos, Vector2 direction, float distance)
+    {
+        RaycastHit2D[] hits = Physics2D.RaycastAll(startPos, direction, distance,  LayerMask.GetMask("DrawProhibited","Draw", "Platform"));
+        if (hits.Length > 0)// && hit.collider.gameObject.layer == LayerMask.NameToLayer("Draw"))
+        {
+            if (currentDrawer)
+                RPC_ForceFinishDraw();
+            else
+                photonView.RPC("RPC_ForceFinishDraw", RpcTarget.Others);
+        }
+    }
+
+    [PunRPC]
+    private void RPC_ForceFinishDraw()
+    {
+        if (currentDrawer)
+        {
+            drawStrokeTotal -= currentDrawer.drawStrokes;
+            //currentDrawer.photonView.RPC("RPC_FinishDraw", RpcTarget.All);
+            currentDrawer = null;
         }
     }
     
