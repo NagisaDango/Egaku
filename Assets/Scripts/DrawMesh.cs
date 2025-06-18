@@ -210,43 +210,52 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
 
                 vertices[vIndex1] = vertices[vIndex1] - lastMouseDir.normalized * cutoff;
 
+
+                vertices[vIndex2] = newVertexUp;
+                vertices[vIndex3] = newVertexDown;
+
+
+                float previousV = uv[vIndex0].y; 
+                uv[vIndex2] = new Vector2(0, previousV + 1.0f); 
+                uv[vIndex3] = new Vector2(1, previousV + 1.0f);
+
+
+
             }
+            else
+            {
+                vertices[vIndex2] = newVertexUp;
+                vertices[vIndex3] = newVertexDown;
 
+                // --- NEW UV CALCULATION ---
+                // Assumes uv[vIndex0] and uv[vIndex1] hold the UVs of the end of the last segment.
+                // U goes from 0 to 1 across the width.
+                // V increments by 1 for each new segment, allowing textures to tile along the length.
+                float previousV = uv[vIndex0].y; // Get V from one of the previous segment's end points
+                                                 // (assuming U-coordinates differ but V-coordinates are the same for that edge)
 
+                uv[vIndex2] = new Vector2(0, previousV + 1.0f); // New "up" vertex UV
+                uv[vIndex3] = new Vector2(1, previousV + 1.0f); // New "down" vertex UV
+                                                                // --- END NEW UV CALCULATION ---
 
+                int tIndex = triangles.Length - 6;
 
+                // Triangles for the new quad. Ensure Counter-Clockwise (CCW) winding for front faces.
+                // Quad formed by (vIndex0, vIndex1) and (vIndex2, vIndex3)
+                // vIndex0 --- vIndex2
+                //   |           |
+                // vIndex1 --- vIndex3
 
-            vertices[vIndex2] = newVertexUp;
-            vertices[vIndex3] = newVertexDown;
+                // Triangle 1: (vIndex0, vIndex2, vIndex1)
+                triangles[tIndex + 0] = vIndex0;
+                triangles[tIndex + 1] = vIndex2;
+                triangles[tIndex + 2] = vIndex1;
 
-            // --- NEW UV CALCULATION ---
-            // Assumes uv[vIndex0] and uv[vIndex1] hold the UVs of the end of the last segment.
-            // U goes from 0 to 1 across the width.
-            // V increments by 1 for each new segment, allowing textures to tile along the length.
-            float previousV = uv[vIndex0].y; // Get V from one of the previous segment's end points
-                                             // (assuming U-coordinates differ but V-coordinates are the same for that edge)
-        
-            uv[vIndex2] = new Vector2(0, previousV + 1.0f); // New "up" vertex UV
-            uv[vIndex3] = new Vector2(1, previousV + 1.0f); // New "down" vertex UV
-            // --- END NEW UV CALCULATION ---
-
-            int tIndex = triangles.Length - 6;
-
-            // Triangles for the new quad. Ensure Counter-Clockwise (CCW) winding for front faces.
-            // Quad formed by (vIndex0, vIndex1) and (vIndex2, vIndex3)
-            // vIndex0 --- vIndex2
-            //   |           |
-            // vIndex1 --- vIndex3
-        
-            // Triangle 1: (vIndex0, vIndex2, vIndex1)
-            triangles[tIndex + 0] = vIndex0;
-            triangles[tIndex + 1] = vIndex2;
-            triangles[tIndex + 2] = vIndex1;
-
-            // Triangle 2: (vIndex1, vIndex2, vIndex3)
-            triangles[tIndex + 3] = vIndex1;
-            triangles[tIndex + 4] = vIndex2;
-            triangles[tIndex + 5] = vIndex3;
+                // Triangle 2: (vIndex1, vIndex2, vIndex3)
+                triangles[tIndex + 3] = vIndex1;
+                triangles[tIndex + 4] = vIndex2;
+                triangles[tIndex + 5] = vIndex3;
+            }
 
             _vertices = vertices;
             _uv = uv;
