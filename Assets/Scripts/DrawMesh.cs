@@ -203,17 +203,14 @@ void RPC_StartDraw(Vector3 mousePos)
             {
                 float dot = Vector2.Dot(lastMouseDir.normalized, mouseForwardVector.normalized);
                 angle = 180 - Mathf.Acos(Mathf.Clamp(dot, -1f, 1f)) * Mathf.Rad2Deg;
-
-                // Use the 2D cross product (scalar in 2D)
-                float cross = lastMouseDir.x * mouseForwardVector.y - lastMouseDir.y * mouseForwardVector.x;
-
-                // If cross < 0, b is clockwise from a ⇒ negative angle
-                //angle = cross >= 0 ? angle : -angle;
                 print("DrawMesh-- " + angle);
             }
 
             if (angle < 90f)
             {
+                float cross = -lastMouseDir.x * mouseForwardVector.y - -lastMouseDir.y * mouseForwardVector.x;
+                angle = cross >= 0 ? angle : -angle;
+
                 float a = lineThickness;
                 float c = a / Mathf.Sin(angle * Mathf.Deg2Rad);
                 float b = Mathf.Sqrt(Mathf.Pow(c, 2) - Mathf.Pow(a, 2));
@@ -226,8 +223,8 @@ void RPC_StartDraw(Vector3 mousePos)
 
                 print("DrawMesh--" + " cutoff:" + cutoff + " vertices[vIndex1]:" + vertices[vIndex1]);
 
-                vertices[vIndex2] = newVertexUp;
-                vertices[vIndex3] = newVertexDown;
+                //vertices[vIndex2] = newVertexUp;
+                //vertices[vIndex3] = newVertexDown;
 
 
                 int curves = 5;
@@ -239,19 +236,12 @@ void RPC_StartDraw(Vector3 mousePos)
                 vertices = new_vertices;
 
 
+                int vIndexAfterCurve = vertices.Length - curves - 2;
 
-                int vIndexAfterCurve = vertices.Length - curves;
-
-                vertices[newVerticesSize-1] = vertices[vIndex1] + Quaternion.AngleAxis(90, Vector3.forward) * mouseForwardVector * lineThickness * 2;
-
-
-                //for (int i = 0; i < curves - 1; i++)
-                //{
-                //    vertices[vIndexAfterCurve + i] = vertices[vIndex0];
-                //}
+                vertices[vIndexAfterCurve + curves - 1] = vertices[vIndex1] + Quaternion.AngleAxis(90, Vector3.forward) * mouseForwardVector * lineThickness * 2;
 
                 Vector3 vStart = vertices[vIndex0] - vertices[vIndex1];
-                Vector3 vEnd = vertices[newVerticesSize - 1] - vertices[vIndex1];
+                Vector3 vEnd = vertices[vIndexAfterCurve + curves - 1] - vertices[vIndex1];
 
                 float totalAngle = Vector3.SignedAngle(vStart, vEnd, Vector3.forward);
                 float angleStep = totalAngle / curves;
@@ -264,24 +254,15 @@ void RPC_StartDraw(Vector3 mousePos)
                     vertices[vIndexAfterCurve + i - 1] = vertices[vIndex1] + dir;
                 }
 
-                int tIndex = triangles.Length - 6;
-                // Triangle 1: (vIndex0, vIndex2, vIndex1)
-                triangles[tIndex + 0] = newVerticesSize - 1;
-                triangles[tIndex + 1] = vIndex2;
-                triangles[tIndex + 2] = vIndex1;
-
-                // Triangle 2: (vIndex1, vIndex2, vIndex3)
-                triangles[tIndex + 3] = vIndex1;
-                triangles[tIndex + 4] = vIndex2;
-                triangles[tIndex + 5] = vIndex3;
-
+                vertices[newVerticesSize-2] = newVertexUp;
+                vertices[newVerticesSize-1] = newVertexDown;
 
                 int newTriangleSize = triangles.Length + 3 * curves;
                 int[] new_triangles = new int[newTriangleSize];
                 Array.Copy(triangles, new_triangles, triangles.Length);
                 triangles = new_triangles;
 
-                int tIndexAfterCurve = triangles.Length - 3 * curves;
+                int tIndexAfterCurve = triangles.Length - 3 * curves - 6;
 
                 triangles[tIndexAfterCurve + 0] = vIndex1;
                 triangles[tIndexAfterCurve + 1] = vIndex0;
@@ -295,13 +276,23 @@ void RPC_StartDraw(Vector3 mousePos)
                 }
 
 
+                int tIndex = triangles.Length - 6;
+                // Triangle 1: (vIndex0, vIndex2, vIndex1)
+                triangles[tIndex + 0] = vIndex1;
+                triangles[tIndex + 1] = newVerticesSize - 2;
+                triangles[tIndex + 2] = newVerticesSize - 1;
+
+                // Triangle 2: (vIndex1, vIndex2, vIndex3)
+                triangles[tIndex + 3] = vIndex1;
+                triangles[tIndex + 4] = newVerticesSize - 3;
+                triangles[tIndex + 5] = newVerticesSize - 2;
+
+
                 int newUVSize = uv.Length + curves;
 
                 Vector2[] new_uv = new Vector2[newUVSize];
                 Array.Copy(uv, new_uv, uv.Length);
                 uv = new_uv;
-
-
                 float previousV = uv[vIndex0].y;
                 uv[vIndex2] = new Vector2(0, previousV + 1.0f);
                 uv[vIndex3] = new Vector2(1, previousV + 1.0f);
