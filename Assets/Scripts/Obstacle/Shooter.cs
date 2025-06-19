@@ -58,7 +58,7 @@ public class Shooter : MonoBehaviour
                 {
                     Vector2 dir = runner.position - transform.position;
                     float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-                    print("angle");
+                    //print("angle");
 
                     sprd.transform.rotation = Quaternion.AngleAxis(runner.position.x >= transform.position.x ? angle : angle + 180, Vector3.forward);
 

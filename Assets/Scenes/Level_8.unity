@@ -2646,6 +2646,10 @@ PrefabInstance:
       value: -1
       objectReference: {fileID: 0}
     - target: {fileID: 5584683189201868784, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
+      propertyPath: leaveDestroy
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5584683189201868784, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
       propertyPath: notShowForSolo
       value: 0
       objectReference: {fileID: 0}

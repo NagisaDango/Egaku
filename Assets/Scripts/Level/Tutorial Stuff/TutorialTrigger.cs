@@ -45,7 +45,11 @@ public class TutorialTrigger : MonoBehaviourPun
         
         if (PhotonNetwork.OfflineMode || GameManager.Instance.devSpawn)
         {
-            if(notShowForSolo) Destroy(this);
+            if (notShowForSolo)
+            {
+                print("Destroying Tutorial not for solo");
+                Destroy(this.gameObject);
+            }
         }
         else if(designRole != RolesManager.PlayerRole.None && (RolesManager.PlayerRole)(int)PhotonNetwork.CurrentRoom.CustomProperties["Role_" + PhotonNetwork.LocalPlayer.ActorNumber] !=
                 designRole || onlyShowForSolo)
