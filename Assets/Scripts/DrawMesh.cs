@@ -375,12 +375,22 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
     
         }
     }
-
+    
+    private bool finished = false;
+    
     private bool _DrawPathValidate(Vector2 startPos, Vector2 direction, float distance)
     {
+        if (currProperty.penType == PenProperty.PenType.Electric)
+        {
+            return true;
+        }
+        
+        if (finished)
+            return false;
         RaycastHit2D[] hits = Physics2D.RaycastAll(startPos, direction, distance,  LayerMask.GetMask("DrawProhibited","Draw", "Platform"));
         if (hits.Length > 0)// && hit.collider.gameObject.layer == LayerMask.NameToLayer("Draw"))
         {
+            finished = true;
             photonView.RPC("RPC_FinishDraw", RpcTarget.All);
             Drawer.Instance.photonView.RPC("RPC_ForceFinishDraw", RpcTarget.All);
             return false;
@@ -410,7 +420,9 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
     {
         lastMouseDir = Vector3.zero;
         if (drawStrokes <= 0 || pointList.Count == 0)
-            PhotonNetwork.Destroy(gameObject);
+        {
+            photonView.RPC("RPC_DestroySelf", RpcTarget.All);
+        }
         else
         {
             //currProperty.currentStrokes += drawStrokes;
@@ -463,6 +475,13 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
     }
 
     [PunRPC]
+    private void RPC_DestroySelf()
+    {
+        if(photonView.IsMine || PhotonNetwork.IsMasterClient)
+            PhotonNetwork.Destroy(this.gameObject);
+    }
+
+    [PunRPC]
     private void RPC_CutDownMesh(int uv, int vert, int tri)
     {
         if (uv < mesh.uv.Length || vert < mesh.vertices.Length || tri < mesh.triangles.Length)
@@ -481,7 +500,7 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
             mesh.triangles = triangles;
         }
     }
-
+    
     private string SetUpObjectTag(PenProperty.PenType penType)
     {
         switch (penType)

@@ -76,13 +76,15 @@ public class Bullet : MonoBehaviourPun
             }
 
         }
-        else if(collision.gameObject.layer == LayerMask.NameToLayer("Draw") && collision.gameObject.tag == "Cloud")
+        else if(collision.gameObject.layer == LayerMask.NameToLayer("Draw"))
         {
-            return;
+            if (collision.gameObject.tag == "Cloud")
+            {
+                ChangeDirection(collision.contacts[0].normal.normalized);
+                return;
+            }
+            PhotonNetwork.Destroy(collision.gameObject);
         }
-        
-        //Destroy(gameObject);
-
         if (photonView.IsMine)
         {
             PhotonNetwork.Destroy(gameObject);
@@ -92,7 +94,10 @@ public class Bullet : MonoBehaviourPun
 
     public void ChangeDirection(Vector2 normal)
     {
+        //Debug.Log(direction + " before bounce");
         direction = Vector2.Reflect(direction, normal).normalized;
+        //transform.Translate(direction.normalized * Time.deltaTime * speed);
+        //Debug.Log(direction + " after bounce");
         //direction = dir;
     }
 

@@ -133,7 +133,7 @@ public class Drawer : MonoBehaviourPun
                         ClearCoroutineQueue();
 
                         //inkSlider.value = penProperties[tempIndex].currentStrokes / penProperties[tempIndex].maxStrokes;
-                        photonView.RPC("UpdateSlider", RpcTarget.All, 1 - penProperties[tempIndex].currentStrokes * 1f / penProperties[tempIndex].maxStrokes);
+                        //photonView.RPC("UpdateSlider", RpcTarget.All, 1 - penProperties[tempIndex].currentStrokes * 1f / penProperties[tempIndex].maxStrokes);
 
                         break;
                     }
@@ -263,8 +263,6 @@ public class Drawer : MonoBehaviourPun
                 Vector3 lastPos = currentDrawer.GetLastMousePosition();
                 Vector3 direction = (mousePos - lastPos).normalized;
                 float distance = Vector3.Distance(lastPos, mousePos);
-                //photonView.RPC("RPC_DrawPathValidate", RpcTarget.All, (Vector2)lastPos, (Vector2)direction,
-                //    distance);
                 
                 
 
@@ -440,25 +438,16 @@ public class Drawer : MonoBehaviourPun
     }
 
     [PunRPC]
-    private void RPC_DrawPathValidate(Vector2 startPos, Vector2 direction, float distance)
-    {
-        RaycastHit2D[] hits = Physics2D.RaycastAll(startPos, direction, distance,  LayerMask.GetMask("DrawProhibited","Draw", "Platform"));
-        if (hits.Length > 0)// && hit.collider.gameObject.layer == LayerMask.NameToLayer("Draw"))
-        {
-            if (currentDrawer)
-                RPC_ForceFinishDraw();
-            else
-                photonView.RPC("RPC_ForceFinishDraw", RpcTarget.Others);
-        }
-    }
-
-    [PunRPC]
     private void RPC_ForceFinishDraw()
     {
         if (currentDrawer)
         {
             drawStrokeTotal -= currentDrawer.drawStrokes;
             //currentDrawer.photonView.RPC("RPC_FinishDraw", RpcTarget.All);
+            if (currentDrawer.drawStrokes <= 0)
+            {
+                PhotonNetwork.Destroy(currentDrawer.gameObject);
+            }
             currentDrawer = null;
         }
     }

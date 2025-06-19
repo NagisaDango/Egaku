@@ -48,7 +48,7 @@ public class CloudFloat : MonoBehaviour
             AudioManager.PlayOne(AudioManager.CLOUDBOUNCESFX);
             if (other.gameObject.tag == "Bullet")
             {
-                other.gameObject.GetComponent<Bullet>().ChangeDirection(bounceDirection);
+                //other.gameObject.GetComponent<Bullet>().ChangeDirection(bounceDirection);
                 return;
             }
             if (rb.mass < 5.0f)
