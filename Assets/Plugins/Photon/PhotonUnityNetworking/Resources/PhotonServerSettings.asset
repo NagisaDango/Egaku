@@ -100,6 +100,7 @@ MonoBehaviour:
   - RPC_BatteryIn
   - RPC_BatteryOut
   - RPC_DestroySelf
+  - ChangeSliderColor
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1
