@@ -388,31 +388,20 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
         if (finished)
             return false;
         RaycastHit2D[] hits = Physics2D.RaycastAll(startPos, direction, distance,  LayerMask.GetMask("DrawProhibited","Draw", "Platform"));
-        if (hits.Length > 0)// && hit.collider.gameObject.layer == LayerMask.NameToLayer("Draw"))
+        if (hits.Length > 0 )// && hit.collider.gameObject.layer == LayerMask.NameToLayer("Draw"))
         {
-            finished = true;
-            photonView.RPC("RPC_FinishDraw", RpcTarget.All);
-            Drawer.Instance.photonView.RPC("RPC_ForceFinishDraw", RpcTarget.All);
-            return false;
+            foreach (RaycastHit2D hit in hits)
+            {
+                if (!hit.collider.gameObject.CompareTag("Electric"))
+                {
+                    finished = true;
+                    photonView.RPC("RPC_FinishDraw", RpcTarget.All);
+                    Drawer.Instance.photonView.RPC("RPC_ForceFinishDraw", RpcTarget.All);
+                    return false;
+                }
+            }
         }
         return true;
-    }
-    
-    [PunRPC]
-    private void RPC_DrawSpriteShape(Vector3 mousePos)
-    {
-        if (((drawStrokes < maxStrokes) || maxStrokes <= 0))
-        {
-            drawStrokes++;
-            currProperty.currentStrokes++;
-            if (pointList != null) pointList.Add(mousePos);
-
-            lastMousePosition = mousePos;
-            EdgeCollider2D col = GetComponent<EdgeCollider2D>();
-            print(pointList.Count );
-            spriteShapeController.spline.InsertPointAt(pointList.Count - 1, mousePos);
-            col.points = pointList.ToArray();
-        }
     }
 
     [PunRPC]
@@ -538,7 +527,7 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
             }
         }
     }
-    
+
     //Get the edges of the mesh
     private Vector2[] GetEdge(Vector2[] array)
     {

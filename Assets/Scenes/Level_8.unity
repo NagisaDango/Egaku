@@ -153,11 +153,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6370572700016637556, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
       propertyPath: m_text
-      value: This is Saki, her attack will break glass and your drawing.
+      value: This is Saki, her attack will break glass and drawings.
       objectReference: {fileID: 0}
     - target: {fileID: 6370572700016637556, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
       propertyPath: m_fontSize
-      value: 21.35
+      value: 23.5
       objectReference: {fileID: 0}
     - target: {fileID: 8720243028531744330, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
       propertyPath: m_Pivot.x
