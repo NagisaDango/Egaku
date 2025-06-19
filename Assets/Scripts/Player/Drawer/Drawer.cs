@@ -32,6 +32,7 @@ public class Drawer : MonoBehaviourPun
     public int drawStrokeLimit = 300;
     private int drawStrokeTotal;
     [SerializeField] private Slider inkSlider;
+    public PenProperty.PenType sliderPenType;
     public float time = 0.2f;
 
     private int actorNum;
@@ -82,8 +83,10 @@ public class Drawer : MonoBehaviourPun
             GameObject.Find("LevelSetup").GetComponent<LevelSetup>().Init(UI.GetComponent<DrawerUICOntrol>());
         }
 
-
-        ChangeSliderColor(FindPenProperty(currentPenType).material.color);
+        Color color = FindPenProperty(currentPenType).material.color;
+        //sliderPenType = FindPenProperty(currentPenType).penType;
+        photonView.RPC("ChangeSliderColor", RpcTarget.All, color.r, color.g, color.b, (int)FindPenProperty(currentPenType).penType);
+        //ChangeSliderColor(FindPenProperty(currentPenType).material.color);
     }
 
 
@@ -129,11 +132,11 @@ public class Drawer : MonoBehaviourPun
                     {
                         SetPenProperties(penProperties[tempIndex].penType);
                         StopAllCoroutines();
-                        photonView.RPC("ChangeSliderColor", RpcTarget.All, penProperties[tempIndex].material.color);
-                        //ChangeSliderColor(penProperties[tempIndex].material.color);
-                        ClearCoroutineQueue();
+                        Color color = penProperties[tempIndex].material.color;
 
-                        //inkSlider.value = penProperties[tempIndex].currentStrokes / penProperties[tempIndex].maxStrokes;
+                        photonView.RPC("ChangeSliderColor", RpcTarget.All, color.r, color.g, color.b, (int)(penProperties[tempIndex].penType));
+                        photonView.RPC("ClearCoroutineQueue", RpcTarget.All);
+
                         photonView.RPC("UpdateSlider", RpcTarget.All, 1 - penProperties[tempIndex].currentStrokes * 1f / penProperties[tempIndex].maxStrokes);
 
                         break;
@@ -156,12 +159,10 @@ public class Drawer : MonoBehaviourPun
                         SetPenProperties(penProperties[tempIndex].penType);
 
                         StopAllCoroutines();
-                        photonView.RPC("ChangeSliderColor", RpcTarget.All, penProperties[tempIndex].material.color);
+                        Color color = penProperties[tempIndex].material.color;
+                        photonView.RPC("ChangeSliderColor", RpcTarget.All, color.r, color.g, color.b, (int)(penProperties[tempIndex].penType));
+                        photonView.RPC("ClearCoroutineQueue", RpcTarget.All);
 
-                        //ChangeSliderColor(penProperties[tempIndex].material.color);
-                        ClearCoroutineQueue();
-
-                        //inkSlider.value = penProperties[tempIndex].currentStrokes / penProperties[tempIndex].maxStrokes;
                         photonView.RPC("UpdateSlider", RpcTarget.All, 1 - penProperties[tempIndex].currentStrokes * 1f / penProperties[tempIndex].maxStrokes);
 
 
@@ -238,8 +239,7 @@ public class Drawer : MonoBehaviourPun
                 {
                     Vector3 direction = (mousePos - lastErasePos).normalized;
                     float distance = Vector3.Distance(lastErasePos, mousePos);
-                    photonView.RPC("EraseDrawnObjCast", RpcTarget.All, (Vector2)lastErasePos, (Vector2)direction,
-                        distance);
+                    photonView.RPC("EraseDrawnObjCast", RpcTarget.All, (Vector2)lastErasePos, (Vector2)direction, distance, (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition));
                     lastErasePos = mousePos;
                 }
 
@@ -301,10 +301,11 @@ public class Drawer : MonoBehaviourPun
     }
 
     [PunRPC]
-    private void ChangeSliderColor(Color color)
+    private void ChangeSliderColor(float r, float g, float b, int penType)
     {
-        inkSlider.transform.Find("Background").GetComponent<Image>().color = new Color(color.r, color.g, color.b, 0.5f);
-        inkSlider.transform.Find("Fill Area/Fill").GetComponent<Image>().color = new Color(color.r, color.g, color.b, 1f);
+        inkSlider.transform.Find("Background").GetComponent<Image>().color = new Color(r, g, b, 0.5f);
+        inkSlider.transform.Find("Fill Area/Fill").GetComponent<Image>().color = new Color(r, g, b, 1f);
+        sliderPenType = (PenProperty.PenType)penType;
     }
 
     private PenUI.PenType lastPenType;
@@ -402,14 +403,15 @@ public class Drawer : MonoBehaviourPun
             //hit.collider.gameObject.GetComponent<DrawMesh>().photonView.TransferOwnership(actorNum);
             AudioManager.PlayOne(AudioManager.ERASESFX);
             DrawMesh erasingMesh = hit.collider.gameObject.GetComponent<DrawMesh>();
-            photonView.RPC("RPC_DirectErase", RpcTarget.All, erasingMesh.drawStrokes, mousePos, hit.collider.gameObject.tag);
+
+            photonView.RPC("RPC_DirectErase", RpcTarget.All, erasingMesh.currProperty.penType, erasingMesh.drawStrokes, mousePos, hit.collider.gameObject.tag, sliderPenType == erasingMesh.currProperty.penType);
             erasingMesh.earsingSelf = true;
             PhotonNetwork.Destroy(hit.collider.gameObject);
         }
     }
     
     [PunRPC]
-    private void EraseDrawnObjCast(Vector2 startPos, Vector2 direction, float distance)
+    private void EraseDrawnObjCast(Vector2 startPos, Vector2 direction, float distance, Vector2 mousePos)
     {
         //Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         //RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero, Mathf.Infinity, LayerMask.GetMask("Draw")); // Small downward ray
@@ -429,10 +431,7 @@ public class Drawer : MonoBehaviourPun
                 AudioManager.PlayOne(AudioManager.ERASESFX);
                 DrawMesh erasingMesh = hit.collider.gameObject.GetComponent<DrawMesh>();
 
-                erasingMesh.currProperty.currentStrokes -= erasingMesh.drawStrokes;
-                float value = 1 - erasingMesh.currProperty.currentStrokes * 1.0f / erasingMesh.currProperty.maxStrokes;
-
-                photonView.RPC("RPC_DirectErase", RpcTarget.All, value, (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition), hit.collider.gameObject.tag);
+                photonView.RPC("RPC_DirectErase", RpcTarget.All, erasingMesh.currProperty.penType, erasingMesh.drawStrokes, mousePos, hit.collider.gameObject.tag, sliderPenType == erasingMesh.currProperty.penType);
 
                 erasingMesh.earsingSelf = true;
                 PhotonNetwork.Destroy(hit.collider.gameObject);
@@ -471,11 +470,7 @@ public class Drawer : MonoBehaviourPun
             AudioManager.PlayOne(AudioManager.ERASESFX);
             DrawMesh erasingMesh = hit.collider.gameObject.GetComponent<DrawMesh>();
          
-            print("add value after erase");
-            erasingMesh.currProperty.currentStrokes -= erasingMesh.drawStrokes;
-            float value = 1 - erasingMesh.currProperty.currentStrokes * 1.0f / erasingMesh.currProperty.maxStrokes;
-
-            photonView.RPC("RPC_DirectErase", RpcTarget.All, value, mousePos, hit.collider.gameObject.tag);
+            photonView.RPC("RPC_DirectErase", RpcTarget.All, erasingMesh.currProperty.penType, erasingMesh.drawStrokes, mousePos, hit.collider.gameObject.tag, sliderPenType == erasingMesh.currProperty.penType);
             erasingMesh.earsingSelf = true;
             PhotonNetwork.Destroy(hit.collider.gameObject);
         }
@@ -484,15 +479,35 @@ public class Drawer : MonoBehaviourPun
     //private DrawMesh erasedDrawMesh;
 
     [PunRPC]
-    public void RPC_DirectErase(float value, Vector2 centerPos, string name)
+    public void RPC_DirectErase(PenProperty.PenType penType, int stroke, Vector2 centerPos, string name, bool updateSlider)
     {
-        //drawStrokeTotal += drawStrokes;
-        //float value = drawStrokeTotal * 1.0f / drawStrokeLimit;
-        EnqueueCoroutine(AddSliderValue(value, time));
+        PenProperty pen  = GetPenProperty(penType);
+        pen.currentStrokes -= stroke;
+        float value = 1 - pen.currentStrokes * 1.0f / pen.maxStrokes;
+
+        if (updateSlider)
+            EnqueueCoroutine(AddSliderValue(value, time));
         print("queue:  " + coroutineQueue.Count);
         //StartCoroutine(AddSliderValue(value, time));
         SpawnParticles(name, centerPos);
         //ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", new Vector3(centerPos.x, centerPos.y, 0), Quaternion.identity).GetComponent<ParticleAttractor>();
+    }
+
+    private PenProperty GetPenProperty(PenProperty.PenType penType)
+    {
+        switch (penType)
+        {
+            case PenProperty.PenType.Wood:
+                return woodPen;
+            case PenProperty.PenType.Cloud:
+                return cloudPen;
+            case PenProperty.PenType.Steel:
+                return steelPen;
+            case PenProperty.PenType.Electric:
+                return electricPen;
+        }
+        return null;
+
     }
 
     private void SpawnParticles(string erasingTagName, Vector3 centerPos)
@@ -530,6 +545,7 @@ public class Drawer : MonoBehaviourPun
             StartCoroutine(RunQueue());
     }
 
+    [PunRPC]
     public void ClearCoroutineQueue()
     {
         coroutineQueue.Clear();

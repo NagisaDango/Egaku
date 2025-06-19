@@ -1817,7 +1817,7 @@ Transform:
   m_GameObject: {fileID: 963194225}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -15.944981, y: -0.65299606, z: -10}
+  m_LocalPosition: {x: -11.963722, y: -0.65299606, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2175,7 +2175,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9114509064569737366, guid: 6fb3c0e619648d442bc88c6ad8555c4f, type: 3}
       propertyPath: CloudEnable
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9114509064569737366, guid: 6fb3c0e619648d442bc88c6ad8555c4f, type: 3}
       propertyPath: initPenType

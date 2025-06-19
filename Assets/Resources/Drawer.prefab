@@ -58,6 +58,7 @@ MonoBehaviour:
   drawSize: 0
   drawStrokeLimit: 300
   inkSlider: {fileID: 0}
+  sliderPenType: 0
   time: 3
   woodPen:
     penType: 0
