@@ -1,21 +1,30 @@
 using DG.Tweening;
+using Photon.Pun;
 using UnityEngine;
 
-public class ElectricDoor : MonoBehaviour, IElectricControl
+[DefaultExecutionOrder(100)]
+public class ElectricDoor : MonoBehaviourPun, IElectricControl
 {
     [SerializeField] private GameObject controllingDoor;
     private bool gotBattery;
     public void BatteryIn()
     {
+        photonView.RPC("RPC_BatteryIn", RpcTarget.All);
+    }
+
+    [PunRPC]
+    private void RPC_BatteryIn()
+    {
         DOTween.To(
-            ()=> controllingDoor.transform.localScale,
-            scale => controllingDoor.transform.localScale = scale,
-            new Vector3(controllingDoor.transform.localScale.x, 0),
-            1f).SetEase(Ease.Linear)
+                ()=> controllingDoor.transform.localScale,
+                scale => controllingDoor.transform.localScale = scale,
+                new Vector3(controllingDoor.transform.localScale.x, 0),
+                1f).SetEase(Ease.Linear)
             .OnComplete(() => { controllingDoor.GetComponent<Collider2D>().enabled = false; });
     }
 
-    public void BatteryOut()
+    [PunRPC]
+    private void RPC_BatteryOut()
     {
         gotBattery = false;
         DOTween.To(
@@ -24,6 +33,11 @@ public class ElectricDoor : MonoBehaviour, IElectricControl
                 new Vector3(controllingDoor.transform.localScale.x, 1),
                 1f).SetEase(Ease.Linear)
             .OnComplete(() => { controllingDoor.GetComponent<Collider2D>().enabled = true; });
+    }
+
+    public void BatteryOut()
+    {
+        photonView.RPC("RPC_BatteryOut", RpcTarget.All);
     }
 
     public void DetectBattery()
@@ -44,5 +58,5 @@ public class ElectricDoor : MonoBehaviour, IElectricControl
                     0.5f).SetEase(Ease.Linear)
                 .OnComplete(BatteryIn);
         }
-    }    
+    }
 }

@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Allan;
 using Photon.Pun;
 using Unity.VisualScripting;
 using UnityEngine;
 
-public class Battery : MonoBehaviour, HoldableObject
+public class Battery : MonoBehaviourPun, HoldableObject
 {
     [SerializeField] private Vector2 originalPos;
     private Collider2D col;
@@ -13,10 +14,13 @@ public class Battery : MonoBehaviour, HoldableObject
     private bool simulatedStatus;
     private Vector2 lastContactPoint;
     private float ogMass;
+    private RigidbodyType2D ogType;
+    private bool ogSimulated;
     [SerializeField] public float radius;
     [SerializeField] private IElectricControl controlObj; 
     public float distance = 10f; // Define a max distance for visualization
     public LayerMask playerLayer; // Assign this in the Inspector
+    private bool ownerTransfered = false;
 
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -27,16 +31,36 @@ public class Battery : MonoBehaviour, HoldableObject
         rb = GetComponent<Rigidbody2D>();
         simulatedStatus = rb.simulated;
         ogMass = rb.mass;
-
-        if ((RolesManager.PlayerRole)(int)PhotonNetwork.LocalPlayer.CustomProperties["Role"] ==
-            RolesManager.PlayerRole.Drawer)
+        
+        if (!PhotonNetwork.OfflineMode && !GameManager.Instance.devSpawn && 
+             (RolesManager.PlayerRole)(int)PhotonNetwork.CurrentRoom.CustomProperties["Role_" + PhotonNetwork.LocalPlayer.ActorNumber] != RolesManager.PlayerRole.Runner)
         {
-            this.rb.simulated = false;
         }
+        else
+        {
+            Debug.Log($"This player ActorNum is {PhotonNetwork.LocalPlayer.ActorNumber}. Runner is {Runner.Instance.actorNum}");
+            ownerTransfered = true;
+        }
+        ogType = rb.bodyType;
+        ogSimulated = rb.simulated;
     }
 
+    
     void Update()
     {
+        if (!ownerTransfered)
+        {
+            if (Runner.Instance != null)
+            {            
+                this.rb.simulated = false;
+                rb.bodyType = RigidbodyType2D.Kinematic;
+                photonView.TransferOwnership(Runner.Instance.actorNum);
+                ogType = rb.bodyType;
+                ogSimulated = rb.simulated;
+                ownerTransfered = true;
+            }
+        }
+        
         // Your actual CircleCast logic
         RaycastHit2D hit = Physics2D.CircleCast(
             transform.position,
@@ -140,14 +164,18 @@ public class Battery : MonoBehaviour, HoldableObject
 
     public void DisconnectFromElectric()
     {
-        controlObj.BatteryOut();
-        rb.bodyType = RigidbodyType2D.Dynamic;
+        Debug.Log(("Out from electric"));
+        if(controlObj != null)
+            controlObj.BatteryOut();
+        rb.bodyType = ogType;
+        rb.simulated = ogSimulated;
         col.isTrigger = false;
         controlObj = null;
     }
 
     public void ConnectToElectric(IElectricControl obj)
     {
+        Debug.Log(("Into electric"));
         controlObj = obj;
         rb.bodyType = RigidbodyType2D.Static;
         col.isTrigger = true;
@@ -172,6 +200,7 @@ public class Battery : MonoBehaviour, HoldableObject
         this.transform.SetParent(null);
         ToggleRbSimulated();
         rb.mass = ogMass;
+        rb.bodyType = ogType;
         lastContactPoint = Vector2.negativeInfinity;
     }
 
@@ -188,7 +217,7 @@ public class Battery : MonoBehaviour, HoldableObject
 
     public void ToggleRbSimulated()
     {
-        rb.simulated = simulatedStatus;
+        rb.simulated = ogSimulated;
     }
 
     //TODO: Right now can infinite jump

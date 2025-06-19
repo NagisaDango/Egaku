@@ -162,7 +162,7 @@ public class Runner : MonoBehaviourPunCallbacks
         }
 
 
-        if (Input.GetKey(KeyCode.LeftShift) && !holding)
+        if (Input.GetKeyDown(KeyCode.LeftShift) && !holding)
         {
             if (holdingObjectID != -1)
             {
@@ -176,15 +176,12 @@ public class Runner : MonoBehaviourPunCallbacks
                 else if (holdGO.CompareTag("Battery") || holdingObject is Battery)
                 {
                     photonView.RPC("RPC_HoldBattery", RpcTarget.All, holdingObjectID);
-                    if (inBattery)
-                    {
                         print("Getting battery from gate");
-                        inBattery = false;
                         Battery battery = holdingObject as Battery;
+                        battery.gameObject.tag = "Holding";
                         battery.DisconnectFromElectric();
                         Vector3 temp = holdGO.transform.localPosition;
                         holdGO.transform.localPosition = temp.normalized;
-                    }
                 }
             }
         }

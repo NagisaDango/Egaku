@@ -75,7 +75,7 @@ MonoBehaviour:
     mass: 0
     size: 0.5
     material: {fileID: 2100000, guid: 430c7cd0f6879854282138e914ea6503, type: 2}
-    maxStrokes: 0
+    maxStrokes: 300
     currentStrokes: 0
   steelPen:
     penType: 3
@@ -84,7 +84,7 @@ MonoBehaviour:
     mass: 50
     size: 0.5
     material: {fileID: 2100000, guid: dac5e6e274aa060418cdb1753457783a, type: 2}
-    maxStrokes: -1
+    maxStrokes: 300
     currentStrokes: 0
   electricPen:
     penType: 2

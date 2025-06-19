@@ -106,6 +106,7 @@ GameObject:
   - component: {fileID: 5910160843082936851}
   - component: {fileID: 1733226889178654150}
   - component: {fileID: 6264061637796224334}
+  - component: {fileID: 7321281905898416864}
   m_Layer: 14
   m_Name: Battery
   m_TagString: Battery
@@ -294,10 +295,11 @@ MonoBehaviour:
   Group: 0
   prefixField: -1
   Synchronization: 3
-  OwnershipTransfer: 0
+  OwnershipTransfer: 1
   observableSearch: 2
   ObservedComponents:
   - {fileID: 1733226889178654150}
+  - {fileID: 7321281905898416864}
   sceneViewId: 0
   InstantiationId: 0
   isRuntimeInstantiated: 0
@@ -330,3 +332,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapObjects
   respawnPos: {x: 0, y: 0}
+--- !u!114 &7321281905898416864
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6722205789826303125}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e7cb724808c322458aa4d15f5035fa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: PhotonUnityNetworking::Photon.Pun.PhotonRigidbody2DView
+  m_SynchronizeVelocity: 1
+  m_SynchronizeAngularVelocity: 0
+  m_TeleportEnabled: 1
+  m_TeleportIfDistanceGreaterThan: 3

@@ -96,6 +96,9 @@ MonoBehaviour:
   - ValidateEventInvoke
   - RPC_ValidateEventInvoke
   - RPC_Destroy
+  - RPC_VisualChange
+  - RPC_BatteryIn
+  - RPC_BatteryOut
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1
