@@ -56,6 +56,15 @@ MonoBehaviour:
   curveThresholdAngle: 180
   splinePrefab: {fileID: 1522651996897891101, guid: f1c3e6686ac59a74ab287dd03fcb12df, type: 3}
   drawStrokes: 0
+  currProperty:
+    penType: 0
+    gravity: 0
+    trigger: 0
+    mass: 0
+    size: 0
+    material: {fileID: 0}
+    maxStrokes: 0
+    currentStrokes: 0
   rb2d: {fileID: 1433935798187040207}
   col2d: {fileID: 7309415233719333893}
   earsingSelf: 0

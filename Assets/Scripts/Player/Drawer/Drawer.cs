@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using System.Net;
+using static UnityEngine.Rendering.DebugUI;
 
 public class Drawer : MonoBehaviourPun
 {
@@ -28,8 +29,8 @@ public class Drawer : MonoBehaviourPun
     private PenUI.PenType currentPenType;
     private int currentPenIndex;
     public float drawSize;
-    private int drawStrokeLimit = 300;
-    private int drawStrokeTotal = 300;
+    public int drawStrokeLimit = 300;
+    private int drawStrokeTotal;
     [SerializeField] private Slider inkSlider;
     public float time = 0.2f;
 
@@ -56,6 +57,8 @@ public class Drawer : MonoBehaviourPun
             };
 
         time = 0.2f;
+
+        drawStrokeTotal = drawStrokeLimit;
     }
     
     
@@ -78,6 +81,26 @@ public class Drawer : MonoBehaviourPun
             GameObject UI = Instantiate(drawerPanelPrefab).transform.GetChild(0).gameObject;
             GameObject.Find("LevelSetup").GetComponent<LevelSetup>().Init(UI.GetComponent<DrawerUICOntrol>());
         }
+
+
+        ChangeSliderColor(FindPenProperty(currentPenType).material.color);
+    }
+
+
+    private PenProperty FindPenProperty(PenUI.PenType currentPenType)
+    {
+        switch (currentPenType)
+        {
+            case PenUI.PenType.Wood:
+                return woodPen;
+            case PenUI.PenType.Cloud:
+                return cloudPen;
+            case PenUI.PenType.Steel:
+                return steelPen;
+            case PenUI.PenType.Electric:
+                return electricPen;
+        }
+        return null;
     }
 
     private void OnDisable()
@@ -105,6 +128,13 @@ public class Drawer : MonoBehaviourPun
                     if (penStatus[tempIndex] == true)
                     {
                         SetPenProperties(penProperties[tempIndex].penType);
+                        StopAllCoroutines();
+                        ChangeSliderColor(penProperties[tempIndex].material.color);
+                        ClearCoroutineQueue();
+
+                        //inkSlider.value = penProperties[tempIndex].currentStrokes / penProperties[tempIndex].maxStrokes;
+                        photonView.RPC("UpdateSlider", RpcTarget.All, 1 - penProperties[tempIndex].currentStrokes * 1f / penProperties[tempIndex].maxStrokes);
+
                         break;
                     }
                     else
@@ -123,6 +153,15 @@ public class Drawer : MonoBehaviourPun
                     if (penStatus[tempIndex] == true)
                     {
                         SetPenProperties(penProperties[tempIndex].penType);
+
+                        StopAllCoroutines();
+                        ChangeSliderColor(penProperties[tempIndex].material.color);
+                        ClearCoroutineQueue();
+
+                        //inkSlider.value = penProperties[tempIndex].currentStrokes / penProperties[tempIndex].maxStrokes;
+                        photonView.RPC("UpdateSlider", RpcTarget.All, 1 - penProperties[tempIndex].currentStrokes * 1f / penProperties[tempIndex].maxStrokes);
+
+
                         break;
                     }
                     else
@@ -165,6 +204,9 @@ public class Drawer : MonoBehaviourPun
                 
                 photonView.RPC("EraseDrawnObj", RpcTarget.All,
                     (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition));
+
+
+
                 if (hit.collider != null)
                 {
                     print(hit.collider.gameObject.name);
@@ -209,8 +251,12 @@ public class Drawer : MonoBehaviourPun
 
             if (currentDrawer.ValidateMouseMovement(mousePos))
             {
-                int djj = drawStrokeTotal - currentDrawer.drawStrokes;
-                photonView.RPC("UpdateSlider", RpcTarget.All, djj * 1.0f / drawStrokeLimit);
+                //int strokeLeft = drawStrokeTotal - currentDrawer.drawStrokes;
+                int strokeLeft = currentDrawer.currProperty.maxStrokes - currentDrawer.currProperty.currentStrokes;
+
+                print("strokeLeft "  + strokeLeft);
+
+                photonView.RPC("UpdateSlider", RpcTarget.All, 1 - currentDrawer.currProperty.currentStrokes * 1f / currentDrawer.currProperty.maxStrokes);
 
                 RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero, 0, LayerMask.GetMask("DrawProhibited","Draw", "Platform"));
 
@@ -222,7 +268,7 @@ public class Drawer : MonoBehaviourPun
                 
                 
 
-                if (djj <= 0)
+                if (strokeLeft <= 0)
                 {
                     print("stop drawing");
                     drawStrokeTotal -= currentDrawer.drawStrokes;
@@ -252,6 +298,14 @@ public class Drawer : MonoBehaviourPun
             currentDrawer = null;
         }
     }
+
+
+    private void ChangeSliderColor(Color color)
+    {
+        inkSlider.transform.Find("Background").GetComponent<Image>().color = new Color(color.r, color.g, color.b, 0.5f);
+        inkSlider.transform.Find("Fill Area/Fill").GetComponent<Image>().color = new Color(color.r, color.g, color.b, 1f);
+    }
+
     private PenUI.PenType lastPenType;
     private void SetPenProperties(PenUI.PenType penType)
     {
@@ -350,15 +404,6 @@ public class Drawer : MonoBehaviourPun
             photonView.RPC("RPC_DirectErase", RpcTarget.All, erasingMesh.drawStrokes, mousePos, hit.collider.gameObject.tag);
             erasingMesh.earsingSelf = true;
             PhotonNetwork.Destroy(hit.collider.gameObject);
-            /*
-            drawStrokeTotal += erasingMesh.drawStrokes;
-            float value = drawStrokeTotal * 1.0f / drawStrokeLimit;
-            StartCoroutine(AddSliderValue(value, time));
-            erasingMesh.earsingSelf = true;
-            PhotonNetwork.Destroy(hit.collider.gameObject);
-            SpawnParticles(hit.collider.gameObject.tag, mousePos);
-            */
-            //ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", new Vector3(mousePos.x, mousePos.y, 0), Quaternion.identity).GetComponent<ParticleAttractor>();
         }
     }
     
@@ -382,21 +427,15 @@ public class Drawer : MonoBehaviourPun
                 //hit.collider.gameObject.GetComponent<DrawMesh>().photonView.TransferOwnership(actorNum);
                 AudioManager.PlayOne(AudioManager.ERASESFX);
                 DrawMesh erasingMesh = hit.collider.gameObject.GetComponent<DrawMesh>();
-                
-                photonView.RPC("RPC_DirectErase", RpcTarget.All, erasingMesh.drawStrokes, hit.point, hit.collider.gameObject.tag);
-                
+
+                erasingMesh.currProperty.currentStrokes -= erasingMesh.drawStrokes;
+                float value = 1 - erasingMesh.currProperty.currentStrokes * 1.0f / erasingMesh.currProperty.maxStrokes;
+
+                photonView.RPC("RPC_DirectErase", RpcTarget.All, value, (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition), hit.collider.gameObject.tag);
+
                 erasingMesh.earsingSelf = true;
                 PhotonNetwork.Destroy(hit.collider.gameObject);
             }
-            /*
-            drawStrokeTotal += erasingMesh.drawStrokes;
-            float value = drawStrokeTotal * 1.0f / drawStrokeLimit;
-            StartCoroutine(AddSliderValue(value, time));
-            erasingMesh.earsingSelf = true;
-            PhotonNetwork.Destroy(hit.collider.gameObject);
-            SpawnParticles(hit.collider.gameObject.tag, mousePos);
-            */
-            //ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", new Vector3(mousePos.x, mousePos.y, 0), Quaternion.identity).GetComponent<ParticleAttractor>();
         }
     }
 
@@ -439,20 +478,26 @@ public class Drawer : MonoBehaviourPun
             Debug.Log("Hit: " + hit.collider.gameObject.name);
             AudioManager.PlayOne(AudioManager.ERASESFX);
             DrawMesh erasingMesh = hit.collider.gameObject.GetComponent<DrawMesh>();
-            photonView.RPC("RPC_DirectErase", RpcTarget.All, erasingMesh.drawStrokes, mousePos, hit.collider.gameObject.tag);
+         
+            print("add value after erase");
+            erasingMesh.currProperty.currentStrokes -= erasingMesh.drawStrokes;
+            float value = 1 - erasingMesh.currProperty.currentStrokes * 1.0f / erasingMesh.currProperty.maxStrokes;
+
+            photonView.RPC("RPC_DirectErase", RpcTarget.All, value, mousePos, hit.collider.gameObject.tag);
             erasingMesh.earsingSelf = true;
             PhotonNetwork.Destroy(hit.collider.gameObject);
         }
     }
 
-
+    //private DrawMesh erasedDrawMesh;
 
     [PunRPC]
-    public void RPC_DirectErase(int drawStrokes, Vector2 centerPos, string name)
+    public void RPC_DirectErase(float value, Vector2 centerPos, string name)
     {
-        drawStrokeTotal += drawStrokes;
-        float value = drawStrokeTotal * 1.0f / drawStrokeLimit;
+        //drawStrokeTotal += drawStrokes;
+        //float value = drawStrokeTotal * 1.0f / drawStrokeLimit;
         EnqueueCoroutine(AddSliderValue(value, time));
+        print("queue:  " + coroutineQueue.Count);
         //StartCoroutine(AddSliderValue(value, time));
         SpawnParticles(name, centerPos);
         //ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", new Vector3(centerPos.x, centerPos.y, 0), Quaternion.identity).GetComponent<ParticleAttractor>();
@@ -470,6 +515,7 @@ public class Drawer : MonoBehaviourPun
 
     IEnumerator AddSliderValue(float target, float time)
     {
+        print("queue" + target +" " + inkSlider.value);
         float currentValue = inkSlider.value;
         float increment = (target- currentValue) / time / 50;
         while (currentValue <= target) {
@@ -482,7 +528,7 @@ public class Drawer : MonoBehaviourPun
     }
 
     private Queue<IEnumerator> coroutineQueue = new Queue<IEnumerator>();
-    private bool isCoroutineRunning = false;
+    public bool isCoroutineRunning = false;
 
     public void EnqueueCoroutine(IEnumerator coroutine)
     {
@@ -492,12 +538,18 @@ public class Drawer : MonoBehaviourPun
             StartCoroutine(RunQueue());
     }
 
+    public void ClearCoroutineQueue()
+    {
+        coroutineQueue.Clear();
+    }
+
     private IEnumerator RunQueue()
     {
         isCoroutineRunning = true;
 
         while (coroutineQueue.Count > 0)
         {
+            print("running queue");
             yield return StartCoroutine(coroutineQueue.Dequeue());
         }
 
@@ -508,7 +560,7 @@ public class Drawer : MonoBehaviourPun
 }
 
 [System.Serializable]
-public struct PenProperty
+public class PenProperty
 {
     public enum PenType
     {
@@ -523,6 +575,8 @@ public struct PenProperty
     public bool trigger;
     public int mass;
     public float size;
-    public int maxStrokes;
     public Material material;
+
+    public int maxStrokes;
+    public int currentStrokes;
 }

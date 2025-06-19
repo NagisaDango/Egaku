@@ -56,6 +56,7 @@ MonoBehaviour:
   steelCursorTexture: {fileID: 2800000, guid: b515c9ce0fe668b4088a965a229f38d7, type: 3}
   eraserCursorTexture: {fileID: 2800000, guid: 2c839905c9ce95f40869c9f9f6ee0cc5, type: 3}
   drawSize: 0
+  drawStrokeLimit: 300
   inkSlider: {fileID: 0}
   time: 3
   woodPen:
@@ -64,34 +65,39 @@ MonoBehaviour:
     trigger: 0
     mass: 20
     size: 0.3
-    maxStrokes: -1
     material: {fileID: 2100000, guid: 6aee6f484a66206489f88aa8682ad516, type: 2}
+    maxStrokes: 300
+    currentStrokes: 0
   cloudPen:
     penType: 1
     gravity: 0
     trigger: 0
     mass: 0
     size: 0.5
-    maxStrokes: 0
     material: {fileID: 2100000, guid: 430c7cd0f6879854282138e914ea6503, type: 2}
+    maxStrokes: 0
+    currentStrokes: 0
   steelPen:
     penType: 3
     gravity: 1
     trigger: 0
     mass: 50
     size: 0.5
-    maxStrokes: -1
     material: {fileID: 2100000, guid: dac5e6e274aa060418cdb1753457783a, type: 2}
+    maxStrokes: -1
+    currentStrokes: 0
   electricPen:
     penType: 2
     gravity: 0
     trigger: 1
     mass: 0
     size: 0.3
-    maxStrokes: -1
     material: {fileID: 2100000, guid: 9bcdb5499083f79478cd2f69c9101779, type: 2}
+    maxStrokes: 100
+    currentStrokes: 0
   penProperties: []
   minEraseDis: 1
+  isCoroutineRunning: 0
 --- !u!114 &1436348200338379537
 MonoBehaviour:
   m_ObjectHideFlags: 0
