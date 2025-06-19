@@ -144,6 +144,10 @@ PrefabInstance:
       value: 11
       objectReference: {fileID: 0}
     - target: {fileID: 5584683189201868784, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
+      propertyPath: closeTrigger
+      value: 
+      objectReference: {fileID: 1706628570}
+    - target: {fileID: 5584683189201868784, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
       propertyPath: notShowForSolo
       value: 1
       objectReference: {fileID: 0}
@@ -1703,6 +1707,10 @@ PrefabInstance:
       value: -1
       objectReference: {fileID: 0}
     - target: {fileID: 5584683189201868784, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
+      propertyPath: closeTrigger
+      value: 
+      objectReference: {fileID: 1706628570}
+    - target: {fileID: 5584683189201868784, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
       propertyPath: leaveDestroy
       value: 0
       objectReference: {fileID: 0}
@@ -2178,6 +2186,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5584683189201868784, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
+      propertyPath: closeTrigger
+      value: 
+      objectReference: {fileID: 1706628570}
+    - target: {fileID: 5584683189201868784, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
       propertyPath: notShowForSolo
       value: 1
       objectReference: {fileID: 0}
@@ -2605,6 +2617,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Tutorial Trigger  (3)
       objectReference: {fileID: 0}
+    - target: {fileID: 5135482661395907025, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5353941654420223234, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
       propertyPath: m_AnchoredPosition.x
       value: 1.21
@@ -2734,6 +2750,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 8720243028531744330, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
   m_PrefabInstance: {fileID: 1706628568}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1706628570 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5584683189201868784, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
+  m_PrefabInstance: {fileID: 1706628568}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa0209e6781591f45b14bcceab44c24c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TutorialTrigger
 --- !u!1 &1724103360
 GameObject:
   m_ObjectHideFlags: 0
