@@ -63,6 +63,7 @@ MonoBehaviour:
     mass: 0
     size: 0
     material: {fileID: 0}
+    drawingMaterial: {fileID: 0}
     maxStrokes: 0
     currentStrokes: 0
   rb2d: {fileID: 1433935798187040207}
