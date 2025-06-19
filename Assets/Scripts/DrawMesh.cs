@@ -23,7 +23,7 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
     private Vector3 lastMouseDir;
 
     public int drawStrokes = 0;
-    private PenProperty currProperty;
+    public PenProperty currProperty;
     
     [Header("Properties set through Drawer PenProperty")]
     [SerializeField] public Rigidbody2D rb2d;
@@ -126,6 +126,8 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
                 Debug.LogWarning(penName + " is not set in the drawer pen list"); break;
         }
     }
+
+
     
     //Set the generated body type rb2d to Dynamic 
     private void InteractSetting()
@@ -155,7 +157,8 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
             if (((drawStrokes < maxStrokes) || maxStrokes <= 0))
             {
                 drawStrokes++;
-                if(pointList != null) pointList.Add(mousePos); // Assuming pointList is for other logic like ElectricSpline
+                currProperty.currentStrokes++;
+                if (pointList != null) pointList.Add(mousePos); // Assuming pointList is for other logic like ElectricSpline
     
                 PhotonNetwork.RaiseEvent(AudioManager.PlayAudioEventCode, new object[] { AudioManager.DRAWSFX, false }, new RaiseEventOptions { Receivers = ReceiverGroup.All }, ExitGames.Client.Photon.SendOptions.SendReliable);
     
@@ -278,23 +281,18 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
 
 
                     int tIndex = triangles.Length - 6;
-                    // Triangle 1: (vIndex0, vIndex2, vIndex1)
+                    // Triangle 1:
                     triangles[tIndex + 0] = newVerticesSize - 3;
                     triangles[tIndex + 1] = newVerticesSize - 2;
                     triangles[tIndex + 2] = newVerticesSize - 1;
 
-                    // Triangle 2: (vIndex1, vIndex2, vIndex3)
+                    // Triangle 2: 
                     triangles[tIndex + 3] = newVerticesSize - 3;
                     triangles[tIndex + 4] = newVerticesSize - 4;
                     triangles[tIndex + 5] = newVerticesSize - 2;
 
 
-                    //triangles[tIndex + 3] = vIndex1;
-                    //triangles[tIndex + 4] = cross > 0 ? newVerticesSize - 3 : newVerticesSize - 1;
-                    //triangles[tIndex + 5] = cross > 0 ? newVerticesSize - 2 : newVerticesSize - 3;
-
-
-                    int newUVSize = uv.Length + curves;
+                    int newUVSize = uv.Length + curves + 2;
     
                     Vector2[] new_uv = new Vector2[newUVSize];
                     Array.Copy(uv, new_uv, uv.Length);
@@ -396,7 +394,8 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
         if (((drawStrokes < maxStrokes) || maxStrokes <= 0))
         {
             drawStrokes++;
-            if(pointList != null) pointList.Add(mousePos);
+            currProperty.currentStrokes++;
+            if (pointList != null) pointList.Add(mousePos);
 
             lastMousePosition = mousePos;
             EdgeCollider2D col = GetComponent<EdgeCollider2D>();
@@ -414,6 +413,9 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
             PhotonNetwork.Destroy(gameObject);
         else
         {
+            //currProperty.currentStrokes += drawStrokes;
+
+
             //Debug.LogError("vertices" + mesh.vertices.Length + "triangle" + mesh.triangles.Length + "uv" + mesh.uv.Length);
             photonView.RPC("RPC_CutDownMesh", RpcTarget.Others, mesh.uv.Length, mesh.vertices.Length, mesh.triangles.Length);
             rb2d.centerOfMass = col2d.bounds.center;
@@ -618,6 +620,12 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
             instantiatedDebugMeshes.Add(newDebugMesh);
         }
     }
+
+
+    //public void OnDestroy()
+    //{
+    //    currProperty.currentStrokes -= drawStrokes;
+    //}
 
 }
 
