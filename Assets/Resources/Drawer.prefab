@@ -66,6 +66,7 @@ MonoBehaviour:
     mass: 20
     size: 0.3
     material: {fileID: 2100000, guid: 6aee6f484a66206489f88aa8682ad516, type: 2}
+    drawingMaterial: {fileID: 2100000, guid: 0236090d1a843c643bb1a67aa3c0a015, type: 2}
     maxStrokes: 300
     currentStrokes: 0
   cloudPen:
@@ -75,6 +76,7 @@ MonoBehaviour:
     mass: 0
     size: 0.5
     material: {fileID: 2100000, guid: 430c7cd0f6879854282138e914ea6503, type: 2}
+    drawingMaterial: {fileID: 2100000, guid: 62b1b4e5416f4ab4290682ef75a92dff, type: 2}
     maxStrokes: 300
     currentStrokes: 0
   steelPen:
@@ -84,6 +86,7 @@ MonoBehaviour:
     mass: 50
     size: 0.5
     material: {fileID: 2100000, guid: dac5e6e274aa060418cdb1753457783a, type: 2}
+    drawingMaterial: {fileID: 2100000, guid: 16a0ec74152cf964ead52445c5e3bf68, type: 2}
     maxStrokes: 300
     currentStrokes: 0
   electricPen:
@@ -93,6 +96,7 @@ MonoBehaviour:
     mass: 0
     size: 0.3
     material: {fileID: 2100000, guid: 9bcdb5499083f79478cd2f69c9101779, type: 2}
+    drawingMaterial: {fileID: 2100000, guid: d918c37ed4287e64c875679185b4e72d, type: 2}
     maxStrokes: 100
     currentStrokes: 0
   penProperties: []

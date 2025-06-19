@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Steel
+  m_Name: Drawing Electric
   m_Shader: {fileID: 46, guid: 0000000000000000f000000000000000, type: 0}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -65,11 +65,11 @@ Material:
     m_Ints: []
     m_Floats:
     - _BumpScale: 1
-    - _Cutoff: 0.5
+    - _Cutoff: 1
     - _DetailNormalMapScale: 1
     - _DstBlend: 10
     - _GlossMapScale: 1
-    - _Glossiness: 0.5
+    - _Glossiness: 0
     - _GlossyReflections: 1
     - _Metallic: 0
     - _Mode: 3
@@ -81,7 +81,7 @@ Material:
     - _UVSec: 0
     - _ZWrite: 0
     m_Colors:
-    - _Color: {r: 0.7132075, g: 0.7132075, b: 0.7132075, a: 1}
-    - _EmissionColor: {r: 0.42767292, g: 0.42767292, b: 0.42767292, a: 1}
+    - _Color: {r: 1, g: 0.9877419, b: 0, a: 0.7058824}
+    - _EmissionColor: {r: 0.67295593, g: 0.592506, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

@@ -53,7 +53,7 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
         pointList = new List<Vector2>();
         pointList.Add(new Vector2(mousePos.x, mousePos.y)); // If used for other logic
 
-        GetComponent<MeshRenderer>().material = currProperty.material;
+        GetComponent<MeshRenderer>().material = currProperty.drawingMaterial;
         drawSize = currProperty.size;
         maxStrokes = currProperty.maxStrokes;
     
@@ -426,7 +426,7 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
         else
         {
             //currProperty.currentStrokes += drawStrokes;
-
+            GetComponent<MeshRenderer>().material = currProperty.material;
 
             //Debug.LogError("vertices" + mesh.vertices.Length + "triangle" + mesh.triangles.Length + "uv" + mesh.uv.Length);
             photonView.RPC("RPC_CutDownMesh", RpcTarget.Others, mesh.uv.Length, mesh.vertices.Length, mesh.triangles.Length);

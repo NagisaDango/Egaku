@@ -565,6 +565,7 @@ public class PenProperty
     public int mass;
     public float size;
     public Material material;
+    public Material drawingMaterial;
 
     public int maxStrokes;
     public int currentStrokes;
