@@ -2,6 +2,9 @@ using System;
 using Photon.Pun;
 using Unity.Cinemachine;
 using UnityEngine;
+using System.IO;
+using System.Collections.Generic;
+using UnityEngine.SceneManagement;
 
 public class LevelSetup : MonoBehaviourPun
 {
@@ -41,10 +44,36 @@ public class LevelSetup : MonoBehaviourPun
 
     private void TempLevelSetting()
     {
+        string csvPath = "Assets/Resources/LevelSetup.csv";
+
+        string[] lines = File.ReadAllLines(csvPath);
+
+        Dictionary<int, int[]> inkDict = new Dictionary<int, int[]>();
+        for (int i = 1; i < lines.Length; i++)
+        {
+            string[] values = lines[i].Split(',');
+            Debug.Log("LevelSetup " + string.Join(" | ", values));
+            int[] inks = new int[4];
+            inks[0] = int.Parse(values[1]);
+            inks[1] = int.Parse(values[2]);
+            inks[2] = int.Parse(values[3]);
+            inks[3] = int.Parse(values[4]);
+            inkDict.Add(i-1, inks);
+
+        }
+
+        int level = int.Parse( SceneManager.GetActiveScene().name.Split("_")[1]);
+
+        Drawer.Instance.woodPen.maxStrokes = inkDict[level][0];
+        Drawer.Instance.cloudPen.maxStrokes = inkDict[level][1];
+        Drawer.Instance.steelPen.maxStrokes = inkDict[level][2];
+        Drawer.Instance.electricPen.maxStrokes = inkDict[level][3];
+
+
         if (drawerUI != null)
         {
-            if (!WoodEnable) 
-            {drawerUI.TogglePenStatus(PenUI.PenType.Wood, false); Drawer.penStatus[0] = false;}
+            if (!WoodEnable)
+            { drawerUI.TogglePenStatus(PenUI.PenType.Wood, false); Drawer.penStatus[0] = false; }
             else Drawer.penStatus[0] = true;
             if(!CloudEnable) 
             {drawerUI.TogglePenStatus(PenUI.PenType.Cloud, false); Drawer.penStatus[1] = false;}

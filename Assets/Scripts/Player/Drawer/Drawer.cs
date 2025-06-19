@@ -129,7 +129,8 @@ public class Drawer : MonoBehaviourPun
                     {
                         SetPenProperties(penProperties[tempIndex].penType);
                         StopAllCoroutines();
-                        ChangeSliderColor(penProperties[tempIndex].material.color);
+                        photonView.RPC("ChangeSliderColor", RpcTarget.All, penProperties[tempIndex].material.color);
+                        //ChangeSliderColor(penProperties[tempIndex].material.color);
                         ClearCoroutineQueue();
 
                         //inkSlider.value = penProperties[tempIndex].currentStrokes / penProperties[tempIndex].maxStrokes;
@@ -155,7 +156,9 @@ public class Drawer : MonoBehaviourPun
                         SetPenProperties(penProperties[tempIndex].penType);
 
                         StopAllCoroutines();
-                        ChangeSliderColor(penProperties[tempIndex].material.color);
+                        photonView.RPC("ChangeSliderColor", RpcTarget.All, penProperties[tempIndex].material.color);
+
+                        //ChangeSliderColor(penProperties[tempIndex].material.color);
                         ClearCoroutineQueue();
 
                         //inkSlider.value = penProperties[tempIndex].currentStrokes / penProperties[tempIndex].maxStrokes;
@@ -297,7 +300,7 @@ public class Drawer : MonoBehaviourPun
         }
     }
 
-
+    [PunRPC]
     private void ChangeSliderColor(Color color)
     {
         inkSlider.transform.Find("Background").GetComponent<Image>().color = new Color(color.r, color.g, color.b, 0.5f);
