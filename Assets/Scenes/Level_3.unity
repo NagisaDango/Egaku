@@ -1639,6 +1639,10 @@ PrefabInstance:
       propertyPath: m_Offset.y
       value: -4.7365685
       objectReference: {fileID: 0}
+    - target: {fileID: 5575307410704212221, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
+      propertyPath: sceneViewId
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6370572700016637556, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
       propertyPath: m_text
       value: You cannot draw in the Red Area :(

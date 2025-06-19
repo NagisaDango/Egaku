@@ -93,6 +93,9 @@ MonoBehaviour:
   - RPC_ForceFinishDraw
   - RPC_CutDownMesh
   - RPC_InitDataSync
+  - ValidateEventInvoke
+  - RPC_ValidateEventInvoke
+  - RPC_Destroy
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

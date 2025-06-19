@@ -9,8 +9,6 @@ using UnityEngine.Splines;
 using UnityEngine.U2D;
 using Spline = UnityEngine.Splines.Spline;
 using Allan;
-using System.Reflection;
-using static UnityEditor.Searcher.SearcherWindow.Alignment;
 
 public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
 {

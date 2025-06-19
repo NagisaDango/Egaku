@@ -1,9 +1,14 @@
+using System;
+using Allan;
 using UnityEngine;
 using DG.Tweening;
+using ExitGames.Client.Photon;
+using Photon.Pun;
+using Photon.Realtime;
 using TMPro;
 using UnityEngine.Events;
 
-public class TutorialTrigger : MonoBehaviour
+public class TutorialTrigger : MonoBehaviourPun
 {
     [SerializeField] private GameObject parent;
     [SerializeField] private TMP_Text tutorialText;
@@ -13,6 +18,14 @@ public class TutorialTrigger : MonoBehaviour
     public UnityEvent onTrigger;
     public UnityEvent onObserveObjDestroyed;
     [SerializeField] private LayerMask layerMask;
+    [SerializeField] private bool leaveDestroy;
+    [SerializeField] private RolesManager.PlayerRole designRole;
+    [SerializeField] private bool notShowForSolo = false;
+    [SerializeField] private bool onlyShowForSolo = false;
+    [SerializeField] private LoopType loopType;
+    [SerializeField] private Ease easeType;
+    
+    
     [Header("Animation")]
     [SerializeField] private GameObject controllingAnim;
     [SerializeField] private Transform startPos;
@@ -22,12 +35,23 @@ public class TutorialTrigger : MonoBehaviour
 
     private void Start()
     {
+        
         if(controllingAnim)
             controllingAnim.transform.localPosition = startPos.localPosition;
         if(closeTrigger)
             closeTrigger.onTrigger.AddListener(Close);
         if(destroyObj)
-            destroyObj._OnDestroy += () => onObserveObjDestroyed?.Invoke();
+            destroyObj._OnDestroy += () => photonView.RPC("RPC_ValidateEventInvoke", RpcTarget.All, CustomTriggerType.ObserveItemDestroyed);
+        
+        if (PhotonNetwork.OfflineMode || GameManager.Instance.devSpawn)
+        {
+            if(notShowForSolo) Destroy(this);
+        }
+        else if(designRole != RolesManager.PlayerRole.None && (RolesManager.PlayerRole)(int)PhotonNetwork.CurrentRoom.CustomProperties["Role_" + PhotonNetwork.LocalPlayer.ActorNumber] !=
+                designRole || onlyShowForSolo)
+        {
+            this.parent.SetActive(false);
+        }
     }
 
     public void MoveGO()
@@ -40,8 +64,52 @@ public class TutorialTrigger : MonoBehaviour
             pos => controllingAnim.transform.localPosition = pos,
             endPos.localPosition,
             animDuration
-        ).SetEase(Ease.Linear)
-        .SetLoops(-1, LoopType.Restart);
+        ).SetEase(easeType)
+        .SetLoops(-1, loopType);
+    }
+    
+    [PunRPC]
+    private void RPC_ValidateEventInvoke(CustomTriggerType triggerType)
+    {
+        if(GameManager.Instance.devSpawn == true || PhotonNetwork.OfflineMode)
+        {
+            switch (triggerType)
+            {
+                case CustomTriggerType.ColliderTrigger:
+                    onTrigger?.Invoke();
+                    if (parent != null)
+                        parent.SetActive(true);
+                    break;
+                case CustomTriggerType.ObserveItemDestroyed:
+                    onObserveObjDestroyed?.Invoke();
+                    break;
+            }
+        }
+        else if (designRole != RolesManager.PlayerRole.None && GameManager.Instance.devSpawn != true && !PhotonNetwork.OfflineMode)
+        {
+            Debug.Log($"This trigger is for {designRole}, I am {(RolesManager.PlayerRole)(int)PhotonNetwork.CurrentRoom.CustomProperties["Role_" + PhotonNetwork.LocalPlayer.ActorNumber]}");
+            if ((RolesManager.PlayerRole)(int)PhotonNetwork.CurrentRoom.CustomProperties["Role_" + PhotonNetwork.LocalPlayer.ActorNumber] ==
+                designRole)
+            {
+                switch (triggerType)
+                {
+                    case CustomTriggerType.ColliderTrigger:
+                        onTrigger?.Invoke();
+                        if (parent != null) 
+                            parent.SetActive(true);
+                        break;
+                    case CustomTriggerType.ObserveItemDestroyed:
+                        onObserveObjDestroyed?.Invoke();
+                        break;
+                }
+            }
+        }
+    }
+    
+    private enum CustomTriggerType
+    {
+        ColliderTrigger,
+        ObserveItemDestroyed
     }
 
     private void TriggerEvent()
@@ -50,10 +118,7 @@ public class TutorialTrigger : MonoBehaviour
             return;
         triggered = true;
         
-        onTrigger?.Invoke();
-        
-        if (parent != null) 
-            parent.SetActive(true);
+        photonView.RPC("RPC_ValidateEventInvoke", RpcTarget.All, CustomTriggerType.ColliderTrigger);
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
@@ -61,6 +126,23 @@ public class TutorialTrigger : MonoBehaviour
         if (((1 << collision.gameObject.layer) & layerMask) != 0)
         {
             TriggerEvent();
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        if (leaveDestroy && ((1 << collision.gameObject.layer) & layerMask) != 0 && triggered)
+        {
+            Debug.Log(collision.gameObject.transform.position);
+            Debug.Log("Destroying this dialogue trigger: " + this.gameObject.name + "name " + collision.gameObject.name);
+            if (PhotonNetwork.IsMasterClient || photonView.IsMine)
+            {
+                PhotonNetwork.Destroy(this.gameObject);
+            }
+            else
+            {
+                photonView.RPC("RPC_Destroy", RpcTarget.MasterClient, photonView.ViewID);
+            }
         }
     }
 
@@ -74,9 +156,22 @@ public class TutorialTrigger : MonoBehaviour
         tutorialText.text = text;
     }
 
-    public void DisableObj(GameObject obj)
+    public void DestroyObj(GameObject obj)
     {
-        obj.SetActive(false);
+        if (PhotonNetwork.IsMasterClient || obj.GetPhotonView().IsMine)
+        {
+            PhotonNetwork.Destroy(obj);
+        }
+        else
+        {
+            photonView.RPC("RPC_Destroy", RpcTarget.MasterClient, obj.GetPhotonView().ViewID);
+        }
+    }
+
+    [PunRPC]
+    private void RPC_Destroy(int objID)
+    {
+        PhotonNetwork.Destroy(PhotonView.Find(objID));
     }
 
     public void EnableObj(GameObject obj)
