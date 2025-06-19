@@ -133,7 +133,7 @@ public class Drawer : MonoBehaviourPun
                         ClearCoroutineQueue();
 
                         //inkSlider.value = penProperties[tempIndex].currentStrokes / penProperties[tempIndex].maxStrokes;
-                        //photonView.RPC("UpdateSlider", RpcTarget.All, 1 - penProperties[tempIndex].currentStrokes * 1f / penProperties[tempIndex].maxStrokes);
+                        photonView.RPC("UpdateSlider", RpcTarget.All, 1 - penProperties[tempIndex].currentStrokes * 1f / penProperties[tempIndex].maxStrokes);
 
                         break;
                     }
