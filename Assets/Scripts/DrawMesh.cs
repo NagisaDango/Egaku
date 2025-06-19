@@ -594,7 +594,9 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
 
     public void SelfDestroy()
     {
-        Drawer.Instance.photonView.RPC("RPC_DirectErase", RpcTarget.AllBuffered, drawStrokes, (Vector2)col2d.bounds.center, this.gameObject.tag);
+        currProperty.currentStrokes -= drawStrokes;
+        float value = 1 - currProperty.currentStrokes * 1f / currProperty.maxStrokes;
+        Drawer.Instance.photonView.RPC("RPC_DirectErase", RpcTarget.AllBuffered, value, (Vector2)col2d.bounds.center, this.gameObject.tag);
         PhotonNetwork.Destroy(gameObject);
     }
 
@@ -603,7 +605,9 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
         if (other.CompareTag("DeathDesuwa"))
         {
             print("Wood into death");
-            Drawer.Instance.photonView.RPC("RPC_DirectErase", RpcTarget.AllBuffered, drawStrokes, (Vector2)col2d.bounds.center, this.gameObject.tag);
+            currProperty.currentStrokes -= drawStrokes;
+            float value = 1 - currProperty.currentStrokes * 1f / currProperty.maxStrokes;
+            Drawer.Instance.photonView.RPC("RPC_DirectErase", RpcTarget.AllBuffered, value, (Vector2)col2d.bounds.center, this.gameObject.tag);
             //ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", new Vector3(col2d.bounds.center.x, col2d.bounds.center.y, 0), Quaternion.identity).GetComponent<ParticleAttractor>();
             PhotonNetwork.Destroy(gameObject);
         }

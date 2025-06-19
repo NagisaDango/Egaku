@@ -238,8 +238,7 @@ public class Drawer : MonoBehaviourPun
                 {
                     Vector3 direction = (mousePos - lastErasePos).normalized;
                     float distance = Vector3.Distance(lastErasePos, mousePos);
-                    photonView.RPC("EraseDrawnObjCast", RpcTarget.All, (Vector2)lastErasePos, (Vector2)direction,
-                        distance);
+                    photonView.RPC("EraseDrawnObjCast", RpcTarget.All, (Vector2)lastErasePos, (Vector2)direction, distance, (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition));
                     lastErasePos = mousePos;
                 }
 
@@ -409,7 +408,7 @@ public class Drawer : MonoBehaviourPun
     }
     
     [PunRPC]
-    private void EraseDrawnObjCast(Vector2 startPos, Vector2 direction, float distance)
+    private void EraseDrawnObjCast(Vector2 startPos, Vector2 direction, float distance, Vector2 mousePos)
     {
         //Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         //RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero, Mathf.Infinity, LayerMask.GetMask("Draw")); // Small downward ray
@@ -432,7 +431,7 @@ public class Drawer : MonoBehaviourPun
                 erasingMesh.currProperty.currentStrokes -= erasingMesh.drawStrokes;
                 float value = 1 - erasingMesh.currProperty.currentStrokes * 1.0f / erasingMesh.currProperty.maxStrokes;
 
-                photonView.RPC("RPC_DirectErase", RpcTarget.All, value, (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition), hit.collider.gameObject.tag);
+                photonView.RPC("RPC_DirectErase", RpcTarget.All, value, mousePos, hit.collider.gameObject.tag);
 
                 erasingMesh.earsingSelf = true;
                 PhotonNetwork.Destroy(hit.collider.gameObject);
