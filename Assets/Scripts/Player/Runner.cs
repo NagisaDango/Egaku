@@ -189,12 +189,7 @@ public class Runner : MonoBehaviourPunCallbacks
         if (holding && Input.GetKeyUp(KeyCode.LeftShift))
         {
             photonView.RPC("RPC_Release", RpcTarget.All);
-            /*
-            if (holdingObject is WoodPen)
-                photonView.RPC("RPC_ReleaseWood", RpcTarget.All);
-            else if (holdingObject is Battery)
-                photonView.RPC("RPC_ReleaseBattery", RpcTarget.All);
-            */
+            holding = false;
         }
 
         if (movingAlongElectric)
@@ -468,30 +463,6 @@ public class Runner : MonoBehaviourPunCallbacks
             fixedJoint2D.connectedBody = holdingRb;
         }
     }
-
-    [PunRPC]
-    private void RPC_ReleaseWood()
-    {
-        ResetAppearance();
-        //fixedJoint2D.gameObject.layer = LayerMask.NameToLayer("Draw");
-        //_RunnerMovement.SetJumpAllowance(true);
-        // TODO: only setting to wood here cuz its the only one that can be hold, might want to change, have a buffer holding the original tag name
-        holdGO.transform.SetParent(null);
-        if (holdingObject != null)
-        {
-            holdingObject.ToggleCollider(true);
-            holdingObject.Reset();
-            holdingObject = null;
-
-            fixedJoint2D.connectedBody.gameObject.transform.SetParent(null);
-            fixedJoint2D.connectedBody = rb;
-        }
-        validHoldJump = false;
-        extraJumpForce = 0;
-        holding = false;
-    }
-    
-    
     private bool inBattery = false;
 
     private void TakeOutBattery(GameObject battery)
@@ -502,7 +473,7 @@ public class Runner : MonoBehaviourPunCallbacks
     [PunRPC]
     private void RPC_HoldBattery(int viewID)
     {
-        if(holdGO == null)
+        if (holdGO == null)
             holdGO = PhotonView.Find(viewID).gameObject;
         holdGO.tag = "Holding";
         holdGO.transform.SetParent(this.transform);
@@ -513,24 +484,6 @@ public class Runner : MonoBehaviourPunCallbacks
         fixedJoint2D.connectedBody = holdingRb;
     }
 
-    [PunRPC]
-    private void RPC_ReleaseBattery()
-    {
-        ResetAppearance();
-        // TODO: only setting to wood here cuz its the only one that can be hold, might want to change, have a buffer holding the original tag name
-        if (holdingObject != null)
-        {
-            holdingObject.ToggleCollider(true);
-            holdingObject.Reset();
-            holdingObject = null;
-
-            fixedJoint2D.connectedBody = rb;
-        }
-        validHoldJump = false;
-        extraJumpForce = 0;
-        holding = false;
-    }
-    
     [PunRPC]
     private void RPC_Release()
     {
