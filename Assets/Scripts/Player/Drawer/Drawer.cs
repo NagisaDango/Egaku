@@ -147,6 +147,18 @@ public class Drawer : MonoBehaviourPun
                         tempIndex = (tempIndex + 4) % 4;
                     }
                 }
+
+                if (tempIndex == currentPenIndex && currentPenType == PenUI.PenType.Eraser)
+                {
+                    SetPenProperties(penProperties[tempIndex].penType);
+                    StopAllCoroutines();
+                    Color color = penProperties[tempIndex].material.color;
+
+                    photonView.RPC("ChangeSliderColor", RpcTarget.All, color.r, color.g, color.b, (int)(penProperties[tempIndex].penType));
+                    photonView.RPC("ClearCoroutineQueue", RpcTarget.All);
+
+                    photonView.RPC("UpdateSlider", RpcTarget.All, 1 - penProperties[tempIndex].currentStrokes * 1f / penProperties[tempIndex].maxStrokes);
+                }
             }
             if (Input.GetAxis("Mouse ScrollWheel") < 0)
             {
@@ -173,6 +185,19 @@ public class Drawer : MonoBehaviourPun
                         tempIndex++;
                         tempIndex = (tempIndex + 4) % 4;
                     }
+                }
+                
+                
+                if (tempIndex == currentPenIndex && currentPenType == PenUI.PenType.Eraser)
+                {
+                    SetPenProperties(penProperties[tempIndex].penType);
+                    StopAllCoroutines();
+                    Color color = penProperties[tempIndex].material.color;
+
+                    photonView.RPC("ChangeSliderColor", RpcTarget.All, color.r, color.g, color.b, (int)(penProperties[tempIndex].penType));
+                    photonView.RPC("ClearCoroutineQueue", RpcTarget.All);
+
+                    photonView.RPC("UpdateSlider", RpcTarget.All, 1 - penProperties[tempIndex].currentStrokes * 1f / penProperties[tempIndex].maxStrokes);
                 }
             }
         }

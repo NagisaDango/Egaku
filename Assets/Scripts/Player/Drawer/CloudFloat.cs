@@ -66,7 +66,8 @@ public class CloudFloat : MonoBehaviour
             {
                 if (bounceDirection.y > 0.15f)
                     rb.AddForce(bounceDirection * bounceMagnitudeSteel, ForceMode2D.Impulse);
-                this.GetComponent<DrawMesh>().SelfDestroy();
+                if(this.gameObject.tag == "Cloud")
+                    this.GetComponent<DrawMesh>().SelfDestroy();
             }
             else
             {
