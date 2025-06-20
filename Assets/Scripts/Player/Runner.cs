@@ -484,6 +484,16 @@ public class Runner : MonoBehaviourPunCallbacks
         fixedJoint2D.connectedBody = holdingRb;
     }
 
+    public void HoldingObjLost()
+    {
+        validHoldJump = false;
+        extraJumpForce = 0;
+        holding = false;
+        holdGO = null;
+        holdingObject = null;
+        fixedJoint2D.connectedBody = rb;
+    }
+
     [PunRPC]
     private void RPC_Release()
     {

@@ -1092,6 +1092,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Tutorial Trigger  (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 3944952937562522872, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
+      propertyPath: m_Size.x
+      value: 14.694797
+      objectReference: {fileID: 0}
+    - target: {fileID: 3944952937562522872, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
+      propertyPath: m_Offset.x
+      value: -3.5737672
+      objectReference: {fileID: 0}
     - target: {fileID: 5135482661395907025, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -2337,7 +2345,7 @@ Transform:
   m_GameObject: {fileID: 963194225}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -16.629639, y: -2.883729, z: -10}
+  m_LocalPosition: {x: -16.624897, y: -2.883729, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

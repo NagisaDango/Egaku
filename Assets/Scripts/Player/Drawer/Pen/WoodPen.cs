@@ -45,12 +45,19 @@ public class WoodPen : MonoBehaviour, HoldableObject
 
     public void Reset()
     {
+        if(holder)
+            holder.HoldingObjLost();
         holder = null;
         this.gameObject.tag = "Wood";
         rb.mass = 20;
         this.transform.SetParent(null);
         lastContactPoint = Vector2.negativeInfinity;
         rb.simulated = simulatedStatus;
+    }
+
+    private void OnDestroy()
+    {
+        holder.HoldingObjLost();
     }
 
     private void Start()
@@ -100,14 +107,13 @@ public class WoodPen : MonoBehaviour, HoldableObject
 
     public void ToggleCollider(bool status)
     {
-        //rb.simulated = status;
-        //f(col)
+        if(col)
             col.enabled = status;
     }
 
     public void ToggleRbSimulated(bool status)
     {
-        //if(rb)
+        if(rb)
             rb.simulated = status;
     }
 
