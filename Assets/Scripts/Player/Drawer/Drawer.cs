@@ -90,7 +90,7 @@ public class Drawer : MonoBehaviourPun
     }
 
 
-    private PenProperty FindPenProperty(PenUI.PenType currentPenType)
+    public PenProperty FindPenProperty(PenUI.PenType currentPenType)
     {
         switch (currentPenType)
         {
