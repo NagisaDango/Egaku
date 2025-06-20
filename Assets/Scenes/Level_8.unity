@@ -2525,6 +2525,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Tutorial Trigger  (3)
       objectReference: {fileID: 0}
+    - target: {fileID: 3944952937562522872, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
+      propertyPath: m_Size.x
+      value: 15.581409
+      objectReference: {fileID: 0}
+    - target: {fileID: 3944952937562522872, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
+      propertyPath: m_Offset.x
+      value: -0.9965019
+      objectReference: {fileID: 0}
     - target: {fileID: 5135482661395907025, guid: 3258a63dd04d7bf4dbdd8240367afe99, type: 3}
       propertyPath: m_IsActive
       value: 0
