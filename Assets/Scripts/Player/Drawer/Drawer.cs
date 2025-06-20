@@ -286,7 +286,6 @@ public class Drawer : MonoBehaviourPun
 
                 photonView.RPC("UpdateSlider", RpcTarget.All, 1 - currentDrawer.currProperty.currentStrokes * 1f / currentDrawer.currProperty.maxStrokes);
 
-                RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero, 0, LayerMask.GetMask("DrawProhibited","Draw", "Platform"));
 
                 Vector3 lastPos = currentDrawer.GetLastMousePosition();
                 Vector3 direction = (mousePos - lastPos).normalized;

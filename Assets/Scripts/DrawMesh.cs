@@ -381,7 +381,10 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
     private bool _DrawPathValidate(Vector2 startPos, Vector2 direction, float distance)
     {
         if (currProperty.penType == PenProperty.PenType.Electric)
-        {
+        { 
+            RaycastHit2D[] hit = Physics2D.RaycastAll(startPos, direction, distance, LayerMask.GetMask("DrawProhibited"));
+            if (hit.Length > 0)
+                return false;
             return true;
         }
         
