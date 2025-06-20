@@ -2,6 +2,7 @@ using UnityEngine;
 using Photon.Pun;
 using Photon.Realtime;
 using Unity.VisualScripting;
+using WebSocketSharp;
 
 
 namespace Phantom
@@ -83,6 +84,8 @@ namespace Phantom
         /// </summary>
         public void Connect()
         {
+            if (PhotonNetwork.NickName.IsNullOrEmpty()) return;
+
             progressLabel.SetActive(true);
             controlPanel.SetActive(false);
             facePanel.SetActive(false);
@@ -109,6 +112,8 @@ namespace Phantom
 
         public void OfflineConnect()
         {
+            if(PhotonNetwork.NickName.IsNullOrEmpty()) return;
+
             progressLabel.SetActive(true);
             controlPanel.SetActive(false);
             facePanel.SetActive(false);
