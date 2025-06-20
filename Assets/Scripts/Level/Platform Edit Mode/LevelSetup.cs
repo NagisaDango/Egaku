@@ -44,12 +44,14 @@ public class LevelSetup : MonoBehaviourPun
 
     private void TempLevelSetting()
     {
-        string csvPath = "Assets/Resources/LevelSetup.csv";
+        string csvPath = "LevelSetup";
+        TextAsset csvfile = Resources.Load<TextAsset>(csvPath);
 
-        string[] lines = File.ReadAllLines(csvPath);
+        string[] lines = csvfile.text.Split("\n");
+            //File.ReadAllLines(csvfile.text);
 
         Dictionary<int, int[]> inkDict = new Dictionary<int, int[]>();
-        for (int i = 1; i < lines.Length; i++)
+        for (int i = 1; i < lines.Length-1; i++)
         {
             string[] values = lines[i].Split(',');
             Debug.Log("LevelSetup " + string.Join(" | ", values));
