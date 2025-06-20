@@ -101,13 +101,13 @@ public class WoodPen : MonoBehaviour, HoldableObject
     public void ToggleCollider(bool status)
     {
         //rb.simulated = status;
-        //f(col)
+        if(col)
             col.enabled = status;
     }
 
     public void ToggleRbSimulated(bool status)
     {
-        //if(rb)
+        if(rb)
             rb.simulated = status;
     }
 
