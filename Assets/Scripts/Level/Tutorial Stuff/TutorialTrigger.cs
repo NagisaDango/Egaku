@@ -24,6 +24,7 @@ public class TutorialTrigger : MonoBehaviourPun
     [SerializeField] private bool onlyShowForSolo = false;
     [SerializeField] private LoopType loopType;
     [SerializeField] private Ease easeType;
+    private bool notShow;
     
     
     [Header("Animation")]
@@ -51,9 +52,10 @@ public class TutorialTrigger : MonoBehaviourPun
                 Destroy(this.gameObject);
             }
         }
-        else if(designRole != RolesManager.PlayerRole.None && (RolesManager.PlayerRole)(int)PhotonNetwork.CurrentRoom.CustomProperties["Role_" + PhotonNetwork.LocalPlayer.ActorNumber] !=
-                designRole || onlyShowForSolo)
+        else if((designRole != RolesManager.PlayerRole.None && (RolesManager.PlayerRole)(int)PhotonNetwork.CurrentRoom.CustomProperties["Role_" + PhotonNetwork.LocalPlayer.ActorNumber] !=
+                designRole) || onlyShowForSolo)
         {
+            notShow = true;
             this.parent.SetActive(false);
         }
     }
@@ -75,38 +77,33 @@ public class TutorialTrigger : MonoBehaviourPun
     [PunRPC]
     private void RPC_ValidateEventInvoke(CustomTriggerType triggerType)
     {
-        if(GameManager.Instance.devSpawn == true || PhotonNetwork.OfflineMode)
+        if(GameManager.Instance.devSpawn == true || PhotonNetwork.OfflineMode || designRole == RolesManager.PlayerRole.None)
         {
-            switch (triggerType)
-            {
-                case CustomTriggerType.ColliderTrigger:
-                    onTrigger?.Invoke();
-                    if (parent != null)
-                        parent.SetActive(true);
-                    break;
-                case CustomTriggerType.ObserveItemDestroyed:
-                    onObserveObjDestroyed?.Invoke();
-                    break;
-            }
+            InvokeEvent(triggerType);
         }
-        else if (designRole != RolesManager.PlayerRole.None && GameManager.Instance.devSpawn != true && !PhotonNetwork.OfflineMode)
+        else if (designRole != RolesManager.PlayerRole.None)
         {
             Debug.Log($"This trigger is for {designRole}, I am {(RolesManager.PlayerRole)(int)PhotonNetwork.CurrentRoom.CustomProperties["Role_" + PhotonNetwork.LocalPlayer.ActorNumber]}");
             if ((RolesManager.PlayerRole)(int)PhotonNetwork.CurrentRoom.CustomProperties["Role_" + PhotonNetwork.LocalPlayer.ActorNumber] ==
                 designRole)
             {
-                switch (triggerType)
-                {
-                    case CustomTriggerType.ColliderTrigger:
-                        onTrigger?.Invoke();
-                        if (parent != null) 
-                            parent.SetActive(true);
-                        break;
-                    case CustomTriggerType.ObserveItemDestroyed:
-                        onObserveObjDestroyed?.Invoke();
-                        break;
-                }
+                InvokeEvent(triggerType);
             }
+        }
+    }
+
+    private void InvokeEvent(CustomTriggerType triggerType)
+    {            
+        switch (triggerType)
+        {
+            case CustomTriggerType.ColliderTrigger:
+                onTrigger?.Invoke();
+                if (parent != null)
+                    parent.SetActive(true);
+                break;
+            case CustomTriggerType.ObserveItemDestroyed:
+                onObserveObjDestroyed?.Invoke();
+                break;
         }
     }
     
@@ -118,7 +115,7 @@ public class TutorialTrigger : MonoBehaviourPun
 
     private void TriggerEvent()
     {
-        if (triggered)
+        if (triggered || notShow)
             return;
         triggered = true;
         
@@ -127,12 +124,14 @@ public class TutorialTrigger : MonoBehaviourPun
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (((1 << collision.gameObject.layer) & layerMask) != 0)
+        if (((1 << collision.gameObject.layer) & layerMask) != 0 && !notShow)
         {
+            Debug.Log(this.name+ " even6t triggered");
             TriggerEvent();
         }
     }
 
+    /*
     private void OnTriggerExit2D(Collider2D collision)
     {
         if (leaveDestroy && ((1 << collision.gameObject.layer) & layerMask) != 0 && triggered)
@@ -149,6 +148,7 @@ public class TutorialTrigger : MonoBehaviourPun
             }
         }
     }
+    */
 
     private void Close()
     {

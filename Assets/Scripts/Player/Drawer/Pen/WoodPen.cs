@@ -57,7 +57,8 @@ public class WoodPen : MonoBehaviour, HoldableObject
 
     private void OnDestroy()
     {
-        holder.HoldingObjLost();
+        if(holder)
+            holder.HoldingObjLost();
     }
 
     private void Start()

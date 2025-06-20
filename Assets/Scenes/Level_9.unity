@@ -2206,7 +2206,7 @@ Transform:
   m_GameObject: {fileID: 963194225}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.9354286, y: -5.165431, z: -10}
+  m_LocalPosition: {x: -2.3551292, y: -5.226301, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3464,6 +3464,7 @@ GameObject:
   - component: {fileID: 1701522478}
   - component: {fileID: 1701522477}
   - component: {fileID: 1701522479}
+  - component: {fileID: 1701522481}
   - component: {fileID: 1701522480}
   m_Layer: 6
   m_Name: Square (12)
@@ -3481,8 +3482,8 @@ Transform:
   m_GameObject: {fileID: 1701522475}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0.19936788, w: 0.97992474}
-  m_LocalPosition: {x: 0.98, y: -0.64, z: 0}
-  m_LocalScale: {x: 0.68, y: 6.3139744, z: 1}
+  m_LocalPosition: {x: 0.9825, y: -0.6389, z: 0}
+  m_LocalScale: {x: 0.685508, y: 6.3139744, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 753035061}
@@ -3634,12 +3635,24 @@ MonoBehaviour:
   Group: 0
   prefixField: -1
   Synchronization: 3
-  OwnershipTransfer: 0
+  OwnershipTransfer: 1
   observableSearch: 2
   ObservedComponents: []
   sceneViewId: 2
   InstantiationId: 0
   isRuntimeInstantiated: 0
+--- !u!114 &1701522481
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1701522475}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1ee7412ac3e2b44c8c5c16b729bb823, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TransferToRunner
 --- !u!1 &1904865666
 GameObject:
   m_ObjectHideFlags: 0

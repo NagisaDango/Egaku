@@ -106,7 +106,7 @@ public class Bullet : MonoBehaviourPun
     {
         if(collision.tag == "Bound")
         {
-            Destroy(gameObject);
+            PhotonNetwork.Destroy(gameObject);
         }
     }
 
