@@ -102,31 +102,44 @@ public class LevelSetup : MonoBehaviourPun
     [PunRPC]
     private void RPC_EnablePen(string penType)
     {
+        Color color = Color.white;
+        PenProperty.PenType type = PenProperty.PenType.Wood;
         switch (penType)
         {
             case "Wood":
                 drawerUI.TogglePenStatus(PenUI.PenType.Wood, true);
                 Drawer.penStatus[0] = true;
                 Drawer.OnPenSelect.Invoke(PenUI.PenType.Wood);
+                color = Drawer.Instance.FindPenProperty(PenUI.PenType.Wood).material.color;
+                type = PenProperty.PenType.Wood;    
                 break;
             case "Cloud":
                 drawerUI.TogglePenStatus(PenUI.PenType.Cloud, true);
                 Drawer.OnPenSelect.Invoke(PenUI.PenType.Cloud);
                 Drawer.penStatus[1] = true;
+                color = Drawer.Instance.FindPenProperty(PenUI.PenType.Cloud).material.color;
+                type= PenProperty.PenType.Cloud;
                 break;
             case "Steel":
                 drawerUI.TogglePenStatus(PenUI.PenType.Steel, true);
                 Drawer.OnPenSelect.Invoke(PenUI.PenType.Steel);
                 Drawer.penStatus[2] = true;
+                color = Drawer.Instance.FindPenProperty(PenUI.PenType.Steel).material.color;
+                type = PenProperty.PenType.Steel;
                 break;
             case "Electric":
                 drawerUI.TogglePenStatus(PenUI.PenType.Electric, true);
                 Drawer.OnPenSelect.Invoke(PenUI.PenType.Electric);
                 Drawer.penStatus[3] = true;
+                color = Drawer.Instance.FindPenProperty(PenUI.PenType.Electric).material.color;
+                type = PenProperty.PenType.Electric;
                 break;
             default:
                 Debug.LogWarning(penType + "Unknown type");
                 break;
         }
+
+        Drawer.Instance.photonView.RPC("ChangeSliderColor", RpcTarget.All, color.r, color.g, color.b, (int)type);
+
     }
 }
