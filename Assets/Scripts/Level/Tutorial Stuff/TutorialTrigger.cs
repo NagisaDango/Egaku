@@ -49,6 +49,7 @@ public class TutorialTrigger : MonoBehaviourPun
             if (notShowForSolo)
             {
                 print("Destroying Tutorial not for solo");
+                notShow = true;
                 Destroy(this.gameObject);
             }
         }
@@ -77,6 +78,9 @@ public class TutorialTrigger : MonoBehaviourPun
     [PunRPC]
     private void RPC_ValidateEventInvoke(CustomTriggerType triggerType)
     {
+        if (notShow)
+            return;
+        
         if(GameManager.Instance.devSpawn == true || PhotonNetwork.OfflineMode || designRole == RolesManager.PlayerRole.None)
         {
             InvokeEvent(triggerType);
@@ -115,7 +119,7 @@ public class TutorialTrigger : MonoBehaviourPun
 
     private void TriggerEvent()
     {
-        if (triggered || notShow)
+        if (triggered)
             return;
         triggered = true;
         
@@ -124,7 +128,7 @@ public class TutorialTrigger : MonoBehaviourPun
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (((1 << collision.gameObject.layer) & layerMask) != 0 && !notShow)
+        if (((1 << collision.gameObject.layer) & layerMask) != 0)
         {
             Debug.Log(this.name+ " even6t triggered");
             TriggerEvent();

@@ -2262,7 +2262,7 @@ Transform:
   m_GameObject: {fileID: 963194225}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -20.84793, y: -5.416299, z: -10}
+  m_LocalPosition: {x: -16.866676, y: -5.416299, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3003,6 +3003,10 @@ MonoBehaviour:
     m_Bits: 8192
   leaveDestroy: 0
   designRole: 0
+  notShowForSolo: 0
+  onlyShowForSolo: 0
+  loopType: 0
+  easeType: 0
   controllingAnim: {fileID: 0}
   startPos: {fileID: 0}
   endPos: {fileID: 0}
@@ -3933,6 +3937,10 @@ MonoBehaviour:
     m_Bits: 8192
   leaveDestroy: 0
   designRole: 0
+  notShowForSolo: 0
+  onlyShowForSolo: 0
+  loopType: 0
+  easeType: 0
   controllingAnim: {fileID: 604984079}
   startPos: {fileID: 606849917}
   endPos: {fileID: 549698916}
@@ -5044,7 +5052,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TutorialTrigger
   parent: {fileID: 1810051351}
-  tutorialText: {fileID: 0}
+  tutorialText: {fileID: 1810051353}
   closeTrigger: {fileID: 1995479906}
   destroyObj: {fileID: 0}
   onTrigger:
@@ -5055,9 +5063,13 @@ MonoBehaviour:
       m_Calls: []
   layerMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 8192
   leaveDestroy: 0
   designRole: 1
+  notShowForSolo: 0
+  onlyShowForSolo: 0
+  loopType: 0
+  easeType: 0
   controllingAnim: {fileID: 0}
   startPos: {fileID: 0}
   endPos: {fileID: 0}
@@ -5203,7 +5215,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1810051352
 RectTransform:
   m_ObjectHideFlags: 0
@@ -5751,6 +5763,10 @@ MonoBehaviour:
     m_Bits: 8192
   leaveDestroy: 0
   designRole: 0
+  notShowForSolo: 0
+  onlyShowForSolo: 0
+  loopType: 0
+  easeType: 0
   controllingAnim: {fileID: 1221117680}
   startPos: {fileID: 1309705388}
   endPos: {fileID: 1336645093}
