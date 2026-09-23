@@ -317,6 +317,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -1418,6 +1419,7 @@ CanvasRenderer:
   m_CullTransparentMesh: 1
 --- !u!213 &593056776
 Sprite:
+  serializedVersion: 2
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -1434,14 +1436,13 @@ Sprite:
   m_PixelsToUnits: 100
   m_Pivot: {x: 0.5, y: 0.5}
   m_Extrude: 0
-  m_IsPolygon: 0
   m_PackingTag: 
   m_RenderDataKey:
     00000000000000000000000000000000: 0
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
-    serializedVersion: 3
+    serializedVersion: 4
     texture: {fileID: 174965838}
     alphaTexture: {fileID: 0}
     secondaryTextures: []
@@ -1520,6 +1521,11 @@ Sprite:
       m_DataSize: 928
       _typelessdata: 0ad7a33f0000403f000000005c8f823fec51b8bd000000000ad7a33f713d8abf00000000ae47813fcdcccc3d000000000000803fec51383e000000007b146e3f85ebd13e000000003d0a573fe17a143f00000000cdcc4c3f0ad7a33f000000001f852b3fb81e453f00000000e17a143f3d0a573f0000000085ebd13e7b146e3f00000000cdcccc3dae47813f00000000ec51b83d5c8f823f00000000cdccccbdae47813f000000009a9999beec51783f00000000f628dcbe1f856b3f000000003333b3bed7a3703f000000007b146ebf85ebd13e000000005c8f82bfec51b83d00000000ae4781bfcdcccc3d000000007b148ebf0ad7a33f000000003d0a57bfe17a143f00000000b81e45bf1f852b3f0000000052b81ebf295c4f3f00000000ae47813fcdccccbd000000007b146e3f85ebd1be000000003d0a573fe17a14bf00000000b81e453f1f852bbf00000000ae47213f0ad7a3bf00000000e17a143f3d0a57bf0000000085ebd13e7b146ebf00000000ec51383e000080bf00000000cdcccc3dae4781bf00000000ec51b8bd5c8f82bf0000000085ebd1be7b146ebf00000000cdccccbdae4781bf00000000ec5178bf9a9999be000000001f856bbff628dcbe00000000d7a370bf3333b3be00000000ec5178bf0ad7a3bf00000000e17a14bf3d0a57bf000000001f852bbfb81e45bf00000000b81e45bf1f852bbf00000000ae4781bfcdccccbd000000000ad7a3bfec51383f000000000ad7a3bf7b146ebf0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     m_Bindpose: []
+    m_BlendShapes:
+      vertices: []
+      shapes: []
+      channels: []
+      fullWeights: []
     textureRect:
       serializedVersion: 2
       x: 0
@@ -1528,11 +1534,11 @@ Sprite:
       height: 256
     textureRectOffset: {x: 0, y: 0}
     atlasRectOffset: {x: -1, y: -1}
-    settingsRaw: 64
+    settingsRaw: 3136
     uvTransform: {x: 100, y: 128, z: 100, w: 128}
     downscaleMultiplier: 1
   m_AtlasRD:
-    serializedVersion: 3
+    serializedVersion: 4
     texture: {fileID: 174965838}
     alphaTexture: {fileID: 0}
     secondaryTextures: []
@@ -1611,6 +1617,11 @@ Sprite:
       m_DataSize: 928
       _typelessdata: 0ad7a33f0000403f000000005c8f823fec51b8bd000000000ad7a33f713d8abf00000000ae47813fcdcccc3d000000000000803fec51383e000000007b146e3f85ebd13e000000003d0a573fe17a143f00000000cdcc4c3f0ad7a33f000000001f852b3fb81e453f00000000e17a143f3d0a573f0000000085ebd13e7b146e3f00000000cdcccc3dae47813f00000000ec51b83d5c8f823f00000000cdccccbdae47813f000000009a9999beec51783f00000000f628dcbe1f856b3f000000003333b3bed7a3703f000000007b146ebf85ebd13e000000005c8f82bfec51b83d00000000ae4781bfcdcccc3d000000007b148ebf0ad7a33f000000003d0a57bfe17a143f00000000b81e45bf1f852b3f0000000052b81ebf295c4f3f00000000ae47813fcdccccbd000000007b146e3f85ebd1be000000003d0a573fe17a14bf00000000b81e453f1f852bbf00000000ae47213f0ad7a3bf00000000e17a143f3d0a57bf0000000085ebd13e7b146ebf00000000ec51383e000080bf00000000cdcccc3dae4781bf00000000ec51b8bd5c8f82bf0000000085ebd1be7b146ebf00000000cdccccbdae4781bf00000000ec5178bf9a9999be000000001f856bbff628dcbe00000000d7a370bf3333b3be00000000ec5178bf0ad7a3bf00000000e17a14bf3d0a57bf000000001f852bbfb81e45bf00000000b81e45bf1f852bbf00000000ae4781bfcdccccbd000000000ad7a3bfec51383f000000000ad7a3bf7b146ebf0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     m_Bindpose: []
+    m_BlendShapes:
+      vertices: []
+      shapes: []
+      channels: []
+      fullWeights: []
     textureRect:
       serializedVersion: 2
       x: 0
@@ -1619,7 +1630,7 @@ Sprite:
       height: 256
     textureRectOffset: {x: 0, y: 0}
     atlasRectOffset: {x: -1, y: -1}
-    settingsRaw: 64
+    settingsRaw: 3136
     uvTransform: {x: 100, y: 128, z: 100, w: 128}
     downscaleMultiplier: 1
   m_PhysicsShape: []
@@ -1855,6 +1866,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -2191,6 +2203,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -2382,6 +2395,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -2720,6 +2734,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -3277,6 +3292,7 @@ GameObject:
   m_IsActive: 1
 --- !u!212 &1199025916
 SpriteRenderer:
+  serializedVersion: 3
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -3322,6 +3338,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_Sprite: {fileID: 1208040086343421634, guid: da730a9ab0973b3478b08a4106dd50ee, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 0.5882353}
   m_FlipX: 0
@@ -3331,8 +3348,8 @@ SpriteRenderer:
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
-  m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!4 &1199025917
 Transform:
   m_ObjectHideFlags: 0
@@ -3443,6 +3460,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -3581,6 +3599,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -3794,6 +3813,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -3935,6 +3955,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -4402,6 +4423,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -4613,6 +4635,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -4749,6 +4772,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -4922,6 +4946,7 @@ CanvasRenderer:
   m_CullTransparentMesh: 1
 --- !u!213 &1799004466
 Sprite:
+  serializedVersion: 2
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -4938,14 +4963,13 @@ Sprite:
   m_PixelsToUnits: 100
   m_Pivot: {x: 0.5, y: 0.5}
   m_Extrude: 0
-  m_IsPolygon: 0
   m_PackingTag: 
   m_RenderDataKey:
     00000000000000000000000000000000: 0
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
-    serializedVersion: 3
+    serializedVersion: 4
     texture: {fileID: 660737867}
     alphaTexture: {fileID: 0}
     secondaryTextures: []
@@ -5024,6 +5048,11 @@ Sprite:
       m_DataSize: 80
       _typelessdata: 0ad723c00ad72340000000000ad723400ad723c0000000000ad723400ad72340000000000ad723c00ad723c000000000000000000000803f0000803f000000000000803f0000803f0000000000000000
     m_Bindpose: []
+    m_BlendShapes:
+      vertices: []
+      shapes: []
+      channels: []
+      fullWeights: []
     textureRect:
       serializedVersion: 2
       x: 0
@@ -5032,11 +5061,11 @@ Sprite:
       height: 512
     textureRectOffset: {x: 0, y: 0}
     atlasRectOffset: {x: -1, y: -1}
-    settingsRaw: 64
+    settingsRaw: 3136
     uvTransform: {x: 100, y: 256, z: 100, w: 256}
     downscaleMultiplier: 1
   m_AtlasRD:
-    serializedVersion: 3
+    serializedVersion: 4
     texture: {fileID: 660737867}
     alphaTexture: {fileID: 0}
     secondaryTextures: []
@@ -5115,6 +5144,11 @@ Sprite:
       m_DataSize: 80
       _typelessdata: 0ad723c00ad72340000000000ad723400ad723c0000000000ad723400ad72340000000000ad723c00ad723c000000000000000000000803f0000803f000000000000803f0000803f0000000000000000
     m_Bindpose: []
+    m_BlendShapes:
+      vertices: []
+      shapes: []
+      channels: []
+      fullWeights: []
     textureRect:
       serializedVersion: 2
       x: 0
@@ -5123,7 +5157,7 @@ Sprite:
       height: 512
     textureRectOffset: {x: 0, y: 0}
     atlasRectOffset: {x: -1, y: -1}
-    settingsRaw: 64
+    settingsRaw: 3136
     uvTransform: {x: 100, y: 256, z: 100, w: 256}
     downscaleMultiplier: 1
   m_PhysicsShape: []
@@ -5132,6 +5166,7 @@ Sprite:
   m_SpriteID: 
 --- !u!213 &1801542387
 Sprite:
+  serializedVersion: 2
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -5148,14 +5183,13 @@ Sprite:
   m_PixelsToUnits: 100
   m_Pivot: {x: 0.5, y: 0.5}
   m_Extrude: 0
-  m_IsPolygon: 0
   m_PackingTag: 
   m_RenderDataKey:
     00000000000000000000000000000000: 0
   m_AtlasTags: []
   m_SpriteAtlas: {fileID: 0}
   m_RD:
-    serializedVersion: 3
+    serializedVersion: 4
     texture: {fileID: 65666985}
     alphaTexture: {fileID: 0}
     secondaryTextures: []
@@ -5234,6 +5268,11 @@ Sprite:
       m_DataSize: 928
       _typelessdata: 0ad7a33f0000403f000000005c8f823fec51b8bd000000000ad7a33f713d8abf00000000ae47813fcdcccc3d000000000000803fec51383e000000007b146e3f85ebd13e000000003d0a573fe17a143f00000000cdcc4c3f0ad7a33f000000001f852b3fb81e453f00000000e17a143f3d0a573f0000000085ebd13e7b146e3f00000000cdcccc3dae47813f00000000ec51b83d5c8f823f00000000cdccccbdae47813f000000009a9999beec51783f00000000f628dcbe1f856b3f000000003333b3bed7a3703f000000007b146ebf85ebd13e000000005c8f82bfec51b83d00000000ae4781bfcdcccc3d000000007b148ebf0ad7a33f000000003d0a57bfe17a143f00000000b81e45bf1f852b3f0000000052b81ebf295c4f3f00000000ae47813fcdccccbd000000007b146e3f85ebd1be000000003d0a573fe17a14bf00000000b81e453f1f852bbf00000000ae47213f0ad7a3bf00000000e17a143f3d0a57bf0000000085ebd13e7b146ebf00000000ec51383e000080bf00000000cdcccc3dae4781bf00000000ec51b8bd5c8f82bf0000000085ebd1be7b146ebf00000000cdccccbdae4781bf00000000ec5178bf9a9999be000000001f856bbff628dcbe00000000d7a370bf3333b3be00000000ec5178bf0ad7a3bf00000000e17a14bf3d0a57bf000000001f852bbfb81e45bf00000000b81e45bf1f852bbf00000000ae4781bfcdccccbd000000000ad7a3bfec51383f000000000ad7a3bf7b146ebf0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     m_Bindpose: []
+    m_BlendShapes:
+      vertices: []
+      shapes: []
+      channels: []
+      fullWeights: []
     textureRect:
       serializedVersion: 2
       x: 0
@@ -5242,11 +5281,11 @@ Sprite:
       height: 256
     textureRectOffset: {x: 0, y: 0}
     atlasRectOffset: {x: -1, y: -1}
-    settingsRaw: 64
+    settingsRaw: 3136
     uvTransform: {x: 100, y: 128, z: 100, w: 128}
     downscaleMultiplier: 1
   m_AtlasRD:
-    serializedVersion: 3
+    serializedVersion: 4
     texture: {fileID: 65666985}
     alphaTexture: {fileID: 0}
     secondaryTextures: []
@@ -5325,6 +5364,11 @@ Sprite:
       m_DataSize: 928
       _typelessdata: 0ad7a33f0000403f000000005c8f823fec51b8bd000000000ad7a33f713d8abf00000000ae47813fcdcccc3d000000000000803fec51383e000000007b146e3f85ebd13e000000003d0a573fe17a143f00000000cdcc4c3f0ad7a33f000000001f852b3fb81e453f00000000e17a143f3d0a573f0000000085ebd13e7b146e3f00000000cdcccc3dae47813f00000000ec51b83d5c8f823f00000000cdccccbdae47813f000000009a9999beec51783f00000000f628dcbe1f856b3f000000003333b3bed7a3703f000000007b146ebf85ebd13e000000005c8f82bfec51b83d00000000ae4781bfcdcccc3d000000007b148ebf0ad7a33f000000003d0a57bfe17a143f00000000b81e45bf1f852b3f0000000052b81ebf295c4f3f00000000ae47813fcdccccbd000000007b146e3f85ebd1be000000003d0a573fe17a14bf00000000b81e453f1f852bbf00000000ae47213f0ad7a3bf00000000e17a143f3d0a57bf0000000085ebd13e7b146ebf00000000ec51383e000080bf00000000cdcccc3dae4781bf00000000ec51b8bd5c8f82bf0000000085ebd1be7b146ebf00000000cdccccbdae4781bf00000000ec5178bf9a9999be000000001f856bbff628dcbe00000000d7a370bf3333b3be00000000ec5178bf0ad7a3bf00000000e17a14bf3d0a57bf000000001f852bbfb81e45bf00000000b81e45bf1f852bbf00000000ae4781bfcdccccbd000000000ad7a3bfec51383f000000000ad7a3bf7b146ebf0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
     m_Bindpose: []
+    m_BlendShapes:
+      vertices: []
+      shapes: []
+      channels: []
+      fullWeights: []
     textureRect:
       serializedVersion: 2
       x: 0
@@ -5333,7 +5377,7 @@ Sprite:
       height: 256
     textureRectOffset: {x: 0, y: 0}
     atlasRectOffset: {x: -1, y: -1}
-    settingsRaw: 64
+    settingsRaw: 3136
     uvTransform: {x: 100, y: 128, z: 100, w: 128}
     downscaleMultiplier: 1
   m_PhysicsShape: []
@@ -5639,137 +5683,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &243778169434221521
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 243778169434221533}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c1ea71f7cad4a6642875d0e08613ed3c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  reversableData:
-    hueDrawerData:
-      textureSize: 512
-      drawerSize: 0.95
-      innerCircleSize: 0.82
-      rotation: 0
-      alpha: 1
-      outsideColor: {r: 0.23529412, g: 0.23529412, b: 0.23529412, a: 1}
-      insideColor: {r: 0.23529412, g: 0.23529412, b: 0.23529412, a: 1}
-    hueSelectorData:
-      textureSize: 256
-      selectorSize: 1
-      innerCircleSize: 0.82
-      color: {r: 1, g: 1, b: 1, a: 1}
-    svDrawerData:
-      textureSize: 256
-      drawerSize: 0.95
-      alpha: 1
-    svSelectorData:
-      textureSize: 256
-      selectorSize: 0.1
-      innerCircleSize: 0.82
-      color: {r: 1, g: 1, b: 1, a: 1}
-    otherData:
-      includeLowerPanel: 0
-      lowerPanelColor: {r: 0.23529412, g: 0.23529412, b: 0.23529412, a: 1}
-      includeSwatches: 1
-      includeHexadecimalInput: 1
-      hexadecimalLabelColor: {r: 0.654902, g: 0.654902, b: 0.654902, a: 1}
-      includeAlphaInput: 1
-      alphaLabelColor: {r: 0.654902, g: 0.654902, b: 0.654902, a: 1}
-      includeColorInput: 1
-      includeInputFields: 1
-      colorSliderTextureSize: 256
-      includeRGB0_255: 1
-      includeRGB0_1: 1
-      rLabelColor: {r: 0.654902, g: 0.654902, b: 0.654902, a: 1}
-      gLabelColor: {r: 0.654902, g: 0.654902, b: 0.654902, a: 1}
-      bLabelColor: {r: 0.654902, g: 0.654902, b: 0.654902, a: 1}
-      includeHSV: 1
-      hLabelColor: {r: 0.654902, g: 0.654902, b: 0.654902, a: 1}
-      sLabelColor: {r: 0.654902, g: 0.654902, b: 0.654902, a: 1}
-      vLabelColor: {r: 0.654902, g: 0.654902, b: 0.654902, a: 1}
-      includeUpperPanel: 0
-      upperPanelColor: {r: 0.23529412, g: 0.23529412, b: 0.23529412, a: 1}
-      includeColorPicker: 1
-      pixelatedDisplayBackgroundColor: {r: 0.23529412, g: 0.23529412, b: 0.23529412, a: 1}
-      includeMemorySwatches: 1
-      includeTitlePanel: 0
-      titlePanelColor: {r: 1, g: 1, b: 1, a: 1}
-      includeTitle: 1
-      title: Color Picker
-      includeCloseButton: 1
-  currentData:
-    hueDrawerData:
-      textureSize: 512
-      drawerSize: 0.95
-      innerCircleSize: 0.82
-      rotation: 0
-      alpha: 1
-      outsideColor: {r: 0.23529412, g: 0.23529412, b: 0.23529412, a: 1}
-      insideColor: {r: 0.23529412, g: 0.23529412, b: 0.23529412, a: 1}
-    hueSelectorData:
-      textureSize: 256
-      selectorSize: 1
-      innerCircleSize: 0.82
-      color: {r: 1, g: 1, b: 1, a: 1}
-    svDrawerData:
-      textureSize: 256
-      drawerSize: 0.95
-      alpha: 1
-    svSelectorData:
-      textureSize: 256
-      selectorSize: 0.1
-      innerCircleSize: 0.82
-      color: {r: 1, g: 1, b: 1, a: 1}
-    otherData:
-      includeLowerPanel: 0
-      lowerPanelColor: {r: 0.23529412, g: 0.23529412, b: 0.23529412, a: 1}
-      includeSwatches: 1
-      includeHexadecimalInput: 1
-      hexadecimalLabelColor: {r: 0.654902, g: 0.654902, b: 0.654902, a: 1}
-      includeAlphaInput: 1
-      alphaLabelColor: {r: 0.654902, g: 0.654902, b: 0.654902, a: 1}
-      includeColorInput: 1
-      includeInputFields: 1
-      colorSliderTextureSize: 256
-      includeRGB0_255: 1
-      includeRGB0_1: 1
-      rLabelColor: {r: 0.654902, g: 0.654902, b: 0.654902, a: 1}
-      gLabelColor: {r: 0.654902, g: 0.654902, b: 0.654902, a: 1}
-      bLabelColor: {r: 0.654902, g: 0.654902, b: 0.654902, a: 1}
-      includeHSV: 1
-      hLabelColor: {r: 0.654902, g: 0.654902, b: 0.654902, a: 1}
-      sLabelColor: {r: 0.654902, g: 0.654902, b: 0.654902, a: 1}
-      vLabelColor: {r: 0.654902, g: 0.654902, b: 0.654902, a: 1}
-      includeUpperPanel: 0
-      upperPanelColor: {r: 0.23529412, g: 0.23529412, b: 0.23529412, a: 1}
-      includeColorPicker: 1
-      pixelatedDisplayBackgroundColor: {r: 0.23529412, g: 0.23529412, b: 0.23529412, a: 1}
-      includeMemorySwatches: 1
-      includeTitlePanel: 0
-      titlePanelColor: {r: 1, g: 1, b: 1, a: 1}
-      includeTitle: 1
-      title: Color Picker
-      includeCloseButton: 1
-  hueDrawer: {fileID: 3315466285520923342}
-  lowerPanel: {fileID: 3315466285465377694}
-  rhRow: {fileID: 4707713903444910163}
-  gsRow: {fileID: 3315466285676078815}
-  bvRow: {fileID: 3315466284724588752}
-  aRow: {fileID: 3315466286262292688}
-  hexadecimalRow: {fileID: 3315466285836840658}
-  swatchesRow: {fileID: 4707713902341103060}
-  upperPanel: {fileID: 3315466285166788044}
-  pixelatedDisplay: {fileID: 4707713903362979264}
-  memorySwatches: {fileID: 3564905049232527911}
-  titlePanel: {fileID: 4707713903103398638}
-  colorPickerPrefab: {fileID: 0}
 --- !u!223 &243778169434221528
 Canvas:
   m_ObjectHideFlags: 0
@@ -5788,6 +5701,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -5824,7 +5738,6 @@ GameObject:
   m_Component:
   - component: {fileID: 243778169434221529}
   - component: {fileID: 243778169434221540}
-  - component: {fileID: 243778169434221521}
   - component: {fileID: 243778169434221528}
   - component: {fileID: 243778169434221535}
   - component: {fileID: 243778169434221534}
@@ -5941,18 +5854,6 @@ MonoBehaviour:
   reference:
     part1: 5295903173018693851
     part2: 7447998518651201972
---- !u!114 &3315466284369814275
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3315466284369814284}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7f844d12d23d9874891fc25045de6ee5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &3315466284369814282
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5982,7 +5883,6 @@ GameObject:
   - component: {fileID: 3315466284369814287}
   - component: {fileID: 3315466284369814286}
   - component: {fileID: 3315466284369814282}
-  - component: {fileID: 3315466284369814275}
   m_Layer: 5
   m_Name: Hue Selector
   m_TagString: Untagged
@@ -6150,6 +6050,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -6260,6 +6161,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -6422,6 +6324,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -6608,6 +6511,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -6895,6 +6799,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -7148,18 +7053,6 @@ RectTransform:
   m_AnchoredPosition: {x: 99.19895, y: -0.000045776367}
   m_SizeDelta: {x: 37.60155, y: 17.5}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &3315466284989740291
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3315466284989740337}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7f844d12d23d9874891fc25045de6ee5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!222 &3315466284989740300
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -7194,7 +7087,6 @@ GameObject:
   - component: {fileID: 3315466284989740300}
   - component: {fileID: 3315466284989740339}
   - component: {fileID: 3315466284989740303}
-  - component: {fileID: 3315466284989740291}
   m_Layer: 5
   m_Name: SV Selector
   m_TagString: Untagged
@@ -7361,6 +7253,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -7576,20 +7469,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   colorPicker: {fileID: 243778169434221540}
---- !u!114 &3315466285166788035
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3315466285166788082}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da6c4a7d7ff84c04488f35e92b61585c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  upper: {fileID: 4707713903103398636}
-  lower: {fileID: 3564905049318739345}
 --- !u!114 &3315466285166788044
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7639,7 +7518,6 @@ GameObject:
   - component: {fileID: 3315466285166788083}
   - component: {fileID: 3315466285166788045}
   - component: {fileID: 3315466285166788044}
-  - component: {fileID: 3315466285166788035}
   - component: {fileID: 3315466285166788034}
   m_Layer: 5
   m_Name: Upper Panel
@@ -7798,6 +7676,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -7954,6 +7833,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -8119,6 +7999,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -8210,6 +8091,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -8654,6 +8536,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -8732,20 +8615,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &3315466285465377683
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3315466285465377692}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da6c4a7d7ff84c04488f35e92b61585c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  upper: {fileID: 3564905049318739345}
-  lower: {fileID: 0}
 --- !u!1 &3315466285465377692
 GameObject:
   m_ObjectHideFlags: 0
@@ -8757,7 +8626,6 @@ GameObject:
   - component: {fileID: 3315466285465377693}
   - component: {fileID: 3315466285465377695}
   - component: {fileID: 3315466285465377694}
-  - component: {fileID: 3315466285465377683}
   m_Layer: 5
   m_Name: Lower Panel
   m_TagString: Untagged
@@ -9048,6 +8916,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -9210,18 +9079,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 28}
   m_Pivot: {x: 0.5, y: 1}
---- !u!114 &3315466285658553667
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3315466285658553714}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7f844d12d23d9874891fc25045de6ee5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &3315466285658553673
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9301,7 +9158,6 @@ GameObject:
   - component: {fileID: 3315466285658553676}
   - component: {fileID: 3315466285658553678}
   - component: {fileID: 3315466285658553673}
-  - component: {fileID: 3315466285658553667}
   m_Layer: 5
   m_Name: SV Drawer
   m_TagString: Untagged
@@ -9460,6 +9316,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -9578,6 +9435,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -10932,20 +10790,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 250, y: 250}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &3564905049318739345
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3564905049318739346}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da6c4a7d7ff84c04488f35e92b61585c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  upper: {fileID: 3315466285166788035}
-  lower: {fileID: 3315466285465377683}
 --- !u!1 &3564905049318739346
 GameObject:
   m_ObjectHideFlags: 0
@@ -10955,7 +10799,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3564905049318739344}
-  - component: {fileID: 3564905049318739345}
   m_Layer: 5
   m_Name: Middle Panel
   m_TagString: Untagged
@@ -21830,6 +21673,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -24485,6 +24329,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -24579,7 +24424,6 @@ GameObject:
   - component: {fileID: 4707713903103398639}
   - component: {fileID: 4707713903103398637}
   - component: {fileID: 4707713903103398638}
-  - component: {fileID: 4707713903103398636}
   - component: {fileID: 4707713903103398625}
   m_Layer: 5
   m_Name: Title Panel
@@ -24588,20 +24432,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 0
---- !u!114 &4707713903103398636
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4707713903103398632}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da6c4a7d7ff84c04488f35e92b61585c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  upper: {fileID: 0}
-  lower: {fileID: 3315466285166788035}
 --- !u!222 &4707713903103398637
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -26977,6 +26807,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -40030,6 +39861,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -43044,6 +42876,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -46713,6 +46546,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -49038,6 +48872,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -49269,6 +49104,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -50210,6 +50046,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -50441,6 +50278,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -50736,6 +50574,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
