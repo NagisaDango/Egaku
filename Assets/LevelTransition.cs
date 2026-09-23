@@ -29,18 +29,18 @@ public class LevelTransition : MonoBehaviourPunCallbacks
         
     }
 
-    private void OnEnable()
+    public override void OnEnable()
     {
+        base.OnEnable();
         EventHandler.ReachDestinationEvent += LoadEnd;
         EventHandler.LevelStartEvent += LoadLevelStart;
     }
 
-    private void OnDisable()
+    public override void OnDisable()
     {
+        base.OnDisable();
         EventHandler.ReachDestinationEvent -= LoadEnd;
         EventHandler.LevelStartEvent -= LoadLevelStart;
-
-
     }
 
     public void LoadEnd()
