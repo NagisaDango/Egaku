@@ -105,8 +105,7 @@ public class Runner : MonoBehaviourPunCallbacks
         if (!photonView.IsMine)
         {
             Debug.Log("this player is not the runner, setting the rb to non physic");
-            //rb.bodyType = RigidbodyType2D.Dynamic;
-            rb.isKinematic = true; // Stop physics interactions
+            rb.bodyType = RigidbodyType2D.Kinematic; // Stop physics interactions
             rb.simulated = false; // Turn off physics on non-owners
         }
         else
