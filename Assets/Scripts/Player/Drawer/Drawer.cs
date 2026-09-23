@@ -7,6 +7,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using System.Net;
 using static UnityEngine.Rendering.DebugUI;
+using Allan;
 
 public class Drawer : MonoBehaviourPun
 {
@@ -116,6 +117,9 @@ public class Drawer : MonoBehaviourPun
 
     void Update()
     {
+        // Freeze drawing and erasing while Photon preserves the two-player session for reconnection.
+        if (GameManager.InteractionsPausedForRecovery) return;
+
         if(!photonView.IsMine || currentPenType == PenUI.PenType.None)
             return;
         if(Input.GetAxis("Mouse ScrollWheel") != 0)
