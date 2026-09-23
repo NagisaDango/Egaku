@@ -101,7 +101,7 @@ namespace Photon.Pun
                 }
                 if (this.supportLoggerComponent != null)
                 {
-                    if (supportLogger.GetInstanceID() != this.supportLoggerComponent.GetInstanceID())
+                    if (supportLogger != this.supportLoggerComponent)
                     {
                         Debug.LogWarningFormat("Cached SupportLogger component is different from the one attached to PhotonMono GameObject");
                     }
