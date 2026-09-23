@@ -125,6 +125,9 @@ public class Runner : MonoBehaviourPunCallbacks
     private bool holdingShift;
     private void Update()
     {
+        // Freeze local gameplay input while Photon preserves the two-player session for reconnection.
+        if (Allan.GameManager.InteractionsPausedForRecovery) return;
+
         AdjustFaceRotation();
         //***need fix calling in update
         if (!photonView.IsMine)

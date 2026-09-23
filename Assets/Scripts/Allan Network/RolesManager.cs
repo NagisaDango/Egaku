@@ -22,6 +22,10 @@ public class RolesManager : MonoBehaviourPunCallbacks
     private int displayID;
     private PlayerRole selectedRole = PlayerRole.None; // Default
 
+    // confirmedRole follows the server-owned room slot; pendingRole exists only while a CAS request is in flight.
+    private PlayerRole confirmedRole = PlayerRole.None;
+    private PlayerRole pendingRole = PlayerRole.None;
+
     public enum PlayerRole { None = -1, Drawer, Runner }
 
     void Start()
@@ -29,6 +33,9 @@ public class RolesManager : MonoBehaviourPunCallbacks
         // Set up button listeners
         drawerButton.onClick.AddListener(() => SelectRole(PlayerRole.Drawer));
         runnerButton.onClick.AddListener(() => { SelectRole(PlayerRole.Runner); });
+
+        confirmedRole = GetLocalOwnedRole();
+        selectedRole = confirmedRole;
 
         //startGameButton.onClick.AddListener(() => GameManager.Instance.LoadArena());
         startGameButton.interactable = false; // Disable until valid selections
@@ -51,16 +58,98 @@ public class RolesManager : MonoBehaviourPunCallbacks
         {
             startGameButton.gameObject.SetActive(false);
         }
+
+        RefreshRoleUi();
     }
 
 
 
     void SelectRole(PlayerRole role)
     {
+        // None also represents "no pending request", so it must not be rejected by the pending-role guard.
+        if (!PhotonNetwork.InRoom || role == confirmedRole ||
+            (pendingRole != PlayerRole.None && role == pendingRole)) return;
+
+        if (role == PlayerRole.None)
+        {
+            // The X button releases only the local actor's confirmed slot.
+            ReleaseRole(confirmedRole);
+            ConfirmRole(PlayerRole.None);
+            return;
+        }
+
+        int actorNumber = PhotonNetwork.LocalPlayer.ActorNumber;
+        string slotKey = PhotonSessionPolicy.GetRoleOwnerKey(role);
+        int currentOwner = GetRoleOwner(role);
+
+        if (currentOwner == actorNumber)
+        {
+            ConfirmRole(role);
+            return;
+        }
+
+        if (currentOwner != 0)
+        {
+            Debug.Log($"Role {role} is already owned by actor {currentOwner}.");
+            RefreshRoleUi();
+            return;
+        }
+
+        // Photon CAS guarantees that only one actor can replace the empty (zero) slot.
+        pendingRole = role;
+        PhotonNetwork.CurrentRoom.SetCustomProperties(
+            new Hashtable { { slotKey, actorNumber } },
+            new Hashtable { { slotKey, 0 } });
+    }
+
+    private int GetRoleOwner(PlayerRole role)
+    {
+        // Missing slots are treated as empty for offline mode and defensive compatibility.
+        if (!PhotonNetwork.InRoom) return 0;
+
+        string key = PhotonSessionPolicy.GetRoleOwnerKey(role);
+        return PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(key, out object owner) ? (int)owner : 0;
+    }
+
+    private PlayerRole GetLocalOwnedRole()
+    {
+        // Rejoining actors recover the role that is still reserved by their actor number.
+        int actorNumber = PhotonNetwork.LocalPlayer.ActorNumber;
+        if (GetRoleOwner(PlayerRole.Drawer) == actorNumber) return PlayerRole.Drawer;
+        if (GetRoleOwner(PlayerRole.Runner) == actorNumber) return PlayerRole.Runner;
+        return PlayerRole.None;
+    }
+
+    private void ConfirmRole(PlayerRole role)
+    {
+        // Local/player properties and the display are updated only after the authoritative room slot confirms ownership.
+        PlayerRole previousRole = confirmedRole;
+        confirmedRole = role;
         selectedRole = role;
-        Hashtable playerProperties = new Hashtable { { "Role", (int)role } };
-        PhotonNetwork.LocalPlayer.SetCustomProperties(playerProperties);
-        photonView.RPC("RPC_SwitchDisplayPos", RpcTarget.AllBuffered, selectedRole, displayID, PhotonNetwork.LocalPlayer.ActorNumber);
+        pendingRole = PlayerRole.None;
+
+        PhotonNetwork.LocalPlayer.SetCustomProperties(new Hashtable { { "Role", (int)role } });
+        PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable
+        {
+            { "Role_" + PhotonNetwork.LocalPlayer.ActorNumber, (int)role }
+        });
+        photonView.RPC("RPC_SwitchDisplayPos", RpcTarget.AllBuffered, role, displayID, PhotonNetwork.LocalPlayer.ActorNumber);
+
+        if (previousRole != PlayerRole.None && previousRole != role)
+            ReleaseRole(previousRole);
+
+        RefreshRoleUi();
+    }
+
+    private void ReleaseRole(PlayerRole role)
+    {
+        // The expected actor number prevents one client from clearing another client's role.
+        if (role == PlayerRole.None || !PhotonNetwork.InRoom) return;
+
+        int actorNumber = PhotonNetwork.LocalPlayer.ActorNumber;
+        PhotonNetwork.CurrentRoom.SetCustomProperties(
+            new Hashtable { { PhotonSessionPolicy.GetRoleOwnerKey(role), 0 } },
+            new Hashtable { { PhotonSessionPolicy.GetRoleOwnerKey(role), actorNumber } });
     }
 
     [PunRPC]
@@ -100,79 +189,55 @@ public class RolesManager : MonoBehaviourPunCallbacks
         else
             print("RPC enter else");
 
-        // Store player's role in Photon Custom Properties (Async Update)
-        Hashtable playerProperties = new Hashtable { { "Role_" + playerActorNumber, (int)role } };
-        PhotonNetwork.CurrentRoom.SetCustomProperties(playerProperties); // The UI will update when the property is synced
-
-        // UI Management for ALL Players
-        if (role == PlayerRole.Drawer)
-        {
-            drawerButton.gameObject.SetActive(false);
-            runnerButton.gameObject.SetActive(PhotonNetwork.LocalPlayer.ActorNumber != playerActorNumber);
-            //drawerButton.interactable = false; // Disable Drawer button for all
-            //runnerButton.interactable = PhotonNetwork.LocalPlayer.ActorNumber != playerActorNumber;
-
-            if (PhotonNetwork.LocalPlayer.ActorNumber == playerActorNumber)
-                noRoleButton.SetActive(true);
-            else
-                noRoleButton.SetActive(false);
-        }
-        else if (role == PlayerRole.Runner)
-        {
-            runnerButton.gameObject.SetActive(false);
-            drawerButton.gameObject.SetActive(PhotonNetwork.LocalPlayer.ActorNumber != playerActorNumber);
-            //runnerButton.interactable = false; // Disable Runner button for all
-            //drawerButton.interactable = PhotonNetwork.LocalPlayer.ActorNumber != playerActorNumber;
-
-            if (PhotonNetwork.LocalPlayer.ActorNumber == playerActorNumber)
-                noRoleButton.SetActive(true);
-            else
-                noRoleButton.SetActive(false);
-        }
-        else if (role == PlayerRole.None)
-        {
-            noRoleButton.SetActive(false); // Hide No Role button
-        }
+        // This RPC only positions the replicated player display. Role buttons are refreshed from
+        // authoritative room slots below, so a remote player's RPC cannot overwrite the local UI.
+        bool isLocalPlayersDisplay = PhotonNetwork.LocalPlayer.ActorNumber == playerActorNumber;
+        noRoleButton.SetActive(isLocalPlayersDisplay && role != PlayerRole.None);
 
         targetDisplay.transform.localScale = Vector3.one;
         targetDisplay.transform.localPosition = Vector3.zero;
+
+        // Reapply the local view after every display RPC because buffered RPC delivery order can vary.
+        RefreshRoleUi();
     }
 
     // Check if the selected role is already taken by another player
     bool IsRoleTaken(PlayerRole role)
     {
-        foreach (var player in PhotonNetwork.PlayerList)
-        {
-            if (PhotonNetwork.CurrentRoom.CustomProperties.ContainsKey("Role_" + player.ActorNumber))
-            {
-                Debug.Log((PlayerRole)(int)PhotonNetwork.CurrentRoom.CustomProperties["Role_" + player.ActorNumber]);
-                if ((PlayerRole)(int)PhotonNetwork.CurrentRoom.CustomProperties["Role_" + player.ActorNumber] == role)
-                {
-                    return true; // Role is already taken by another player
-                }
-            }
-        }
-        return false;
+        return GetRoleOwner(role) != 0;
     }
 
     [PunRPC]
     void RPC_CheckStartGameCondition(int[] roleArray)
     {
-        HashSet<PlayerRole> roleSet = new HashSet<PlayerRole>(roleArray.Select(r => (PlayerRole)r));
+        RefreshRoleUi();
+    }
 
-        Debug.Log("Checking Start Game Condition...");
-        Debug.Log($"Current Roles in Room: {string.Join(", ", roleSet)}");
+    private void RefreshRoleUi()
+    {
+        if (!PhotonNetwork.InRoom) return;
 
-        // Ensure both required roles are present
-        if (roleSet.Contains(PlayerRole.Runner) && roleSet.Contains(PlayerRole.Drawer))
+        int localActorNumber = PhotonNetwork.LocalPlayer.ActorNumber;
+        int drawerOwner = GetRoleOwner(PlayerRole.Drawer);
+        int runnerOwner = GetRoleOwner(PlayerRole.Runner);
+
+        // Once this client owns a role, both role-selection buttons stay hidden until the X button is used.
+        bool localPlayerHasRole = confirmedRole != PlayerRole.None;
+        drawerButton.gameObject.SetActive(!localPlayerHasRole && drawerOwner == 0);
+        runnerButton.gameObject.SetActive(!localPlayerHasRole && runnerOwner == 0);
+        startGameButton.gameObject.SetActive(PhotonNetwork.IsMasterClient);
+
+        // Distinct owners are required so one actor can never satisfy both role requirements during a role switch.
+        startGameButton.interactable = PhotonNetwork.IsMasterClient &&
+                                       drawerOwner != 0 &&
+                                       runnerOwner != 0 &&
+                                       drawerOwner != runnerOwner;
+
+        if (confirmedRole != PlayerRole.None &&
+            GetRoleOwner(confirmedRole) != localActorNumber)
         {
-            Debug.Log("Both roles selected, enabling start button.");
-            startGameButton.interactable = true;
-        }
-        else
-        {
-            Debug.Log("Not all roles are selected, disabling start button.");
-            startGameButton.interactable = false;
+            confirmedRole = PlayerRole.None;
+            selectedRole = PlayerRole.None;
         }
     }
 
@@ -186,29 +251,22 @@ public class RolesManager : MonoBehaviourPunCallbacks
     {
         Debug.Log("Room properties updated.");
 
-        List<int> roleList = new List<int>(); // Stores all current role selections
-
-        // Loop through all players and collect their assigned roles
-        foreach (var player in PhotonNetwork.PlayerList)
+        if (pendingRole != PlayerRole.None &&
+            propertiesThatChanged.ContainsKey(PhotonSessionPolicy.GetRoleOwnerKey(pendingRole)))
         {
-            string key = "Role_" + player.ActorNumber;
-            if (PhotonNetwork.CurrentRoom.CustomProperties.ContainsKey(key))
-            {
-                int roleValue = (int)PhotonNetwork.CurrentRoom.CustomProperties[key];
-                roleList.Add(roleValue);
-            }
+            // A CAS loser observes the winner's actor number and simply clears its pending request.
+            if (GetRoleOwner(pendingRole) == PhotonNetwork.LocalPlayer.ActorNumber)
+                ConfirmRole(pendingRole);
+            else
+                pendingRole = PlayerRole.None;
         }
 
-        Debug.Log($"Updated Role List: {string.Join(", ", roleList)}");
+        RefreshRoleUi();
+    }
 
-        // Send the full role list to all clients
-        photonView.RPC("RPC_CheckStartGameCondition", RpcTarget.All, roleList.ToArray());
-
-        // Refresh button interactability
-        drawerButton.gameObject.SetActive(!IsRoleTaken(PlayerRole.Drawer));
-        runnerButton.gameObject.SetActive(!IsRoleTaken(PlayerRole.Runner));
-        //drawerButton.interactable = !IsRoleTaken(PlayerRole.Drawer);
-        //runnerButton.interactable = !IsRoleTaken(PlayerRole.Runner);
+    public override void OnMasterClientSwitched(Player newMasterClient)
+    {
+        RefreshRoleUi();
     }
 
 
