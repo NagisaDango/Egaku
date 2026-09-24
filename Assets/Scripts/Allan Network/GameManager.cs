@@ -45,8 +45,16 @@ namespace Allan
 
         private HashSet<string> roomInfoSet = new();
 
-        // A create request may arrive before Photon finishes joining the lobby.
-        private string pendingRoomName;
+        // A room-code request may arrive before Photon finishes returning to the Master Server.
+        private enum PrivateRoomRequest
+        {
+            None,
+            Create,
+            Join
+        }
+
+        private string pendingRoomCode;
+        private PrivateRoomRequest pendingRoomRequest;
 
         // These flags distinguish intentional navigation from a transport failure that should be recovered.
         private bool explicitLeaveRequested;
@@ -72,6 +80,8 @@ namespace Allan
         {
             // Photon separates incompatible room protocols by Application.version.
             PhotonNetwork.GameVersion = Application.version;
+            // A stable Photon UserId prevents a different actor from claiming a reserved reconnect slot.
+            PhotonSessionPolicy.EnsureStableUserIdentity();
             //if (Instance == null)
             //{
             //    Instance = this;
@@ -123,6 +133,7 @@ namespace Allan
 
             //go.UpdateProperty(roomSelection, roleSelection, levelSelection, gridLayout, nameField);
             leaveGameButton.onClick.AddListener(() => { LeaveRoom(); });
+            ConfigurePrivateRoomCodeUi();
         }
         void Start()
         {
@@ -260,6 +271,69 @@ namespace Allan
             leaveGameButton.onClick.AddListener(() => { LeaveRoom(); });
 
             levelSelection.transform.Find("BackButton").GetComponent<Button>().onClick.AddListener(() => { Back2RoleSelection(); });
+            ConfigurePrivateRoomCodeUi();
+        }
+
+        /// <summary>Configures the existing room panel for direct private-code matchmaking.</summary>
+        private void ConfigurePrivateRoomCodeUi()
+        {
+            if (nameField != null)
+            {
+                nameField.characterLimit = PhotonSessionPolicy.MaximumRoomCodeLength;
+                nameField.contentType = TMP_InputField.ContentType.Alphanumeric;
+                if (nameField.placeholder is TMP_Text placeholderLabel)
+                    placeholderLabel.text = "Room code (blank = create)";
+            }
+
+            if (roomCreateOrJoinButton != null)
+            {
+                TMP_Text buttonLabel = roomCreateOrJoinButton.GetComponentInChildren<TMP_Text>();
+                if (buttonLabel != null) buttonLabel.text = "Create / Join Code";
+            }
+
+            if (gridLayout != null && gridLayout.parent != null && gridLayout.parent.parent != null)
+            {
+                // Private rooms are never listed, so hide the legacy public-room scroll view.
+                gridLayout.parent.parent.gameObject.SetActive(false);
+            }
+        }
+
+        /// <summary>Shows the private code in the waiting room so the host can share it with one client.</summary>
+        private void ShowCurrentRoomCode()
+        {
+            if (roleSelection == null || !PhotonNetwork.InRoom || PhotonNetwork.OfflineMode) return;
+
+            Transform existingLabel = roleSelection.transform.Find("PrivateRoomCodeLabel");
+            TMP_Text codeLabel;
+            if (existingLabel == null)
+            {
+                // The label is runtime-only so legacy scenes remain untouched and every scene reload gets fresh state.
+                GameObject labelObject = new GameObject(
+                    "PrivateRoomCodeLabel",
+                    typeof(RectTransform),
+                    typeof(TextMeshProUGUI));
+                labelObject.transform.SetParent(roleSelection.transform, false);
+
+                RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+                labelRect.anchorMin = new Vector2(0.5f, 1f);
+                labelRect.anchorMax = new Vector2(0.5f, 1f);
+                labelRect.pivot = new Vector2(0.5f, 1f);
+                labelRect.anchoredPosition = new Vector2(0f, -24f);
+                labelRect.sizeDelta = new Vector2(600f, 60f);
+
+                codeLabel = labelObject.GetComponent<TextMeshProUGUI>();
+                codeLabel.alignment = TextAlignmentOptions.Center;
+                codeLabel.fontSize = 30f;
+                codeLabel.fontStyle = FontStyles.Bold;
+                codeLabel.color = Color.black;
+                codeLabel.raycastTarget = false;
+            }
+            else
+            {
+                codeLabel = existingLabel.GetComponent<TMP_Text>();
+            }
+
+            codeLabel.text = $"Room Code: {PhotonNetwork.CurrentRoom.Name}";
         }
 
 
@@ -374,12 +448,6 @@ namespace Allan
 
         private Room currentRoom;
 
-        void JoinLobbyAfterDelay()
-        {
-            Debug.Log("Waiting for room cleanup...");
-            PhotonNetwork.JoinLobby();
-        }
-
         public void LeaveRoom()
         {
             //currentRoom = PhotonNetwork.CurrentRoom;
@@ -479,6 +547,7 @@ namespace Allan
                     roomSelection.SetActive(false);
                     roleSelection.SetActive(true);
                     levelSelection.SetActive(false);
+                    ShowCurrentRoomCode();
                 }
                 else
                 {
@@ -498,24 +567,14 @@ namespace Allan
 
         public void CreateJoinButton()
         {
-            Debug.Log("Enter CreateJoinButton" + PhotonNetwork.InLobby);
-            if (nameField.text.IsNullOrEmpty())
-            {
-                return;
-            }
+            // A blank field creates a readable code; entering a code only joins that exact private room.
+            string roomCode = PhotonSessionPolicy.NormalizeRoomCode(nameField != null ? nameField.text : string.Empty);
+            pendingRoomRequest = string.IsNullOrEmpty(roomCode) ? PrivateRoomRequest.Create : PrivateRoomRequest.Join;
+            if (pendingRoomRequest == PrivateRoomRequest.Create) roomCode = PhotonSessionPolicy.GenerateRoomCode();
 
-            // Preserve the user's request until the asynchronous JoinLobby callback arrives.
-            pendingRoomName = nameField.text.Trim();
-
-            if (!PhotonNetwork.InLobby)
-            {
-                Debug.Log("Not in lobby; queueing room creation until OnJoinedLobby.");
-                if (PhotonNetwork.IsConnectedAndReady)
-                    PhotonNetwork.JoinLobby();
-                return;
-            }
-
-            TryCreatePendingRoom();
+            if (nameField != null) nameField.text = roomCode;
+            pendingRoomCode = roomCode;
+            TryStartPendingRoomRequest();
         }
 
         private void OnApplicationQuit()
@@ -523,54 +582,32 @@ namespace Allan
             explicitLeaveRequested = true;
         }
 
-        private void TryCreatePendingRoom()
+        private void TryStartPendingRoomRequest()
         {
-            // This method is safe to call from both the button handler and OnJoinedLobby.
-            if (string.IsNullOrWhiteSpace(pendingRoomName) || !PhotonNetwork.IsConnectedAndReady || !PhotonNetwork.InLobby)
+            // This method is safe from the button and connection callbacks; Photon accepts it on the Master Server.
+            if (string.IsNullOrWhiteSpace(pendingRoomCode) || !PhotonNetwork.IsConnectedAndReady || PhotonNetwork.InRoom)
                 return;
 
-            string roomName = pendingRoomName;
-            pendingRoomName = null;
-            PhotonNetwork.CreateRoom(roomName, PhotonSessionPolicy.CreateRoomOptions());
+            string roomCode = pendingRoomCode;
+            PrivateRoomRequest request = pendingRoomRequest;
+            pendingRoomCode = null;
+            pendingRoomRequest = PrivateRoomRequest.None;
+
+            if (request == PrivateRoomRequest.Create)
+                PhotonNetwork.CreateRoom(roomCode, PhotonSessionPolicy.CreateRoomOptions(), TypedLobby.Default);
+            else if (request == PrivateRoomRequest.Join)
+                PhotonNetwork.JoinRoom(roomCode);
         }
 
         public void JoinButton(string name)
         {
-            // Lobby entries use the exact Photon room name; this is already a direct room-ID join.
-            PhotonNetwork.JoinRoom(name);
+            // Retained for serialized legacy buttons; all joins still resolve through the exact room code.
+            pendingRoomCode = PhotonSessionPolicy.NormalizeRoomCode(name);
+            pendingRoomRequest = PrivateRoomRequest.Join;
+            TryStartPendingRoomRequest();
             //roomSelection.SetActive(false);
             //roleSelection.SetActive(true);
 
-        }
-
-
-        string test = "";
-
-        void UpdateRoomPlayerList()
-        {
-            // Get current room properties
-            Hashtable roomProperties = PhotonNetwork.CurrentRoom.CustomProperties;
-
-            string playerList;
-            Debug.Log($"RoomName: {PhotonNetwork.CurrentRoom.Name},{PhotonNetwork.NickName}");
-            //Add the new player name(avoid duplicates)
-            if ((string)roomProperties["p1"] == "" && (string)roomProperties["p2"] == "")
-            {
-                roomProperties["p1"] = PhotonNetwork.NickName;
-            }
-            else
-            {
-                if ((string)roomProperties["p1"] == "")
-                {
-                    roomProperties["p1"] = PhotonNetwork.NickName;
-                }
-                else
-                {
-                    roomProperties["p2"] = PhotonNetwork.NickName;
-                }
-            }
-
-            PhotonNetwork.CurrentRoom.SetCustomProperties(roomProperties);
         }
 
         void UpdateRoomPlayerList(Dictionary<int, Player> players)
@@ -628,38 +665,6 @@ namespace Allan
         }
 
         //RPCs only get call in rooms
-        //Only get call in lobby
-
-        public void RefreshRoomList()
-        {
-            foreach (Transform child in gridLayout)
-            {
-                child.GetComponentInChildren<Button>().onClick.RemoveListener(() => JoinButton(child.GetComponentInChildren<TMP_Text>().text));
-                Destroy(child.gameObject);
-            }
-
-            foreach(RoomInfo room in roomInfoList)
-            {
-                if ((bool)room.CustomProperties["show"])
-                {
-                    Transform newRoom = Instantiate(roomItemPrefab, gridLayout.transform).transform;
-
-                    string player1 = (string)room.CustomProperties["p1"] != "" ? (string)room.CustomProperties["p1"] : " ----";
-                    string player2 = (string)room.CustomProperties["p2"] != "" ? (string)room.CustomProperties["p2"] : " ----";
-                    string players = player1 + " X " + player2;
-                    newRoom.transform.Find("PlayerName").GetComponent<TMP_Text>().text = players;
-                    newRoom.transform.Find("RoomName").GetComponent<TMP_Text>().text = room.Name;// + "(" + room.PlayerCount +")";
-                    newRoom.GetComponentInChildren<Button>().onClick.AddListener(() => JoinButton(room.Name));
-                }
-
-
-            }
-
-        }
-
-
-        private List<RoomInfo> roomInfoList = new List<RoomInfo>();
-
         /// <summary>Checks the authoritative room state before accepting a late rejoin.</summary>
         private static bool IsSessionExpired()
         {
@@ -776,17 +781,18 @@ namespace Allan
                 SceneManager.LoadScene("RoleSelection");
 
             if (lobbyReconnectCoroutine == null)
-                lobbyReconnectCoroutine = StartCoroutine(ConnectToLobbyWhenReady());
+                lobbyReconnectCoroutine = StartCoroutine(ConnectToRoomSelectionWhenReady());
         }
 
-        /// <summary>Waits for any in-progress disconnect before establishing a clean lobby connection.</summary>
-        private IEnumerator ConnectToLobbyWhenReady()
+        /// <summary>Waits for any in-progress disconnect before returning to private-code matchmaking.</summary>
+        private IEnumerator ConnectToRoomSelectionWhenReady()
         {
             while (!PhotonNetwork.IsConnectedAndReady)
             {
                 if (PhotonNetwork.NetworkClientState == ClientState.Disconnected)
                 {
                     PhotonNetwork.GameVersion = Application.version;
+                    PhotonSessionPolicy.EnsureStableUserIdentity();
                     PhotonNetwork.ConnectUsingSettings();
                 }
 
@@ -794,8 +800,12 @@ namespace Allan
             }
 
             lobbyReconnectCoroutine = null;
-            if (!PhotonNetwork.InLobby && !PhotonNetwork.InRoom)
-                PhotonNetwork.JoinLobby();
+            returningToLobby = false;
+            explicitLeaveRequested = false;
+            if (SceneManager.GetActiveScene().name != "RoleSelection")
+                SceneManager.LoadScene("RoleSelection");
+
+            TryStartPendingRoomRequest();
         }
 
         /// <summary>Closes, hides, and deletes a finished room as soon as its final actor leaves.</summary>
@@ -840,13 +850,22 @@ namespace Allan
         public override void OnConnectedToMaster()
         {
             Debug.Log("Enter Callback OnConnectedToMaster");
-            // ReconnectAndRejoin controls its own server transition, so normal lobby joining must stay out of its way.
-            if (!reconnecting && !PhotonNetwork.InLobby)
-                PhotonNetwork.JoinLobby();
+            // ReconnectAndRejoin owns its connection path; normal room-code requests resume on the Master Server.
+            if (reconnecting) return;
+
+            if (returningToLobby)
+            {
+                returningToLobby = false;
+                explicitLeaveRequested = false;
+                if (SceneManager.GetActiveScene().name != "RoleSelection")
+                    SceneManager.LoadScene("RoleSelection");
+            }
+
+            TryStartPendingRoomRequest();
         }
         public override void OnJoinedLobby()
         {
-            Debug.Log("Enter Callback OnJoinedLobby");
+            Debug.Log("Enter Callback OnJoinedLobby (legacy compatibility)");
 
             //Debug.Log("ding zhengasds");
             List<Transform> childs = new List<Transform>();
@@ -860,7 +879,8 @@ namespace Allan
                 DestroyImmediate(child.gameObject);
             }
 
-            TryCreatePendingRoom();
+            // A client upgraded while already in a lobby can still use the same direct room-code request.
+            TryStartPendingRoomRequest();
 
             if (returningToLobby)
             {
@@ -891,6 +911,7 @@ namespace Allan
                 roomSelection.SetActive(false);
                 roleSelection.SetActive(true);
                 levelSelection.SetActive(false);
+                ShowCurrentRoomCode();
             }
 
 
@@ -1044,7 +1065,12 @@ namespace Allan
 
         public override void OnJoinRoomFailed(short returnCode, string message)
         {
-            if (!reconnecting) return;
+            if (!reconnecting)
+            {
+                // Direct-code joins never create a room on typo; keep the entered code visible for correction.
+                Debug.LogWarning($"Room code join failed ({returnCode}): {message}");
+                return;
+            }
 
             Debug.LogWarning($"ReconnectAndRejoin failed ({returnCode}): {message}");
             // Return to Disconnected so the unscaled retry loop can make another clean attempt.
@@ -1052,102 +1078,17 @@ namespace Allan
                 PhotonNetwork.Disconnect();
         }
 
+        public override void OnCreateRoomFailed(short returnCode, string message)
+        {
+            // A generated-code collision is extremely unlikely; the user can clear the field to generate another.
+            Debug.LogWarning($"Private room creation failed ({returnCode}): {message}");
+        }
+
         public override void OnRoomListUpdate(List<RoomInfo> roomList)
         {
-            Debug.Log("Enter Callback OnRoomListUpdate");
-
-            //foreach (Transform child in gridLayout)
-            //{
-            //    DestroyImmediate(child.gameObject);
-            //}
-
-
-            List<string> activeRooms = new List<string>();
-            List<string> removingRooms = new List<string>();
-            foreach (RoomInfo room in roomList)
-            {
-                if (room.RemovedFromList)
-                {
-                    print("Removing room: " + room.Name);
-                    removingRooms.Add(room.Name);
-                }
-                else
-                {
-                    print("Active room: " + room.Name);
-                    activeRooms.Add(room.Name);
-                }
-            }
-
-
-            List<Transform> toRemove = new List<Transform>();
-            foreach (Transform child in gridLayout)
-            {
-                if (removingRooms.Contains(child.name) || activeRooms.Contains(child.name))
-                {
-                    toRemove.Add(child);
-
-                }
-            }
-
-            foreach (Transform child in toRemove)
-            {
-                DestroyImmediate(child.gameObject);
-            }
-
-            foreach (RoomInfo r in roomList)
-            {
-                print(r.Name + r.RemovedFromList);
-            }
-
-            roomList.RemoveAll(room => room.RemovedFromList);
-            print("____");
-            foreach (RoomInfo room in roomList)
-            {
-
-                // Delta updates can still contain a retained but closed room. Never recreate a UI
-                // entry unless the server says that the room is open and its lobby flag is enabled.
-                bool shouldShowRoom = room.IsOpen &&
-                                      room.CustomProperties.TryGetValue(PhotonSessionPolicy.ShowRoomKey, out object showValue) &&
-                                      showValue is bool showRoom &&
-                                      showRoom;
-                if (!shouldShowRoom)
-                {
-                    continue;
-                }
-                print("Cleaning" + room.Name + room.PlayerCount + (string)room.CustomProperties["p1"] + (string)room.CustomProperties["p2"]);
-                //GameObject newRoom = Instantiate(roomItemPrefab, gridLayout.position, Quaternion.identity);
-                Transform newRoom = null;
-                if ((string)room.CustomProperties["p1"] != "" || (string)room.CustomProperties["p2"] != "")
-                {
-                    newRoom = Instantiate(roomItemPrefab, gridLayout.transform).transform;
-                    newRoom.name = room.Name;
-                }
-
-                if (newRoom != null)
-                {
-                    if (room.PlayerCount == 2)
-                    {
-                        newRoom.GetComponentInChildren<Button>().interactable = false;
-                    }
-                    else
-                    {
-                        newRoom.GetComponentInChildren<Button>().interactable = true;
-
-                    }
-
-                    string player1 = (string)room.CustomProperties["p1"] != "" ? (string)room.CustomProperties["p1"] : " ----";
-                    string player2 = (string)room.CustomProperties["p2"] != "" ? (string)room.CustomProperties["p2"] : " ----";
-                    string players = player1 + " X " + player2;
-                    newRoom.transform.Find("PlayerName").GetComponent<TMP_Text>().text = players;
-                    Debug.Log($"Room: {room.Name}, Players: {players}");
-
-                    newRoom.transform.Find("RoomName").GetComponent<TMP_Text>().text = room.Name;// + "(" + room.PlayerCount +")";
-                    newRoom.GetComponentInChildren<Button>().onClick.AddListener(() => JoinButton(room.Name));
-                }
-
-            }
-
-
+            // Protocol 0.3 uses invisible exact-code rooms. Ignore any legacy lobby delta instead of
+            // rebuilding stale join buttons that can outlive a closed or retained Photon room.
+            Debug.Log($"Ignored {roomList.Count} legacy lobby room updates in private-code mode.");
         }
         public override void OnRoomPropertiesUpdate(Hashtable propertiesThatChanged)
         {
