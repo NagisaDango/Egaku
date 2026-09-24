@@ -74,6 +74,7 @@ namespace Allan
         private bool recoveryTargetLoadIssued;
         private bool recoveryLocalReloadIssued;
         private int recoveryRefreshEpoch;
+        private int recoveryLocalLoadCompletedEpoch;
         private string recoveryRefreshTargetScene;
         private Coroutine recoveryRefreshTimeoutCoroutine;
         private Coroutine recoveryLocalReloadCoroutine;
@@ -824,6 +825,7 @@ namespace Allan
             recoveryRefreshInProgress = true;
             recoveryTargetLoadIssued = false;
             recoveryLocalReloadIssued = false;
+            recoveryLocalLoadCompletedEpoch = 0;
             recoveryRefreshEpoch = previousEpoch + 1;
             recoveryRefreshTargetScene = activeScene;
             SetRecoveryInputPause(true);
@@ -885,6 +887,7 @@ namespace Allan
             recoveryTargetLoadIssued = false;
             recoveryLocalReloadIssued = false;
             recoveryRefreshEpoch = epoch;
+            recoveryLocalLoadCompletedEpoch = 0;
             recoveryRefreshTargetScene = targetScene;
             SetRecoveryInputPause(true);
             StartRecoveryRefreshTimeout();
@@ -922,6 +925,10 @@ namespace Allan
             if (!recoveryRefreshInProgress || recoveryRefreshEpoch <= 0 ||
                 loadedScene != recoveryRefreshTargetScene)
                 return;
+
+            // The local Master may receive its own room-property callback after this sceneLoaded
+            // callback. Remember local completion so that late callback cannot re-pause controls.
+            recoveryLocalLoadCompletedEpoch = recoveryRefreshEpoch;
 
             // Each player confirms its own rebuilt level before the Master retires the request.
             // The Master keeps the request active until both scene loads have completed.
@@ -1450,6 +1457,17 @@ namespace Allan
                 recoveryRefreshInProgress = true;
                 recoveryRefreshEpoch = epoch;
                 recoveryRefreshTargetScene = targetScene;
+                if (recoveryLocalLoadCompletedEpoch != epoch)
+                    recoveryLocalLoadCompletedEpoch = 0;
+
+                // Photon delivers the room-property update to its writer asynchronously. If this
+                // actor already loaded and acknowledged this exact epoch, this is only a late echo.
+                if (recoveryLocalLoadCompletedEpoch == epoch)
+                {
+                    TryCompleteSharedRecoverySceneRefresh();
+                    return;
+                }
+
                 SetRecoveryInputPause(true);
                 StartRecoveryRefreshTimeout();
                 ScheduleLocalRecoverySceneReload(epoch, targetScene);
