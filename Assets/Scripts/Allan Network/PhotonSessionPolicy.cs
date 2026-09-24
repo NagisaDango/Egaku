@@ -10,9 +10,13 @@ using UnityEngine;
 /// </summary>
 public static class PhotonSessionPolicy
 {
-    private const string StableUserIdPreferenceKey = "Egaku.Photon.StableUserId";
     private const string PlayerIdCommandLinePrefix = "-egaku-player-id=";
     private const string RoomCodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+    // ReconnectAndRejoin only needs the identity to survive reconnect attempts in this running process.
+    // Do not store it in PlayerPrefs: two local standalone clients share those preferences and would then
+    // authenticate as the same Photon user, preventing the second client from joining the first client's room.
+    private static string processScopedUserId;
 
     // Six characters provide a shareable code while excluding easily confused glyphs such as O/0 and I/1.
     public const int RoomCodeLength = 6;
@@ -40,8 +44,15 @@ public static class PhotonSessionPolicy
     public const string SessionStarted = "started";
     public const string SessionExpired = "expired";
 
+    // Recovery refresh handshake. The room request identifies the authoritative level to rebuild, while
+    // each actor acknowledges cleanup and the bridge scene before the Master Client advances the reload.
+    public const string RecoveryRefreshEpochKey = "recovery_refresh_epoch";
+    public const string RecoveryRefreshTargetKey = "recovery_refresh_target";
+    public const string RecoveryCleanupAckKey = "recovery_cleanup_ack";
+    public const string RecoveryBridgeAckKey = "recovery_bridge_ack";
+
     /// <summary>
-    /// Creates the only supported online/offline room configuration for protocol version 0.3.
+    /// Creates the only supported online/offline room configuration for protocol version 0.4.
     /// </summary>
     public static RoomOptions CreateRoomOptions()
     {
@@ -61,7 +72,9 @@ public static class PhotonSessionPolicy
                 { ShowRoomKey, false },
                 { DrawerOwnerKey, 0 },
                 { RunnerOwnerKey, 0 },
-                { SessionStateKey, SessionActive }
+                { SessionStateKey, SessionActive },
+                { RecoveryRefreshEpochKey, 0 },
+                { RecoveryRefreshTargetKey, string.Empty }
             }
         };
     }
@@ -94,7 +107,7 @@ public static class PhotonSessionPolicy
     }
 
     /// <summary>
-    /// Ensures Photon receives the same install-scoped UserId on reconnect. This identifies a returning
+    /// Ensures Photon receives the same process-scoped UserId on reconnect. This identifies a returning
     /// player to Photon; it is not account authentication and must not be treated as a security credential.
     /// </summary>
     public static string EnsureStableUserIdentity()
@@ -105,13 +118,10 @@ public static class PhotonSessionPolicy
         string userId = GetCommandLinePlayerId();
         if (string.IsNullOrEmpty(userId))
         {
-            userId = PlayerPrefs.GetString(StableUserIdPreferenceKey, string.Empty);
-            if (string.IsNullOrEmpty(userId))
-            {
-                userId = "egaku-" + Guid.NewGuid().ToString("N");
-                PlayerPrefs.SetString(StableUserIdPreferenceKey, userId);
-                PlayerPrefs.Save();
-            }
+            if (string.IsNullOrEmpty(processScopedUserId))
+                processScopedUserId = "egaku-session-" + Guid.NewGuid().ToString("N");
+
+            userId = processScopedUserId;
         }
 
         PhotonNetwork.AuthValues = new AuthenticationValues(userId);

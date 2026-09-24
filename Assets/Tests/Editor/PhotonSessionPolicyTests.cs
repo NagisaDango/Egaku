@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEditor;
+using UnityEngine;
 
 namespace Egaku.Tests.Editor
 {
@@ -45,13 +46,50 @@ namespace Egaku.Tests.Editor
             Assert.That((byte)optionsType.GetField("MaxPlayers").GetValue(options), Is.EqualTo(2));
             Assert.That((int)optionsType.GetField("PlayerTtl").GetValue(options), Is.EqualTo(30_000));
             Assert.That((int)optionsType.GetField("EmptyRoomTtl").GetValue(options), Is.EqualTo(60_000));
+
+            object customProperties = optionsType.GetField("CustomRoomProperties").GetValue(options);
+            var properties = (System.Collections.IDictionary)customProperties;
+            Assert.That(properties["recovery_refresh_epoch"], Is.EqualTo(0));
+            Assert.That(properties["recovery_refresh_target"], Is.EqualTo(string.Empty));
+        }
+
+        [Test]
+        public void LocalStandaloneClientsDoNotReuseLegacyPlayerPrefsIdentity()
+        {
+            const string legacyPreferenceKey = "Egaku.Photon.StableUserId";
+            const string legacyUserId = "egaku-shared-local-client";
+            Type photonNetworkType = Type.GetType("Photon.Pun.PhotonNetwork, PhotonUnityNetworking", throwOnError: true);
+            PropertyInfo authValuesProperty = photonNetworkType.GetProperty("AuthValues", BindingFlags.Public | BindingFlags.Static);
+            FieldInfo processUserIdField = PolicyType.GetField("processScopedUserId", BindingFlags.NonPublic | BindingFlags.Static);
+            MethodInfo ensureIdentity = PolicyType.GetMethod("EnsureStableUserIdentity", BindingFlags.Public | BindingFlags.Static);
+            object originalAuthValues = authValuesProperty.GetValue(null);
+            string originalProcessUserId = (string)processUserIdField.GetValue(null);
+
+            try
+            {
+                // Two standalone clients on one PC share PlayerPrefs, so a saved ID must not be reused.
+                PlayerPrefs.SetString(legacyPreferenceKey, legacyUserId);
+                authValuesProperty.SetValue(null, null);
+                processUserIdField.SetValue(null, null);
+
+                string result = (string)ensureIdentity.Invoke(null, null);
+
+                Assert.That(result, Does.StartWith("egaku-session-"));
+                Assert.That(result, Is.Not.EqualTo(legacyUserId));
+            }
+            finally
+            {
+                authValuesProperty.SetValue(null, originalAuthValues);
+                processUserIdField.SetValue(null, originalProcessUserId);
+                PlayerPrefs.DeleteKey(legacyPreferenceKey);
+            }
         }
 
         [Test]
         public void ProtocolVersionMatchesPrivateRoomRelease()
         {
             // Network-incompatible room rules must always be isolated by the Unity application version.
-            Assert.That(PlayerSettings.bundleVersion, Is.EqualTo("0.3"));
+            Assert.That(PlayerSettings.bundleVersion, Is.EqualTo("0.4"));
         }
     }
 }
