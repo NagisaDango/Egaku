@@ -83,7 +83,6 @@ MonoBehaviour:
   - RPC_HoldBattery
   - RPC_ReleaseBattery
   - RPC_SetHoldingEyes
-  - RPC_PlayGameBGM
   - RPC_QueueDialogue
   - RPC_Release
   - RPC_EnablePen
@@ -102,6 +101,11 @@ MonoBehaviour:
   - RPC_DestroySelf
   - ChangeSliderColor
   - ClearCoroutineQueue
+  - RPC_ApplySceneObjectErase
+  - RPC_RequestErase
+  - RPC_RequestSceneObjectErase
+  - RPC_RequestSelfDestroy
+  - RPC_DestroyAfterMasterAuthorization
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

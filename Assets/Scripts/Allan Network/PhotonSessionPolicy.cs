@@ -44,15 +44,18 @@ public static class PhotonSessionPolicy
     public const string SessionStarted = "started";
     public const string SessionExpired = "expired";
 
-    // Recovery refresh handshake. The room request identifies the authoritative level to rebuild, while
-    // each actor acknowledges cleanup and the bridge scene before the Master Client advances the reload.
+    // Recovery refresh state. The Master names the level to rebuild; each actor acknowledges
+    // its restored scene before the request is cleared.
     public const string RecoveryRefreshEpochKey = "recovery_refresh_epoch";
+    public const string RecoveryRefreshCounterKey = "recovery_refresh_counter";
+    public const string RecoveryRefreshReadyKey = "recovery_refresh_ready";
+    public const string RecoveryCleanupAckPrefix = "recovery_cleanup_ack_";
     public const string RecoveryRefreshTargetKey = "recovery_refresh_target";
-    public const string RecoveryCleanupAckKey = "recovery_cleanup_ack";
-    public const string RecoveryBridgeAckKey = "recovery_bridge_ack";
+    public const string RecoveryRefreshRequestKey = "recovery_refresh_request";
+    public const string RecoveryTargetAckKey = "recovery_target_ack";
 
     /// <summary>
-    /// Creates the only supported online/offline room configuration for protocol version 0.4.
+    /// Creates the only supported online/offline room configuration for this Application.version.
     /// </summary>
     public static RoomOptions CreateRoomOptions()
     {
@@ -74,7 +77,10 @@ public static class PhotonSessionPolicy
                 { RunnerOwnerKey, 0 },
                 { SessionStateKey, SessionActive },
                 { RecoveryRefreshEpochKey, 0 },
-                { RecoveryRefreshTargetKey, string.Empty }
+                { RecoveryRefreshCounterKey, 0 },
+                { RecoveryRefreshReadyKey, 0 },
+                { RecoveryRefreshTargetKey, string.Empty },
+                { RecoveryRefreshRequestKey, 0 }
             }
         };
     }

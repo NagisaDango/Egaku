@@ -50,7 +50,9 @@ namespace Egaku.Tests.Editor
             object customProperties = optionsType.GetField("CustomRoomProperties").GetValue(options);
             var properties = (System.Collections.IDictionary)customProperties;
             Assert.That(properties["recovery_refresh_epoch"], Is.EqualTo(0));
+            Assert.That(properties["recovery_refresh_ready"], Is.EqualTo(0));
             Assert.That(properties["recovery_refresh_target"], Is.EqualTo(string.Empty));
+            Assert.That(properties["recovery_refresh_request"], Is.EqualTo(0));
         }
 
         [Test]
@@ -86,10 +88,48 @@ namespace Egaku.Tests.Editor
         }
 
         [Test]
-        public void ProtocolVersionMatchesPrivateRoomRelease()
+        public void NetworkProtocolVersionMatchesRelease()
         {
             // Network-incompatible room rules must always be isolated by the Unity application version.
-            Assert.That(PlayerSettings.bundleVersion, Is.EqualTo("0.4"));
+            Assert.That(PlayerSettings.bundleVersion, Is.EqualTo("0.13"));
+        }
+
+        [Test]
+        public void PackagedLevelSetupCsvIsAvailableThroughResources()
+        {
+            TextAsset csv = Resources.Load<TextAsset>("LevelSetup");
+
+            Assert.That(csv, Is.Not.Null);
+            Assert.That(csv.text, Does.Contain("level_id,wood,cloud,steel,electric"));
+            Assert.That(csv.text, Does.Contain("1,300,-1,-1,-1"));
+        }
+
+        [Test]
+        public void PenUnlockWaitsForDrawerUiDuringRecoveryReload()
+        {
+            Type levelSetupType = Type.GetType("LevelSetup, Assembly-CSharp", throwOnError: true);
+            GameObject levelSetupObject = new GameObject("Recovery LevelSetup Test");
+
+            try
+            {
+                Component levelSetup = levelSetupObject.AddComponent(levelSetupType);
+                MethodInfo receiveUnlock = levelSetupType.GetMethod(
+                    "RPC_EnablePen", BindingFlags.NonPublic | BindingFlags.Instance);
+                FieldInfo pendingUnlocks = levelSetupType.GetField(
+                    "pendingPenUnlocks", BindingFlags.NonPublic | BindingFlags.Instance);
+
+                receiveUnlock.Invoke(levelSetup, new object[] { "Wood" });
+                object queuedUnlocks = pendingUnlocks.GetValue(levelSetup);
+                bool containsWood = (bool)queuedUnlocks.GetType().GetMethod("Contains")
+                    .Invoke(queuedUnlocks, new object[] { "Wood" });
+
+                Assert.That(containsWood, Is.True,
+                    "A pickup received before Drawer UI initialization must be replayed after Init.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(levelSetupObject);
+            }
         }
     }
 }

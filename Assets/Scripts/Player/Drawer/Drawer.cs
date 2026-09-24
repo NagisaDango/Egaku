@@ -36,7 +36,10 @@ public class Drawer : MonoBehaviourPun
     public PenProperty.PenType sliderPenType;
     public float time = 0.2f;
 
-    private int actorNum;
+    // The Master Client serializes erase results so a drag crossing the same object
+    // cannot refund ink or destroy the network object more than once.
+    private readonly HashSet<int> processedEraseViewIds = new HashSet<int>();
+    private readonly HashSet<string> processedSceneErasePaths = new HashSet<string>();
 
     [Header("Pen")] 
     [SerializeField] public PenProperty woodPen;
@@ -48,11 +51,14 @@ public class Drawer : MonoBehaviourPun
     public static bool multipleEraseMode;
     private void Awake()
     {
+        // The Drawer can survive Photon scene refreshes, so reset scene-target erase guards whenever Unity loads a level.
+        SceneManager.sceneLoaded += ResetEraseDedupeForLoadedScene;
+
         //DontDestroyOnLoad(this.gameObject);
         Instance = this;
         inkSlider = GameObject.Find("GameCanvas/Panel/Slider").GetComponent<Slider>();
         currentPenType = PenUI.PenType.None;
-        penProperties = 
+        penProperties =
             new List<PenProperty>
             {
                 woodPen, cloudPen, steelPen, electricPen
@@ -77,17 +83,32 @@ public class Drawer : MonoBehaviourPun
         //}
         if (photonView.IsMine)
         {
-            actorNum = PhotonNetwork.LocalPlayer.ActorNumber;
             print("This is the draweer spawning UI");
             OnPenSelect += SetPenProperties;
             GameObject UI = Instantiate(drawerPanelPrefab).transform.GetChild(0).gameObject;
             GameObject.Find("LevelSetup").GetComponent<LevelSetup>().Init(UI.GetComponent<DrawerUICOntrol>());
-        }
 
-        Color color = FindPenProperty(currentPenType).material.color;
-        //sliderPenType = FindPenProperty(currentPenType).penType;
-        photonView.RPC("ChangeSliderColor", RpcTarget.All, color.r, color.g, color.b, (int)FindPenProperty(currentPenType).penType);
-        //ChangeSliderColor(FindPenProperty(currentPenType).material.color);
+            // The level setup may intentionally leave the initial tool as None. Pick an
+            // unlocked tool before reading its material so a scene reload cannot abort Start.
+            if (currentPenType == PenUI.PenType.None)
+            {
+                for (int i = 0; i < penProperties.Count; i++)
+                {
+                    if (penStatus[i] && penProperties[i] != null)
+                    {
+                        SetPenProperties(penProperties[i].penType);
+                        break;
+                    }
+                }
+            }
+
+            PenProperty initialPen = FindPenProperty(currentPenType);
+            if (initialPen != null && initialPen.material != null)
+            {
+                Color color = initialPen.material.color;
+                ChangeSliderColor(color.r, color.g, color.b, (int)initialPen.penType);
+            }
+        }
     }
 
 
@@ -112,8 +133,31 @@ public class Drawer : MonoBehaviourPun
         print("Wtf");
     }
 
+    private void OnDestroy()
+    {
+        // Remove the static Unity event hook so a destroyed network Drawer cannot keep receiving scene loads.
+        SceneManager.sceneLoaded -= ResetEraseDedupeForLoadedScene;
+    }
+
+    private void ResetEraseDedupeForLoadedScene(Scene loadedScene, LoadSceneMode mode)
+    {
+        // A refreshed level may reuse hierarchy paths and PhotonView IDs; clear per-room request guards so valid erases can run again.
+        requestedEraseViewIds.Clear();
+        requestedSceneErasePaths.Clear();
+        processedEraseViewIds.Clear();
+        processedSceneErasePaths.Clear();
+    }
+
+
     private Vector3 lastErasePos;
     [SerializeField] private float minEraseDis;
+    // Request guards suppress duplicate owner-to-Master erase RPCs and reset when a refreshed level reuses its scene targets.
+    private readonly HashSet<int> requestedEraseViewIds = new HashSet<int>();
+    private readonly HashSet<string> requestedSceneErasePaths = new HashSet<string>();
+    private readonly List<DrawMesh> eraseMeshHits = new List<DrawMesh>();
+    // The eraser is a visible brush, not an infinitely thin physics ray. Sampling
+    // this radius along fast pointer movement prevents narrow strokes being skipped.
+    [SerializeField, Min(0.01f)] private float eraseBrushRadius = 0.2f;
 
     void Update()
     {
@@ -138,10 +182,9 @@ public class Drawer : MonoBehaviourPun
                         StopAllCoroutines();
                         Color color = penProperties[tempIndex].material.color;
 
-                        photonView.RPC("ChangeSliderColor", RpcTarget.All, color.r, color.g, color.b, (int)(penProperties[tempIndex].penType));
-                        photonView.RPC("ClearCoroutineQueue", RpcTarget.All);
-
-                        photonView.RPC("UpdateSlider", RpcTarget.All, 1 - penProperties[tempIndex].currentStrokes * 1f / penProperties[tempIndex].maxStrokes);
+                        ChangeSliderColor(color.r, color.g, color.b, (int)penProperties[tempIndex].penType);
+                        ClearCoroutineQueue();
+                        UpdateSlider(1 - penProperties[tempIndex].currentStrokes * 1f / penProperties[tempIndex].maxStrokes);
 
                         break;
                     }
@@ -158,10 +201,9 @@ public class Drawer : MonoBehaviourPun
                     StopAllCoroutines();
                     Color color = penProperties[tempIndex].material.color;
 
-                    photonView.RPC("ChangeSliderColor", RpcTarget.All, color.r, color.g, color.b, (int)(penProperties[tempIndex].penType));
-                    photonView.RPC("ClearCoroutineQueue", RpcTarget.All);
-
-                    photonView.RPC("UpdateSlider", RpcTarget.All, 1 - penProperties[tempIndex].currentStrokes * 1f / penProperties[tempIndex].maxStrokes);
+                    ChangeSliderColor(color.r, color.g, color.b, (int)penProperties[tempIndex].penType);
+                    ClearCoroutineQueue();
+                    UpdateSlider(1 - penProperties[tempIndex].currentStrokes * 1f / penProperties[tempIndex].maxStrokes);
                 }
             }
             if (Input.GetAxis("Mouse ScrollWheel") < 0)
@@ -176,10 +218,9 @@ public class Drawer : MonoBehaviourPun
 
                         StopAllCoroutines();
                         Color color = penProperties[tempIndex].material.color;
-                        photonView.RPC("ChangeSliderColor", RpcTarget.All, color.r, color.g, color.b, (int)(penProperties[tempIndex].penType));
-                        photonView.RPC("ClearCoroutineQueue", RpcTarget.All);
-
-                        photonView.RPC("UpdateSlider", RpcTarget.All, 1 - penProperties[tempIndex].currentStrokes * 1f / penProperties[tempIndex].maxStrokes);
+                        ChangeSliderColor(color.r, color.g, color.b, (int)penProperties[tempIndex].penType);
+                        ClearCoroutineQueue();
+                        UpdateSlider(1 - penProperties[tempIndex].currentStrokes * 1f / penProperties[tempIndex].maxStrokes);
 
 
                         break;
@@ -198,10 +239,9 @@ public class Drawer : MonoBehaviourPun
                     StopAllCoroutines();
                     Color color = penProperties[tempIndex].material.color;
 
-                    photonView.RPC("ChangeSliderColor", RpcTarget.All, color.r, color.g, color.b, (int)(penProperties[tempIndex].penType));
-                    photonView.RPC("ClearCoroutineQueue", RpcTarget.All);
-
-                    photonView.RPC("UpdateSlider", RpcTarget.All, 1 - penProperties[tempIndex].currentStrokes * 1f / penProperties[tempIndex].maxStrokes);
+                    ChangeSliderColor(color.r, color.g, color.b, (int)penProperties[tempIndex].penType);
+                    ClearCoroutineQueue();
+                    UpdateSlider(1 - penProperties[tempIndex].currentStrokes * 1f / penProperties[tempIndex].maxStrokes);
                 }
             }
         }
@@ -215,16 +255,8 @@ public class Drawer : MonoBehaviourPun
             else
             {
                 SetPenProperties(PenUI.PenType.Eraser);
-                RaycastHit2D hit = Physics2D.Raycast((Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition),
-                    Vector2.zero, Mathf.Infinity, LayerMask.GetMask("Draw"));
-
-                photonView.RPC("EraseDrawnObj", RpcTarget.All,
-                    (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition));
-                if (hit.collider != null)
-                {
-                    print(hit.collider.gameObject.name);
-                    print("erase mode: " + multipleEraseMode);
-                }
+                Vector2 erasePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                EraseDrawnObj(erasePosition);
             }
         }
         if (Input.GetMouseButtonDown(0))//&& !EventSystem.current.IsPointerOverGameObject())
@@ -233,21 +265,7 @@ public class Drawer : MonoBehaviourPun
             {
                 lastErasePos = GetMouseWorldPosition();
                 //if(EventSystem.current.IsPointerOverGameObject())
-                RaycastHit2D hit = Physics2D.Raycast((Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition), Vector2.zero, Mathf.Infinity, LayerMask.GetMask("Draw"));
-                
-                photonView.RPC("EraseDrawnObj", RpcTarget.All,
-                    (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition));
-
-
-
-                if (hit.collider != null)
-                {
-                    print(hit.collider.gameObject.name);
-                    print("erase mode: " + multipleEraseMode);
-                    //if(!multipleEraseMode)
-                        //SetPenProperties(lastPenType);
-                }
-                //EraseDrawnObj();
+                EraseDrawnObj(Camera.main.ScreenToWorldPoint(Input.mousePosition));
             }
             else if (currentDrawer == null)
             {
@@ -264,11 +282,11 @@ public class Drawer : MonoBehaviourPun
             Vector3 mousePos = GetMouseWorldPosition();
             if (eraserMode)
             {
-                if (Vector3.Distance(mousePos, lastErasePos) >= minEraseDis)
+                float eraseDistance = Vector3.Distance(mousePos, lastErasePos);
+                float eraseSampleDistance = Mathf.Max(0.01f, Mathf.Min(minEraseDis, eraseBrushRadius * 0.5f));
+                if (eraseDistance >= eraseSampleDistance)
                 {
-                    Vector3 direction = (mousePos - lastErasePos).normalized;
-                    float distance = Vector3.Distance(lastErasePos, mousePos);
-                    photonView.RPC("EraseDrawnObjCast", RpcTarget.All, (Vector2)lastErasePos, (Vector2)direction, distance, (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition));
+                    EraseDrawnObjCast(lastErasePos, mousePos);
                     lastErasePos = mousePos;
                 }
 
@@ -288,7 +306,7 @@ public class Drawer : MonoBehaviourPun
 
                 print("strokeLeft "  + strokeLeft);
 
-                photonView.RPC("UpdateSlider", RpcTarget.All, 1 - currentDrawer.currProperty.currentStrokes * 1f / currentDrawer.currProperty.maxStrokes);
+                UpdateSlider(1 - currentDrawer.currProperty.currentStrokes * 1f / currentDrawer.currProperty.maxStrokes);
 
 
                 Vector3 lastPos = currentDrawer.GetLastMousePosition();
@@ -301,14 +319,14 @@ public class Drawer : MonoBehaviourPun
                 {
                     print("stop drawing");
                     drawStrokeTotal -= currentDrawer.drawStrokes;
-                    currentDrawer.photonView.RPC("RPC_FinishDraw", RpcTarget.All);
+                    currentDrawer.RequestFinishDraw();
                     currentDrawer = null;
                 }
                 else
                 {
                     if (currentDrawer)
                     {
-                        currentDrawer.photonView.RPC("RPC_StartDraw", RpcTarget.All, mousePos);
+                        currentDrawer.RequestStartDraw(mousePos);
                     }
                     //currentDrawer.photonView.RPC("RPC_DrawSpriteShape", RpcTarget.All, mousePos);
                     //currentDrawer.StartDraw();
@@ -321,7 +339,7 @@ public class Drawer : MonoBehaviourPun
             if (currentDrawer)
             {
                 drawStrokeTotal -= currentDrawer.drawStrokes;
-                currentDrawer.photonView.RPC("RPC_FinishDraw", RpcTarget.All);
+                currentDrawer.RequestFinishDraw();
                 //currentDrawer.rb2d.bodyType = RigidbodyType2D.Kinematic;
             }
             currentDrawer = null;
@@ -329,7 +347,7 @@ public class Drawer : MonoBehaviourPun
     }
 
     [PunRPC]
-    private void ChangeSliderColor(float r, float g, float b, int penType)
+    public void ChangeSliderColor(float r, float g, float b, int penType)
     {
         inkSlider.transform.Find("Background").GetComponent<Image>().color = new Color(r, g, b, 0.5f);
         inkSlider.transform.Find("Fill Area/Fill").GetComponent<Image>().color = new Color(r, g, b, 1f);
@@ -408,112 +426,120 @@ public class Drawer : MonoBehaviourPun
     }
 
     [PunRPC]
-    private void UpdateSlider(float val)
+    public void UpdateSlider(float val)
     {
         inkSlider.value = val;
     }
     
-    [PunRPC]
     private void EraseDrawnObj(Vector2 mousePos)
     {
-        //Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero, Mathf.Infinity, LayerMask.GetMask("Draw")); // Small downward ray
+        EraseAtPosition(mousePos);
+    }
 
-        if (hit.collider != null)// && hit.collider.gameObject.layer == LayerMask.NameToLayer("Draw"))
+    private void EraseDrawnObjCast(Vector2 startPos, Vector2 endPos)
+    {
+        float distance = Vector2.Distance(startPos, endPos);
+        int steps = Mathf.Max(1, Mathf.CeilToInt(distance / Mathf.Max(eraseBrushRadius * 0.5f, 0.05f)));
+        for (int i = 0; i <= steps; i++)
         {
-            if(hit.collider.gameObject.tag == "ClickToErase")
-            {
-                Destroy(hit.collider.gameObject.transform.parent.gameObject);
-                return;
-            }
-
-            Debug.Log("Hit: " + hit.collider.gameObject.name);
-            //hit.collider.gameObject.GetComponent<DrawMesh>().photonView.TransferOwnership(actorNum);
-            AudioManager.PlayOne(AudioManager.ERASESFX);
-            DrawMesh erasingMesh = hit.collider.gameObject.GetComponent<DrawMesh>();
-
-            photonView.RPC("RPC_DirectErase", RpcTarget.All, erasingMesh.currProperty.penType, erasingMesh.drawStrokes, mousePos, hit.collider.gameObject.tag, sliderPenType == erasingMesh.currProperty.penType);
-            erasingMesh.earsingSelf = true;
-            PhotonNetwork.Destroy(hit.collider.gameObject);
+            Vector2 sample = Vector2.Lerp(startPos, endPos, i / (float)steps);
+            EraseAtPosition(sample);
         }
     }
-    
-    [PunRPC]
-    private void EraseDrawnObjCast(Vector2 startPos, Vector2 direction, float distance, Vector2 mousePos)
+
+    private void EraseAtPosition(Vector2 position)
     {
-        //Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        //RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero, Mathf.Infinity, LayerMask.GetMask("Draw")); // Small downward ray
-        RaycastHit2D[] hits = Physics2D.RaycastAll(startPos, direction, distance, LayerMask.GetMask("Draw"));
-        if (hits.Length > 0)// && hit.collider.gameObject.layer == LayerMask.NameToLayer("Draw"))
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(position, eraseBrushRadius, LayerMask.GetMask("Draw"));
+        foreach (Collider2D hitCollider in colliders)
         {
-            foreach (RaycastHit2D hit in hits)
+            if (hitCollider == null)
+                continue;
+
+            if (hitCollider.CompareTag("ClickToErase"))
             {
-                if(hit.collider.gameObject.tag == "ClickToErase")
+                Transform sceneTarget = hitCollider.transform.parent;
+                if (sceneTarget != null)
                 {
-                    Destroy(hit.collider.gameObject.transform.parent.gameObject);
-                    return;
+                    string path = GetSceneObjectPath(sceneTarget.gameObject);
+                    if (requestedSceneErasePaths.Add(path))
+                        photonView.RPC(nameof(RPC_RequestSceneObjectErase), RpcTarget.MasterClient, path);
                 }
-
-                Debug.Log("Hit: " + hit.collider.gameObject.name);
-                //hit.collider.gameObject.GetComponent<DrawMesh>().photonView.TransferOwnership(actorNum);
-                AudioManager.PlayOne(AudioManager.ERASESFX);
-                DrawMesh erasingMesh = hit.collider.gameObject.GetComponent<DrawMesh>();
-
-                photonView.RPC("RPC_DirectErase", RpcTarget.All, erasingMesh.currProperty.penType, erasingMesh.drawStrokes, mousePos, hit.collider.gameObject.tag, sliderPenType == erasingMesh.currProperty.penType);
-
-                erasingMesh.earsingSelf = true;
-                PhotonNetwork.Destroy(hit.collider.gameObject);
+                continue;
             }
+
+        }
+
+        // Do not depend on Physics2D for strokes: the Drawer-side rigidbody is
+        // intentionally unsimulated, so its attached PolygonCollider2D is not queried.
+        DrawMesh.CollectEraserHits(position, eraseBrushRadius, eraseMeshHits);
+        foreach (DrawMesh erasingMesh in eraseMeshHits)
+        {
+            if (erasingMesh.photonView != null && requestedEraseViewIds.Add(erasingMesh.photonView.ViewID))
+                photonView.RPC(nameof(RPC_RequestErase), RpcTarget.MasterClient, erasingMesh.photonView.ViewID);
         }
     }
 
-    [PunRPC]
-    private void RPC_ForceFinishDraw()
+    public void ForceFinishDraw(DrawMesh drawMesh)
     {
-        if (currentDrawer)
+        if (photonView.IsMine && currentDrawer == drawMesh)
         {
             drawStrokeTotal -= currentDrawer.drawStrokes;
-            //currentDrawer.photonView.RPC("RPC_FinishDraw", RpcTarget.All);
-            if (currentDrawer.drawStrokes <= 0)
-            {
-                PhotonNetwork.Destroy(currentDrawer.gameObject);
-            }
             currentDrawer = null;
         }
     }
-    
+
+    private void RequestSceneObjectErase(GameObject target)
+    {
+        photonView.RPC(nameof(RPC_RequestSceneObjectErase), RpcTarget.MasterClient, GetSceneObjectPath(target));
+    }
 
     [PunRPC]
-    private void EraseDrawnObj(RaycastHit2D hit, Vector2 mousePos)
+    private void RPC_RequestErase(int viewId, PhotonMessageInfo info)
     {
-        if (hit.collider != null)
-        {
-            if (hit.collider.gameObject.tag == "ClickToErase")
-            {
-                Destroy(hit.collider.gameObject.transform.parent.gameObject);
-                return;
-            }
+        if (!PhotonNetwork.IsMasterClient || info.Sender == null || info.Sender.ActorNumber != photonView.OwnerActorNr || !processedEraseViewIds.Add(viewId))
+            return;
 
-            Debug.Log("Hit: " + hit.collider.gameObject.name);
+        PhotonView targetView = PhotonView.Find(viewId);
+        DrawMesh target = targetView != null ? targetView.GetComponent<DrawMesh>() : null;
+        if (target == null || target.currProperty == null)
+            return;
+
+        Vector2 eraseCenter = target.col2d != null ? target.col2d.bounds.center : target.transform.position;
+        photonView.RPC(nameof(RPC_DirectErase), RpcTarget.AllViaServer, (int)target.currProperty.penType,
+            target.drawStrokes, eraseCenter, target.gameObject.tag);
+        target.DestroyAfterMasterAuthorization();
+    }
+
+    [PunRPC]
+    private void RPC_RequestSceneObjectErase(string path, PhotonMessageInfo info)
+    {
+        if (!PhotonNetwork.IsMasterClient || info.Sender == null || info.Sender.ActorNumber != photonView.OwnerActorNr || !processedSceneErasePaths.Add(path))
+            return;
+
+        photonView.RPC(nameof(RPC_ApplySceneObjectErase), RpcTarget.AllViaServer, path);
+    }
+
+    [PunRPC]
+    private void RPC_ApplySceneObjectErase(string path)
+    {
+        GameObject target = FindSceneObject(path);
+        if (target != null)
+        {
             AudioManager.PlayOne(AudioManager.ERASESFX);
-            DrawMesh erasingMesh = hit.collider.gameObject.GetComponent<DrawMesh>();
-         
-            photonView.RPC("RPC_DirectErase", RpcTarget.All, erasingMesh.currProperty.penType, erasingMesh.drawStrokes, mousePos, hit.collider.gameObject.tag, sliderPenType == erasingMesh.currProperty.penType);
-            erasingMesh.earsingSelf = true;
-            PhotonNetwork.Destroy(hit.collider.gameObject);
+            Destroy(target);
         }
     }
 
-    //private DrawMesh erasedDrawMesh;
-
     [PunRPC]
-    public void RPC_DirectErase(PenProperty.PenType penType, int stroke, Vector2 centerPos, string name, bool updateSlider)
+    public void RPC_DirectErase(int penTypeValue, int stroke, Vector2 centerPos, string name)
     {
+        PenProperty.PenType penType = (PenProperty.PenType)penTypeValue;
         PenProperty pen  = GetPenProperty(penType);
         pen.currentStrokes -= stroke;
         float value = 1 - pen.currentStrokes * 1.0f / pen.maxStrokes;
 
-        if (updateSlider)
+        AudioManager.PlayOne(AudioManager.ERASESFX);
+        if (photonView.IsMine && sliderPenType == penType)
             EnqueueCoroutine(AddSliderValue(value, time));
         print("queue:  " + coroutineQueue.Count);
         //StartCoroutine(AddSliderValue(value, time));
@@ -556,7 +582,7 @@ public class Drawer : MonoBehaviourPun
         while (currentValue <= target) {
             currentValue += increment;
             //print("value:" + currentValue);
-            photonView.RPC("UpdateSlider", RpcTarget.All, currentValue);
+            UpdateSlider(currentValue);
             yield return new WaitForSeconds(0.02f);
         }
 
@@ -577,6 +603,43 @@ public class Drawer : MonoBehaviourPun
     public void ClearCoroutineQueue()
     {
         coroutineQueue.Clear();
+    }
+
+    private static string GetSceneObjectPath(GameObject target)
+    {
+        List<int> indices = new List<int>();
+        Transform current = target.transform;
+        while (current.parent != null)
+        {
+            indices.Add(current.GetSiblingIndex());
+            current = current.parent;
+        }
+
+        GameObject[] roots = current.gameObject.scene.GetRootGameObjects();
+        indices.Add(Array.IndexOf(roots, current.gameObject));
+        indices.Reverse();
+        return string.Join("/", indices);
+    }
+
+    private static GameObject FindSceneObject(string path)
+    {
+        string[] parts = path.Split('/');
+        if (parts.Length == 0 || !int.TryParse(parts[0], out int rootIndex))
+            return null;
+
+        GameObject[] roots = SceneManager.GetActiveScene().GetRootGameObjects();
+        if (rootIndex < 0 || rootIndex >= roots.Length)
+            return null;
+
+        Transform current = roots[rootIndex].transform;
+        for (int i = 1; i < parts.Length; i++)
+        {
+            if (!int.TryParse(parts[i], out int childIndex) || childIndex < 0 || childIndex >= current.childCount)
+                return null;
+            current = current.GetChild(childIndex);
+        }
+
+        return current.gameObject;
     }
 
     private IEnumerator RunQueue()

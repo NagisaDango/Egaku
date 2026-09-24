@@ -42,10 +42,13 @@ public class LevelManager : MonoBehaviourPunCallbacks
 
             display.levelIndex = i;
 
-            //go.GetComponent<Button>().onClick.AddListener(() => { GameManager.Instance.LoadLevel(display.levelIndex);  });
-            //go.GetComponent<Button>().onClick.AddListener(() => { GameManager.Instance.photonView.RPC("RPC_LoadLevel", RpcTarget.AllBuffered, display.levelIndex); });
-            go.GetComponent<Button>().onClick.AddListener(() => { photonView.RPC("RPC_LoadLevel", RpcTarget.AllBuffered, display.levelIndex); });
-            go.GetComponent<Button>().onClick.AddListener(() => { photonView.RPC("RPC_PlayGameBGM", RpcTarget.AllBuffered); });
+            go.GetComponent<Button>().onClick.AddListener(() =>
+            {
+                if (PhotonNetwork.OfflineMode || !PhotonNetwork.InRoom)
+                    RPC_LoadLevel(display.levelIndex);
+                else
+                    photonView.RPC(nameof(RPC_LoadLevel), RpcTarget.AllViaServer, display.levelIndex);
+            });
         }
 
 
@@ -55,13 +58,9 @@ public class LevelManager : MonoBehaviourPunCallbacks
     [PunRPC]
     public void RPC_LoadLevel(int level)
     {
-        GameManager.Instance.LoadLevel(level);
-    }
-
-    [PunRPC]
-    public void RPC_PlayGameBGM()
-    {
         AudioManager.PlayBGM(AudioManager.GAMEBGM);
+        if (PhotonNetwork.OfflineMode || PhotonNetwork.IsMasterClient)
+            GameManager.Instance.LoadLevel(level);
     }
 
 

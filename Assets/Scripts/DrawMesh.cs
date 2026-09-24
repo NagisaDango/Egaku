@@ -1,5 +1,6 @@
 ﻿using System;
 using Photon.Pun;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Photon.Realtime;
@@ -12,6 +13,9 @@ using Allan;
 
 public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
 {
+    // Keep only live stroke meshes here so the eraser can query visible geometry even when its local physics collider is inactive.
+    private static readonly HashSet<DrawMesh> activeDrawMeshes = new HashSet<DrawMesh>();
+
     [SerializeField] float minDistance = .1f;
     [SerializeField] float lineThickness = 1f;
     [SerializeField] float curveThresholdAngle = 90f;
@@ -31,8 +35,112 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
     private Mesh mesh;
     private float drawSize = 1;
     private int maxStrokes;
-    public bool earsingSelf;
     private List<Vector2> pointList;
+    // Only the DrawMesh owner may request finalization. These guards make finish
+    // and destruction idempotent when input, collision, and physics overlap.
+    private bool finishRequested;
+    private bool finishApplied;
+    private bool destroyRequestSent;
+    private bool destroyDispatchSent;
+    private bool destroyApplied;
+
+    public override void OnEnable()
+    {
+        base.OnEnable();
+        activeDrawMeshes.Add(this);
+    }
+
+    public override void OnDisable()
+    {
+        activeDrawMeshes.Remove(this);
+        base.OnDisable();
+    }
+
+    private void OnDestroy()
+    {
+        activeDrawMeshes.Remove(this);
+    }
+
+    /// <summary>
+    /// Finds visible strokes on this client without querying the physics scene. The
+    /// Drawer copy intentionally has Rigidbody2D.simulated disabled, so its collider
+    /// is absent from Physics2D queries even though its locally rebuilt mesh is visible.
+    /// </summary>
+    public static void CollectEraserHits(Vector2 center, float radius, List<DrawMesh> results)
+    {
+        results.Clear();
+        foreach (DrawMesh drawMesh in activeDrawMeshes)
+        {
+            if (drawMesh != null && drawMesh.OverlapsEraser(center, radius))
+                results.Add(drawMesh);
+        }
+    }
+
+    private bool OverlapsEraser(Vector2 center, float radius)
+    {
+        if (drawStrokes <= 0 || currProperty == null || photonView == null || _vertices == null || _triangles == null || _triangles.Length < 3)
+            return false;
+
+        Renderer meshRenderer = GetComponent<Renderer>();
+        if (meshRenderer == null)
+            return false;
+
+        Bounds broadPhaseBounds = meshRenderer.bounds;
+        broadPhaseBounds.Expand(radius * 2f);
+        if (!broadPhaseBounds.Contains(center))
+            return false;
+
+        for (int i = 0; i + 2 < _triangles.Length; i += 3)
+        {
+            int indexA = _triangles[i];
+            int indexB = _triangles[i + 1];
+            int indexC = _triangles[i + 2];
+            if (indexA < 0 || indexB < 0 || indexC < 0 ||
+                indexA >= _vertices.Length || indexB >= _vertices.Length || indexC >= _vertices.Length)
+                continue;
+
+            Vector2 a = transform.TransformPoint(_vertices[indexA]);
+            Vector2 b = transform.TransformPoint(_vertices[indexB]);
+            Vector2 c = transform.TransformPoint(_vertices[indexC]);
+            if (PointInTriangle(center, a, b, c) ||
+                DistanceToSegmentSquared(center, a, b) <= radius * radius ||
+                DistanceToSegmentSquared(center, b, c) <= radius * radius ||
+                DistanceToSegmentSquared(center, c, a) <= radius * radius)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool PointInTriangle(Vector2 point, Vector2 a, Vector2 b, Vector2 c)
+    {
+        const float epsilon = 0.00001f;
+        if (Mathf.Abs(Cross(b - a, c - a)) <= epsilon)
+            return false;
+
+        float crossAB = Cross(b - a, point - a);
+        float crossBC = Cross(c - b, point - b);
+        float crossCA = Cross(a - c, point - c);
+        bool hasNegative = crossAB < -epsilon || crossBC < -epsilon || crossCA < -epsilon;
+        bool hasPositive = crossAB > epsilon || crossBC > epsilon || crossCA > epsilon;
+        return !(hasNegative && hasPositive);
+    }
+
+    private static float DistanceToSegmentSquared(Vector2 point, Vector2 start, Vector2 end)
+    {
+        Vector2 segment = end - start;
+        float lengthSquared = segment.sqrMagnitude;
+        if (lengthSquared <= Mathf.Epsilon)
+            return (point - start).sqrMagnitude;
+
+        float t = Mathf.Clamp01(Vector2.Dot(point - start, segment) / lengthSquared);
+        return (point - (start + segment * t)).sqrMagnitude;
+    }
+
+    private static float Cross(Vector2 a, Vector2 b)
+    {
+        return a.x * b.y - a.y * b.x;
+    }
 
     public Vector3[] _vertices;
     public Vector2[] _uv;
@@ -145,14 +253,25 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
         return lastMousePosition;
     }
 
+    public void RequestStartDraw(Vector3 mousePos)
+    {
+        if (!photonView.IsMine || finishRequested)
+            return;
+
+        Vector3 direction = (mousePos - lastMousePosition).normalized;
+        float distance = Vector3.Distance(lastMousePosition, mousePos);
+        if (!_DrawPathValidate(lastMousePosition, direction, distance))
+            return;
+
+        photonView.RPC(nameof(RPC_StartDraw), RpcTarget.All, mousePos);
+    }
+
     //RPC: Draw mesh according to the mosuePos
    [PunRPC]
     void RPC_StartDraw(Vector3 mousePos)
     {
-        Vector3 direction = (mousePos - lastMousePosition).normalized;
         float distance = Vector3.Distance(lastMousePosition, mousePos);
-        
-        if (((drawStrokes < maxStrokes) || maxStrokes <= 0) && _DrawPathValidate((Vector2)lastMousePosition, (Vector2)direction, distance))
+        if (((drawStrokes < maxStrokes) || maxStrokes <= 0) && !finishApplied)
         {
             if (((drawStrokes < maxStrokes) || maxStrokes <= 0))
             {
@@ -160,7 +279,9 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
                 currProperty.currentStrokes++;
                 if (pointList != null) pointList.Add(mousePos); // Assuming pointList is for other logic like ElectricSpline
     
-                PhotonNetwork.RaiseEvent(AudioManager.PlayAudioEventCode, new object[] { AudioManager.DRAWSFX, false }, new RaiseEventOptions { Receivers = ReceiverGroup.All }, ExitGames.Client.Photon.SendOptions.SendReliable);
+                // RPC_StartDraw already arrives once on every client. Playing locally
+                // avoids each receiver raising the same room-wide audio event again.
+                AudioManager.PlayOne(AudioManager.DRAWSFX);
     
                 Vector3[] vertices = new Vector3[mesh.vertices.Length + 2];
                 Vector2[] uv = new Vector2[mesh.uv.Length + 2]; // UV array also needs to be expanded
@@ -398,8 +519,8 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
                 if (!hit.collider.gameObject.CompareTag("Electric"))
                 {
                     finished = true;
-                    photonView.RPC("RPC_FinishDraw", RpcTarget.All);
-                    Drawer.Instance.photonView.RPC("RPC_ForceFinishDraw", RpcTarget.All);
+                    RequestFinishDraw();
+                    Drawer.Instance.ForceFinishDraw(this);
                     return false;
                 }
             }
@@ -407,13 +528,29 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
         return true;
     }
 
+    public void RequestFinishDraw()
+    {
+        if (!photonView.IsMine || finishRequested)
+            return;
+
+        finishRequested = true;
+        photonView.RPC(nameof(RPC_FinishDraw), RpcTarget.All);
+    }
+
     [PunRPC]
     private void RPC_FinishDraw()
     {
+        if (finishApplied)
+            return;
+
+        finishApplied = true;
+        finished = true;
         lastMouseDir = Vector3.zero;
-        if (drawStrokes <= 0 || pointList.Count == 0)
+        if (drawStrokes <= 0 || pointList == null || pointList.Count == 0)
         {
-            photonView.RPC("RPC_DestroySelf", RpcTarget.All);
+            // The creating Drawer owns this network object; the Master cannot destroy it by role alone.
+            if (photonView.IsMine)
+                PhotonNetwork.Destroy(gameObject);
         }
         else
         {
@@ -421,7 +558,6 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
             GetComponent<MeshRenderer>().material = currProperty.material;
 
             //Debug.LogError("vertices" + mesh.vertices.Length + "triangle" + mesh.triangles.Length + "uv" + mesh.uv.Length);
-            photonView.RPC("RPC_CutDownMesh", RpcTarget.Others, mesh.uv.Length, mesh.vertices.Length, mesh.triangles.Length);
             rb2d.centerOfMass = col2d.bounds.center;
             if (currProperty.gravity) rb2d.bodyType = RigidbodyType2D.Dynamic;
             if (currProperty.mass > 0) rb2d.mass = currProperty.mass;
@@ -437,12 +573,8 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
             this.gameObject.tag = SetUpObjectTag(currProperty.penType);
             if (photonView.IsMine && PhotonNetwork.LocalPlayer.ActorNumber != Runner.Instance.actorNum)
             {
-                Debug.LogError($"Transferring ownership to: {Runner.Instance.actorNum} self actor num is {PhotonNetwork.LocalPlayer.ActorNumber}" );
+                Debug.Log($"Transferring drawn object ownership to Runner actor {Runner.Instance.actorNum}." );
                 photonView.TransferOwnership(Runner.Instance.actorNum);
-            }
-            else
-            {
-                Debug.LogError("Self actor num is " + PhotonNetwork.LocalPlayer.ActorNumber + " While savbed is " + Runner.Instance.actorNum);
             }
             //Electric
             if (currProperty.penType == PenProperty.PenType.Electric)
@@ -469,7 +601,7 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
     [PunRPC]
     private void RPC_DestroySelf()
     {
-        if(photonView.IsMine || PhotonNetwork.IsMasterClient)
+        if (photonView.IsMine)
             PhotonNetwork.Destroy(this.gameObject);
     }
 
@@ -578,30 +710,105 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
     
     public void OnOwnerChange(Player newOwner, Player previousOwner)
     {
-        if (earsingSelf)
-        {
-            PhotonNetwork.Destroy(this.gameObject);
-        }
+        // Ownership changes are state transitions only. Destruction is serialized
+        // through the Master Client and must never be inferred from a transfer.
     }
 
     public void SelfDestroy()
     {
-        Drawer.Instance.photonView.RPC("RPC_DirectErase", RpcTarget.AllBuffered, currProperty.penType, drawStrokes, (Vector2)col2d.bounds.center, this.gameObject.tag, Drawer.Instance.sliderPenType == currProperty.penType);
-        PhotonNetwork.Destroy(gameObject);
-
-
-
+        RequestAuthoritativeDestroy();
     }
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("DeathDesuwa"))
+        if (other.CompareTag("DeathDesuwa") && photonView.IsMine)
         {
             print("Wood into death");
-            Drawer.Instance.photonView.RPC("RPC_DirectErase", RpcTarget.AllBuffered, currProperty.penType, drawStrokes, (Vector2)col2d.bounds.center, this.gameObject.tag, Drawer.Instance.sliderPenType == currProperty.penType);
-            //ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", new Vector3(col2d.bounds.center.x, col2d.bounds.center.y, 0), Quaternion.identity).GetComponent<ParticleAttractor>();
-            PhotonNetwork.Destroy(gameObject);
+            RequestAuthoritativeDestroy();
         }
+    }
+
+    private void RequestAuthoritativeDestroy()
+    {
+        if (!photonView.IsMine || destroyRequestSent || currProperty == null)
+            return;
+
+        destroyRequestSent = true;
+        photonView.RPC(nameof(RPC_RequestSelfDestroy), RpcTarget.MasterClient);
+    }
+
+    [PunRPC]
+    private void RPC_RequestSelfDestroy(PhotonMessageInfo info)
+    {
+        bool validOwner = PhotonNetwork.OfflineMode ||
+            (info.Sender != null && info.Sender.ActorNumber == photonView.OwnerActorNr);
+        if (!PhotonNetwork.IsMasterClient || !validOwner || destroyApplied || currProperty == null)
+            return;
+
+        Drawer drawer = Drawer.Instance;
+        if (drawer != null)
+        {
+            drawer.photonView.RPC(nameof(Drawer.RPC_DirectErase), RpcTarget.AllViaServer,
+                (int)currProperty.penType, drawStrokes, (Vector2)col2d.bounds.center, gameObject.tag);
+        }
+        DestroyAfterMasterAuthorization();
+    }
+
+    /// <summary>Routes Master-approved deletion through the PhotonView owner, who has legal destroy authority.</summary>
+    public void DestroyAfterMasterAuthorization()
+    {
+        if (!PhotonNetwork.IsMasterClient || destroyApplied || destroyDispatchSent)
+            return;
+
+        if (photonView.IsMine)
+        {
+            destroyDispatchSent = true;
+            destroyApplied = true;
+            PhotonNetwork.Destroy(gameObject);
+            return;
+        }
+
+        destroyDispatchSent = true;
+        StartCoroutine(DispatchMasterApprovedDestroy());
+    }
+
+    // Ownership may be moving to the Runner or falling back to the Master while
+    // an owner is inactive. Broadcast the approved command so the current PUN
+    // controller can act, retrying briefly while its local controller cache updates.
+    private IEnumerator DispatchMasterApprovedDestroy()
+    {
+        const int maxAttempts = 10;
+        const float retryDelay = 0.1f;
+
+        for (int attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            if (!PhotonNetwork.IsMasterClient || destroyApplied || this == null)
+                yield break;
+
+            if (photonView.IsMine)
+            {
+                destroyApplied = true;
+                PhotonNetwork.Destroy(gameObject);
+                yield break;
+            }
+
+            photonView.RPC(nameof(RPC_DestroyAfterMasterAuthorization), RpcTarget.AllViaServer);
+            yield return new WaitForSeconds(retryDelay);
+        }
+
+        if (this != null && !destroyApplied)
+            Debug.LogWarning($"Master-approved erase for DrawMesh {photonView.ViewID} was not acknowledged by its current controller.");
+    }
+
+    [PunRPC]
+    private void RPC_DestroyAfterMasterAuthorization(PhotonMessageInfo info)
+    {
+        if (!photonView.IsMine || destroyApplied || info.Sender == null || PhotonNetwork.MasterClient == null ||
+            info.Sender.ActorNumber != PhotonNetwork.MasterClient.ActorNumber)
+            return;
+
+        destroyApplied = true;
+        PhotonNetwork.Destroy(gameObject);
     }
 
     private List<GameObject> instantiatedDebugMeshes = new List<GameObject>();

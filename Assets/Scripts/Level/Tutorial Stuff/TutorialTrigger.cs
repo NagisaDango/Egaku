@@ -42,7 +42,16 @@ public class TutorialTrigger : MonoBehaviourPun
         if(closeTrigger)
             closeTrigger.onTrigger.AddListener(Close);
         if(destroyObj)
-            destroyObj._OnDestroy += () => photonView.RPC("RPC_ValidateEventInvoke", RpcTarget.All, CustomTriggerType.ObserveItemDestroyed);
+        {
+            // DestroyAll and scene reload can destroy this trigger before the observed object.
+            // Capture the view now and guard it instead of accessing this component's photonView later.
+            PhotonView triggerView = photonView;
+            destroyObj._OnDestroy += () =>
+            {
+                if (triggerView != null && PhotonNetwork.InRoom)
+                    triggerView.RPC("RPC_ValidateEventInvoke", RpcTarget.All, CustomTriggerType.ObserveItemDestroyed);
+            };
+        }
         
         if (PhotonNetwork.OfflineMode || GameManager.Instance.devSpawn)
         {
@@ -53,11 +62,12 @@ public class TutorialTrigger : MonoBehaviourPun
                 Destroy(this.gameObject);
             }
         }
-        else if((designRole != RolesManager.PlayerRole.None && (RolesManager.PlayerRole)(int)PhotonNetwork.CurrentRoom.CustomProperties["Role_" + PhotonNetwork.LocalPlayer.ActorNumber] !=
-                designRole) || onlyShowForSolo)
+        else if ((designRole != RolesManager.PlayerRole.None &&
+                  TryGetLocalRole(out RolesManager.PlayerRole localRole) && localRole != designRole) || onlyShowForSolo)
         {
             notShow = true;
-            this.parent.SetActive(false);
+            if (parent != null)
+                parent.SetActive(false);
         }
     }
 
@@ -85,15 +95,54 @@ public class TutorialTrigger : MonoBehaviourPun
         {
             InvokeEvent(triggerType);
         }
-        else if (designRole != RolesManager.PlayerRole.None)
+        else if (designRole != RolesManager.PlayerRole.None && TryGetLocalRole(out RolesManager.PlayerRole localRole))
         {
-            Debug.Log($"This trigger is for {designRole}, I am {(RolesManager.PlayerRole)(int)PhotonNetwork.CurrentRoom.CustomProperties["Role_" + PhotonNetwork.LocalPlayer.ActorNumber]}");
-            if ((RolesManager.PlayerRole)(int)PhotonNetwork.CurrentRoom.CustomProperties["Role_" + PhotonNetwork.LocalPlayer.ActorNumber] ==
-                designRole)
+            if (localRole == designRole)
             {
                 InvokeEvent(triggerType);
             }
         }
+    }
+
+    /// <summary>Room role properties can be absent during scene handoff; player properties are the fallback.</summary>
+    private static bool TryGetLocalRole(out RolesManager.PlayerRole role)
+    {
+        role = RolesManager.PlayerRole.None;
+        if (!PhotonNetwork.InRoom || PhotonNetwork.LocalPlayer == null)
+            return false;
+
+        object roleValue = null;
+        if (PhotonNetwork.LocalPlayer.CustomProperties.TryGetValue("Role", out roleValue) &&
+            roleValue is int playerRole && Enum.IsDefined(typeof(RolesManager.PlayerRole), playerRole))
+        {
+            role = (RolesManager.PlayerRole)playerRole;
+            if (role != RolesManager.PlayerRole.None)
+                return true;
+        }
+
+        string roomRoleKey = "Role_" + PhotonNetwork.LocalPlayer.ActorNumber;
+        if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(roomRoleKey, out roleValue) &&
+            roleValue is int roomRole && Enum.IsDefined(typeof(RolesManager.PlayerRole), roomRole))
+        {
+            role = (RolesManager.PlayerRole)roomRole;
+            return role != RolesManager.PlayerRole.None;
+        }
+
+        int actorNumber = PhotonNetwork.LocalPlayer.ActorNumber;
+        if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(PhotonSessionPolicy.DrawerOwnerKey, out roleValue) &&
+            roleValue is int drawerOwner && drawerOwner == actorNumber)
+        {
+            role = RolesManager.PlayerRole.Drawer;
+            return true;
+        }
+        if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(PhotonSessionPolicy.RunnerOwnerKey, out roleValue) &&
+            roleValue is int runnerOwner && runnerOwner == actorNumber)
+        {
+            role = RolesManager.PlayerRole.Runner;
+            return true;
+        }
+
+        return false;
     }
 
     private void InvokeEvent(CustomTriggerType triggerType)
