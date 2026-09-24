@@ -85,8 +85,26 @@ public class Drawer : MonoBehaviourPun
             GameObject UI = Instantiate(drawerPanelPrefab).transform.GetChild(0).gameObject;
             GameObject.Find("LevelSetup").GetComponent<LevelSetup>().Init(UI.GetComponent<DrawerUICOntrol>());
 
-            Color color = FindPenProperty(currentPenType).material.color;
-            ChangeSliderColor(color.r, color.g, color.b, (int)FindPenProperty(currentPenType).penType);
+            // The level setup may intentionally leave the initial tool as None. Pick an
+            // unlocked tool before reading its material so a scene reload cannot abort Start.
+            if (currentPenType == PenUI.PenType.None)
+            {
+                for (int i = 0; i < penProperties.Count; i++)
+                {
+                    if (penStatus[i] && penProperties[i] != null)
+                    {
+                        SetPenProperties(penProperties[i].penType);
+                        break;
+                    }
+                }
+            }
+
+            PenProperty initialPen = FindPenProperty(currentPenType);
+            if (initialPen != null && initialPen.material != null)
+            {
+                Color color = initialPen.material.color;
+                ChangeSliderColor(color.r, color.g, color.b, (int)initialPen.penType);
+            }
         }
     }
 

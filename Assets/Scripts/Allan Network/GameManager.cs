@@ -730,6 +730,12 @@ namespace Allan
             Time.timeScale = paused ? 0f : 1f;
         }
 
+        /// <summary>Blocks gameplay input during a scene refresh without freezing Photon callbacks or Unity initialization.</summary>
+        private static void SetRecoveryInputPause(bool paused)
+        {
+            InteractionsPausedForRecovery = paused;
+        }
+
         /// <summary>Reads the active recovery refresh request shared by the Master Client.</summary>
         private static bool TryGetRecoveryRefreshRequest(out int epoch, out string targetScene)
         {
@@ -767,7 +773,7 @@ namespace Allan
 
             int previousEpoch = 0;
             if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(
-                    PhotonSessionPolicy.RecoveryRefreshEpochKey, out object previousEpochValue))
+                    PhotonSessionPolicy.RecoveryRefreshCounterKey, out object previousEpochValue))
                 previousEpoch = (int)previousEpochValue;
 
             recoveryRefreshInProgress = true;
@@ -775,7 +781,7 @@ namespace Allan
             recoveryLocalReloadIssued = false;
             recoveryRefreshEpoch = previousEpoch + 1;
             recoveryRefreshTargetScene = activeScene;
-            SetRecoveryPause(true);
+            SetRecoveryInputPause(true);
             StartRecoveryRefreshTimeout();
 
             // Clear runtime instantiations and Photon room caches before sending the reload request.
@@ -784,6 +790,7 @@ namespace Allan
             PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable
             {
                 { PhotonSessionPolicy.RecoveryRefreshEpochKey, recoveryRefreshEpoch },
+                { PhotonSessionPolicy.RecoveryRefreshCounterKey, recoveryRefreshEpoch },
                 { PhotonSessionPolicy.RecoveryRefreshTargetKey, recoveryRefreshTargetScene }
             });
 
@@ -834,7 +841,7 @@ namespace Allan
             recoveryLocalReloadIssued = false;
             recoveryRefreshEpoch = epoch;
             recoveryRefreshTargetScene = targetScene;
-            SetRecoveryPause(true);
+            SetRecoveryInputPause(true);
             StartRecoveryRefreshTimeout();
             ScheduleLocalRecoverySceneReload(epoch, targetScene);
             return true;
@@ -867,15 +874,15 @@ namespace Allan
         /// <summary>Releases recovery input pause after this client rebuilt the requested gameplay scene.</summary>
         private void CompleteLocalRecoverySceneRefresh(string loadedScene)
         {
-            if (!TryGetRecoveryRefreshRequest(out int epoch, out string targetScene) ||
-                epoch != recoveryRefreshEpoch || loadedScene != targetScene)
+            if (!recoveryRefreshInProgress || recoveryRefreshEpoch <= 0 ||
+                loadedScene != recoveryRefreshTargetScene)
                 return;
 
             // Each player confirms its own rebuilt level before the Master retires the request.
             // The Master keeps the request active until both scene loads have completed.
             PhotonNetwork.LocalPlayer.SetCustomProperties(new Hashtable
             {
-                { PhotonSessionPolicy.RecoveryTargetAckKey, epoch }
+                { PhotonSessionPolicy.RecoveryTargetAckKey, recoveryRefreshEpoch }
             });
             if (PhotonNetwork.IsMasterClient)
                 recoveryTargetLoadIssued = true;
@@ -884,7 +891,7 @@ namespace Allan
                 recoveryRefreshInProgress = false;
                 StopRecoveryRefreshTimeout();
             }
-            SetRecoveryPause(false);
+            SetRecoveryInputPause(false);
             TryCompleteSharedRecoverySceneRefresh();
         }
 
@@ -933,7 +940,7 @@ namespace Allan
             if (!recoveryRefreshInProgress || !PhotonNetwork.InRoom) yield break;
 
             Debug.LogError($"Recovery scene refresh {recoveryRefreshEpoch} timed out; restoring local control without leaving the room.");
-            SetRecoveryPause(false);
+            SetRecoveryInputPause(false);
             recoveryRefreshInProgress = false;
             recoveryTargetLoadIssued = false;
             recoveryLocalReloadIssued = false;
@@ -1398,7 +1405,7 @@ namespace Allan
                 recoveryRefreshInProgress = true;
                 recoveryRefreshEpoch = epoch;
                 recoveryRefreshTargetScene = targetScene;
-                SetRecoveryPause(true);
+                SetRecoveryInputPause(true);
                 StartRecoveryRefreshTimeout();
                 ScheduleLocalRecoverySceneReload(epoch, targetScene);
             }

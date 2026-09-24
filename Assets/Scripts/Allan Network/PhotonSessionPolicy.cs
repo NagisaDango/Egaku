@@ -47,6 +47,7 @@ public static class PhotonSessionPolicy
     // Recovery refresh state. The Master names the level to rebuild; each actor acknowledges
     // its restored scene before the request is cleared.
     public const string RecoveryRefreshEpochKey = "recovery_refresh_epoch";
+    public const string RecoveryRefreshCounterKey = "recovery_refresh_counter";
     public const string RecoveryRefreshTargetKey = "recovery_refresh_target";
     public const string RecoveryRefreshRequestKey = "recovery_refresh_request";
     public const string RecoveryTargetAckKey = "recovery_target_ack";
@@ -74,6 +75,7 @@ public static class PhotonSessionPolicy
                 { RunnerOwnerKey, 0 },
                 { SessionStateKey, SessionActive },
                 { RecoveryRefreshEpochKey, 0 },
+                { RecoveryRefreshCounterKey, 0 },
                 { RecoveryRefreshTargetKey, string.Empty },
                 { RecoveryRefreshRequestKey, 0 }
             }
