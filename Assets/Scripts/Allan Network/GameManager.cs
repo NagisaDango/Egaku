@@ -1025,6 +1025,27 @@ namespace Allan
             recoveryRefreshTimeoutCoroutine = null;
         }
 
+        /// <summary>
+        /// Refresh epochs start at one in each room. Forget the previous room's local
+        /// completion before joining another room, or its first refresh looks finished.
+        /// </summary>
+        private void ResetLocalRecoveryRefreshState()
+        {
+            StopRecoveryRefreshTimeout();
+            if (recoveryLocalReloadCoroutine != null)
+            {
+                StopCoroutine(recoveryLocalReloadCoroutine);
+                recoveryLocalReloadCoroutine = null;
+            }
+
+            recoveryRefreshInProgress = false;
+            recoveryTargetLoadIssued = false;
+            recoveryLocalReloadIssued = false;
+            recoveryRefreshEpoch = 0;
+            recoveryLocalLoadCompletedEpoch = 0;
+            recoveryRefreshTargetScene = null;
+        }
+
         private IEnumerator ExpireStalledRecoveryRefresh()
         {
             // A failed scene handshake must never leave both players permanently paused.
@@ -1267,6 +1288,16 @@ namespace Allan
 
             ClearPendingRoomRequest();
             bool completedReconnect = reconnecting;
+            ResetLocalRecoveryRefreshState();
+            if (!completedReconnect)
+            {
+                // Photon player properties can survive a room change. A new room must
+                // not inherit a scene-load acknowledgement for the same epoch number.
+                PhotonNetwork.LocalPlayer.SetCustomProperties(new Hashtable
+                {
+                    { PhotonSessionPolicy.RecoveryTargetAckKey, 0 }
+                });
+            }
             CompleteRecovery();
             bool resumedExistingRefresh = ResumeExistingRecoverySceneRefresh();
             if (SceneManager.GetActiveScene().name == "RoleSelection" && roomSelection != null)
@@ -1304,8 +1335,7 @@ namespace Allan
         {
             Debug.Log("Enter Callback OnLeftRoom");
             ClearPendingRoomRequest();
-            StopRecoveryRefreshTimeout();
-            recoveryRefreshInProgress = false;
+            ResetLocalRecoveryRefreshState();
             SetRecoveryPause(false);
 
             if (PhotonNetwork.OfflineMode)

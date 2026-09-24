@@ -51,11 +51,14 @@ public class Drawer : MonoBehaviourPun
     public static bool multipleEraseMode;
     private void Awake()
     {
+        // The Drawer can survive Photon scene refreshes, so reset scene-target erase guards whenever Unity loads a level.
+        SceneManager.sceneLoaded += ResetEraseDedupeForLoadedScene;
+
         //DontDestroyOnLoad(this.gameObject);
         Instance = this;
         inkSlider = GameObject.Find("GameCanvas/Panel/Slider").GetComponent<Slider>();
         currentPenType = PenUI.PenType.None;
-        penProperties = 
+        penProperties =
             new List<PenProperty>
             {
                 woodPen, cloudPen, steelPen, electricPen
@@ -130,8 +133,31 @@ public class Drawer : MonoBehaviourPun
         print("Wtf");
     }
 
+    private void OnDestroy()
+    {
+        // Remove the static Unity event hook so a destroyed network Drawer cannot keep receiving scene loads.
+        SceneManager.sceneLoaded -= ResetEraseDedupeForLoadedScene;
+    }
+
+    private void ResetEraseDedupeForLoadedScene(Scene loadedScene, LoadSceneMode mode)
+    {
+        // A refreshed level may reuse hierarchy paths and PhotonView IDs; clear per-room request guards so valid erases can run again.
+        requestedEraseViewIds.Clear();
+        requestedSceneErasePaths.Clear();
+        processedEraseViewIds.Clear();
+        processedSceneErasePaths.Clear();
+    }
+
+
     private Vector3 lastErasePos;
     [SerializeField] private float minEraseDis;
+    // Request guards suppress duplicate owner-to-Master erase RPCs and reset when a refreshed level reuses its scene targets.
+    private readonly HashSet<int> requestedEraseViewIds = new HashSet<int>();
+    private readonly HashSet<string> requestedSceneErasePaths = new HashSet<string>();
+    private readonly List<DrawMesh> eraseMeshHits = new List<DrawMesh>();
+    // The eraser is a visible brush, not an infinitely thin physics ray. Sampling
+    // this radius along fast pointer movement prevents narrow strokes being skipped.
+    [SerializeField, Min(0.01f)] private float eraseBrushRadius = 0.2f;
 
     void Update()
     {
@@ -230,13 +256,7 @@ public class Drawer : MonoBehaviourPun
             {
                 SetPenProperties(PenUI.PenType.Eraser);
                 Vector2 erasePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-                RaycastHit2D hit = Physics2D.Raycast(erasePosition, Vector2.zero, Mathf.Infinity, LayerMask.GetMask("Draw"));
                 EraseDrawnObj(erasePosition);
-                if (hit.collider != null)
-                {
-                    print(hit.collider.gameObject.name);
-                    print("erase mode: " + multipleEraseMode);
-                }
             }
         }
         if (Input.GetMouseButtonDown(0))//&& !EventSystem.current.IsPointerOverGameObject())
@@ -245,20 +265,7 @@ public class Drawer : MonoBehaviourPun
             {
                 lastErasePos = GetMouseWorldPosition();
                 //if(EventSystem.current.IsPointerOverGameObject())
-                RaycastHit2D hit = Physics2D.Raycast((Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition), Vector2.zero, Mathf.Infinity, LayerMask.GetMask("Draw"));
-                
                 EraseDrawnObj(Camera.main.ScreenToWorldPoint(Input.mousePosition));
-
-
-
-                if (hit.collider != null)
-                {
-                    print(hit.collider.gameObject.name);
-                    print("erase mode: " + multipleEraseMode);
-                    //if(!multipleEraseMode)
-                        //SetPenProperties(lastPenType);
-                }
-                //EraseDrawnObj();
             }
             else if (currentDrawer == null)
             {
@@ -275,11 +282,11 @@ public class Drawer : MonoBehaviourPun
             Vector3 mousePos = GetMouseWorldPosition();
             if (eraserMode)
             {
-                if (Vector3.Distance(mousePos, lastErasePos) >= minEraseDis)
+                float eraseDistance = Vector3.Distance(mousePos, lastErasePos);
+                float eraseSampleDistance = Mathf.Max(0.01f, Mathf.Min(minEraseDis, eraseBrushRadius * 0.5f));
+                if (eraseDistance >= eraseSampleDistance)
                 {
-                    Vector3 direction = (mousePos - lastErasePos).normalized;
-                    float distance = Vector3.Distance(lastErasePos, mousePos);
-                    EraseDrawnObjCast(lastErasePos, direction, distance);
+                    EraseDrawnObjCast(lastErasePos, mousePos);
                     lastErasePos = mousePos;
                 }
 
@@ -426,51 +433,49 @@ public class Drawer : MonoBehaviourPun
     
     private void EraseDrawnObj(Vector2 mousePos)
     {
-        //Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero, Mathf.Infinity, LayerMask.GetMask("Draw")); // Small downward ray
+        EraseAtPosition(mousePos);
+    }
 
-        if (hit.collider != null)// && hit.collider.gameObject.layer == LayerMask.NameToLayer("Draw"))
+    private void EraseDrawnObjCast(Vector2 startPos, Vector2 endPos)
+    {
+        float distance = Vector2.Distance(startPos, endPos);
+        int steps = Mathf.Max(1, Mathf.CeilToInt(distance / Mathf.Max(eraseBrushRadius * 0.5f, 0.05f)));
+        for (int i = 0; i <= steps; i++)
         {
-            if (hit.collider.CompareTag("ClickToErase"))
-            {
-                RequestSceneObjectErase(hit.collider.transform.parent.gameObject);
-                return;
-            }
-
-            Debug.Log("Hit: " + hit.collider.gameObject.name);
-            //hit.collider.gameObject.GetComponent<DrawMesh>().photonView.TransferOwnership(actorNum);
-            DrawMesh erasingMesh = hit.collider.gameObject.GetComponent<DrawMesh>();
-            if (erasingMesh != null)
-                photonView.RPC(nameof(RPC_RequestErase), RpcTarget.MasterClient, erasingMesh.photonView.ViewID);
+            Vector2 sample = Vector2.Lerp(startPos, endPos, i / (float)steps);
+            EraseAtPosition(sample);
         }
     }
-    
-    private void EraseDrawnObjCast(Vector2 startPos, Vector2 direction, float distance)
-    {
-        //Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        //RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero, Mathf.Infinity, LayerMask.GetMask("Draw")); // Small downward ray
-        RaycastHit2D[] hits = Physics2D.RaycastAll(startPos, direction, distance, LayerMask.GetMask("Draw"));
-        if (hits.Length > 0)// && hit.collider.gameObject.layer == LayerMask.NameToLayer("Draw"))
-        {
-            HashSet<int> requestedViews = new HashSet<int>();
-            HashSet<string> requestedSceneObjects = new HashSet<string>();
-            foreach (RaycastHit2D hit in hits)
-            {
-                if (hit.collider.CompareTag("ClickToErase"))
-                {
-                    GameObject sceneTarget = hit.collider.transform.parent.gameObject;
-                    string path = GetSceneObjectPath(sceneTarget);
-                    if (requestedSceneObjects.Add(path))
-                        photonView.RPC(nameof(RPC_RequestSceneObjectErase), RpcTarget.MasterClient, path);
-                    continue;
-                }
 
-                Debug.Log("Hit: " + hit.collider.gameObject.name);
-                //hit.collider.gameObject.GetComponent<DrawMesh>().photonView.TransferOwnership(actorNum);
-                DrawMesh erasingMesh = hit.collider.gameObject.GetComponent<DrawMesh>();
-                if (erasingMesh != null && requestedViews.Add(erasingMesh.photonView.ViewID))
-                    photonView.RPC(nameof(RPC_RequestErase), RpcTarget.MasterClient, erasingMesh.photonView.ViewID);
+    private void EraseAtPosition(Vector2 position)
+    {
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(position, eraseBrushRadius, LayerMask.GetMask("Draw"));
+        foreach (Collider2D hitCollider in colliders)
+        {
+            if (hitCollider == null)
+                continue;
+
+            if (hitCollider.CompareTag("ClickToErase"))
+            {
+                Transform sceneTarget = hitCollider.transform.parent;
+                if (sceneTarget != null)
+                {
+                    string path = GetSceneObjectPath(sceneTarget.gameObject);
+                    if (requestedSceneErasePaths.Add(path))
+                        photonView.RPC(nameof(RPC_RequestSceneObjectErase), RpcTarget.MasterClient, path);
+                }
+                continue;
             }
+
+        }
+
+        // Do not depend on Physics2D for strokes: the Drawer-side rigidbody is
+        // intentionally unsimulated, so its attached PolygonCollider2D is not queried.
+        DrawMesh.CollectEraserHits(position, eraseBrushRadius, eraseMeshHits);
+        foreach (DrawMesh erasingMesh in eraseMeshHits)
+        {
+            if (erasingMesh.photonView != null && requestedEraseViewIds.Add(erasingMesh.photonView.ViewID))
+                photonView.RPC(nameof(RPC_RequestErase), RpcTarget.MasterClient, erasingMesh.photonView.ViewID);
         }
     }
 

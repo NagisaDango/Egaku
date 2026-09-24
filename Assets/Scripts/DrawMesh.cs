@@ -1,5 +1,6 @@
 ﻿using System;
 using Photon.Pun;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Photon.Realtime;
@@ -12,6 +13,9 @@ using Allan;
 
 public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
 {
+    // Keep only live stroke meshes here so the eraser can query visible geometry even when its local physics collider is inactive.
+    private static readonly HashSet<DrawMesh> activeDrawMeshes = new HashSet<DrawMesh>();
+
     [SerializeField] float minDistance = .1f;
     [SerializeField] float lineThickness = 1f;
     [SerializeField] float curveThresholdAngle = 90f;
@@ -39,6 +43,104 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
     private bool destroyRequestSent;
     private bool destroyDispatchSent;
     private bool destroyApplied;
+
+    public override void OnEnable()
+    {
+        base.OnEnable();
+        activeDrawMeshes.Add(this);
+    }
+
+    public override void OnDisable()
+    {
+        activeDrawMeshes.Remove(this);
+        base.OnDisable();
+    }
+
+    private void OnDestroy()
+    {
+        activeDrawMeshes.Remove(this);
+    }
+
+    /// <summary>
+    /// Finds visible strokes on this client without querying the physics scene. The
+    /// Drawer copy intentionally has Rigidbody2D.simulated disabled, so its collider
+    /// is absent from Physics2D queries even though its locally rebuilt mesh is visible.
+    /// </summary>
+    public static void CollectEraserHits(Vector2 center, float radius, List<DrawMesh> results)
+    {
+        results.Clear();
+        foreach (DrawMesh drawMesh in activeDrawMeshes)
+        {
+            if (drawMesh != null && drawMesh.OverlapsEraser(center, radius))
+                results.Add(drawMesh);
+        }
+    }
+
+    private bool OverlapsEraser(Vector2 center, float radius)
+    {
+        if (drawStrokes <= 0 || currProperty == null || photonView == null || _vertices == null || _triangles == null || _triangles.Length < 3)
+            return false;
+
+        Renderer meshRenderer = GetComponent<Renderer>();
+        if (meshRenderer == null)
+            return false;
+
+        Bounds broadPhaseBounds = meshRenderer.bounds;
+        broadPhaseBounds.Expand(radius * 2f);
+        if (!broadPhaseBounds.Contains(center))
+            return false;
+
+        for (int i = 0; i + 2 < _triangles.Length; i += 3)
+        {
+            int indexA = _triangles[i];
+            int indexB = _triangles[i + 1];
+            int indexC = _triangles[i + 2];
+            if (indexA < 0 || indexB < 0 || indexC < 0 ||
+                indexA >= _vertices.Length || indexB >= _vertices.Length || indexC >= _vertices.Length)
+                continue;
+
+            Vector2 a = transform.TransformPoint(_vertices[indexA]);
+            Vector2 b = transform.TransformPoint(_vertices[indexB]);
+            Vector2 c = transform.TransformPoint(_vertices[indexC]);
+            if (PointInTriangle(center, a, b, c) ||
+                DistanceToSegmentSquared(center, a, b) <= radius * radius ||
+                DistanceToSegmentSquared(center, b, c) <= radius * radius ||
+                DistanceToSegmentSquared(center, c, a) <= radius * radius)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool PointInTriangle(Vector2 point, Vector2 a, Vector2 b, Vector2 c)
+    {
+        const float epsilon = 0.00001f;
+        if (Mathf.Abs(Cross(b - a, c - a)) <= epsilon)
+            return false;
+
+        float crossAB = Cross(b - a, point - a);
+        float crossBC = Cross(c - b, point - b);
+        float crossCA = Cross(a - c, point - c);
+        bool hasNegative = crossAB < -epsilon || crossBC < -epsilon || crossCA < -epsilon;
+        bool hasPositive = crossAB > epsilon || crossBC > epsilon || crossCA > epsilon;
+        return !(hasNegative && hasPositive);
+    }
+
+    private static float DistanceToSegmentSquared(Vector2 point, Vector2 start, Vector2 end)
+    {
+        Vector2 segment = end - start;
+        float lengthSquared = segment.sqrMagnitude;
+        if (lengthSquared <= Mathf.Epsilon)
+            return (point - start).sqrMagnitude;
+
+        float t = Mathf.Clamp01(Vector2.Dot(point - start, segment) / lengthSquared);
+        return (point - (start + segment * t)).sqrMagnitude;
+    }
+
+    private static float Cross(Vector2 a, Vector2 b)
+    {
+        return a.x * b.y - a.y * b.x;
+    }
 
     public Vector3[] _vertices;
     public Vector2[] _uv;
@@ -666,14 +768,36 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
             return;
         }
 
-        if (!PhotonNetwork.CurrentRoom.Players.TryGetValue(photonView.OwnerActorNr, out Player owner) || owner.IsInactive)
+        destroyDispatchSent = true;
+        StartCoroutine(DispatchMasterApprovedDestroy());
+    }
+
+    // Ownership may be moving to the Runner or falling back to the Master while
+    // an owner is inactive. Broadcast the approved command so the current PUN
+    // controller can act, retrying briefly while its local controller cache updates.
+    private IEnumerator DispatchMasterApprovedDestroy()
+    {
+        const int maxAttempts = 10;
+        const float retryDelay = 0.1f;
+
+        for (int attempt = 0; attempt < maxAttempts; attempt++)
         {
-            Debug.LogWarning($"Cannot erase DrawMesh {photonView.ViewID}: owner {photonView.OwnerActorNr} is not active.");
-            return;
+            if (!PhotonNetwork.IsMasterClient || destroyApplied || this == null)
+                yield break;
+
+            if (photonView.IsMine)
+            {
+                destroyApplied = true;
+                PhotonNetwork.Destroy(gameObject);
+                yield break;
+            }
+
+            photonView.RPC(nameof(RPC_DestroyAfterMasterAuthorization), RpcTarget.AllViaServer);
+            yield return new WaitForSeconds(retryDelay);
         }
 
-        destroyDispatchSent = true;
-        photonView.RPC(nameof(RPC_DestroyAfterMasterAuthorization), owner);
+        if (this != null && !destroyApplied)
+            Debug.LogWarning($"Master-approved erase for DrawMesh {photonView.ViewID} was not acknowledged by its current controller.");
     }
 
     [PunRPC]
