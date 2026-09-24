@@ -48,6 +48,8 @@ public static class PhotonSessionPolicy
     // its restored scene before the request is cleared.
     public const string RecoveryRefreshEpochKey = "recovery_refresh_epoch";
     public const string RecoveryRefreshCounterKey = "recovery_refresh_counter";
+    public const string RecoveryRefreshReadyKey = "recovery_refresh_ready";
+    public const string RecoveryCleanupAckPrefix = "recovery_cleanup_ack_";
     public const string RecoveryRefreshTargetKey = "recovery_refresh_target";
     public const string RecoveryRefreshRequestKey = "recovery_refresh_request";
     public const string RecoveryTargetAckKey = "recovery_target_ack";
@@ -76,6 +78,7 @@ public static class PhotonSessionPolicy
                 { SessionStateKey, SessionActive },
                 { RecoveryRefreshEpochKey, 0 },
                 { RecoveryRefreshCounterKey, 0 },
+                { RecoveryRefreshReadyKey, 0 },
                 { RecoveryRefreshTargetKey, string.Empty },
                 { RecoveryRefreshRequestKey, 0 }
             }

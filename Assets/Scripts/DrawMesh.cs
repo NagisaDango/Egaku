@@ -37,6 +37,7 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
     private bool finishRequested;
     private bool finishApplied;
     private bool destroyRequestSent;
+    private bool destroyDispatchSent;
     private bool destroyApplied;
 
     public Vector3[] _vertices;
@@ -445,7 +446,8 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
         lastMouseDir = Vector3.zero;
         if (drawStrokes <= 0 || pointList == null || pointList.Count == 0)
         {
-            if (PhotonNetwork.IsMasterClient)
+            // The creating Drawer owns this network object; the Master cannot destroy it by role alone.
+            if (photonView.IsMine)
                 PhotonNetwork.Destroy(gameObject);
         }
         else
@@ -497,7 +499,7 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
     [PunRPC]
     private void RPC_DestroySelf()
     {
-        if(photonView.IsMine || PhotonNetwork.IsMasterClient)
+        if (photonView.IsMine)
             PhotonNetwork.Destroy(this.gameObject);
     }
 
@@ -641,13 +643,47 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
         if (!PhotonNetwork.IsMasterClient || !validOwner || destroyApplied || currProperty == null)
             return;
 
-        destroyApplied = true;
         Drawer drawer = Drawer.Instance;
         if (drawer != null)
         {
             drawer.photonView.RPC(nameof(Drawer.RPC_DirectErase), RpcTarget.AllViaServer,
                 (int)currProperty.penType, drawStrokes, (Vector2)col2d.bounds.center, gameObject.tag);
         }
+        DestroyAfterMasterAuthorization();
+    }
+
+    /// <summary>Routes Master-approved deletion through the PhotonView owner, who has legal destroy authority.</summary>
+    public void DestroyAfterMasterAuthorization()
+    {
+        if (!PhotonNetwork.IsMasterClient || destroyApplied || destroyDispatchSent)
+            return;
+
+        if (photonView.IsMine)
+        {
+            destroyDispatchSent = true;
+            destroyApplied = true;
+            PhotonNetwork.Destroy(gameObject);
+            return;
+        }
+
+        if (!PhotonNetwork.CurrentRoom.Players.TryGetValue(photonView.OwnerActorNr, out Player owner) || owner.IsInactive)
+        {
+            Debug.LogWarning($"Cannot erase DrawMesh {photonView.ViewID}: owner {photonView.OwnerActorNr} is not active.");
+            return;
+        }
+
+        destroyDispatchSent = true;
+        photonView.RPC(nameof(RPC_DestroyAfterMasterAuthorization), owner);
+    }
+
+    [PunRPC]
+    private void RPC_DestroyAfterMasterAuthorization(PhotonMessageInfo info)
+    {
+        if (!photonView.IsMine || destroyApplied || info.Sender == null || PhotonNetwork.MasterClient == null ||
+            info.Sender.ActorNumber != PhotonNetwork.MasterClient.ActorNumber)
+            return;
+
+        destroyApplied = true;
         PhotonNetwork.Destroy(gameObject);
     }
 

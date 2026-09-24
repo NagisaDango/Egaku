@@ -502,7 +502,7 @@ public class Drawer : MonoBehaviourPun
         Vector2 eraseCenter = target.col2d != null ? target.col2d.bounds.center : target.transform.position;
         photonView.RPC(nameof(RPC_DirectErase), RpcTarget.AllViaServer, (int)target.currProperty.penType,
             target.drawStrokes, eraseCenter, target.gameObject.tag);
-        PhotonNetwork.Destroy(target.gameObject);
+        target.DestroyAfterMasterAuthorization();
     }
 
     [PunRPC]

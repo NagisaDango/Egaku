@@ -838,12 +838,13 @@ namespace Allan
             {
                 { PhotonSessionPolicy.RecoveryRefreshEpochKey, recoveryRefreshEpoch },
                 { PhotonSessionPolicy.RecoveryRefreshCounterKey, recoveryRefreshEpoch },
-                { PhotonSessionPolicy.RecoveryRefreshTargetKey, recoveryRefreshTargetScene }
+                { PhotonSessionPolicy.RecoveryRefreshTargetKey, recoveryRefreshTargetScene },
+                { PhotonSessionPolicy.RecoveryRefreshReadyKey, 0 },
+                { GetRecoveryCleanupAckKey(PhotonNetwork.LocalPlayer.ActorNumber), recoveryRefreshEpoch }
             });
 
-            // Each actor reloads locally after receiving the same room property. This forces a
-            // same-scene reload, which PhotonNetwork.LoadLevel does not synchronize to other actors.
-            ScheduleLocalRecoverySceneReload(recoveryRefreshEpoch, recoveryRefreshTargetScene);
+            // Wait for every actor to receive DestroyAll before allowing either client to respawn.
+            TryAdvanceRecoverySceneRefreshToLoad();
         }
 
         /// <summary>Routes the in-game reset button through the Master-owned full scene rebuild.</summary>
@@ -891,8 +892,47 @@ namespace Allan
             recoveryRefreshTargetScene = targetScene;
             SetRecoveryInputPause(true);
             StartRecoveryRefreshTimeout();
-            ScheduleLocalRecoverySceneReload(epoch, targetScene);
+
+            // A returning actor may have missed the room-wide cleanup event while disconnected.
+            // Clean only its local Photon instances before acknowledging the cleanup barrier.
+            PhotonNetwork.DestroyAll(true);
+            PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable
+            {
+                { GetRecoveryCleanupAckKey(PhotonNetwork.LocalPlayer.ActorNumber), epoch }
+            });
+            TryAdvanceRecoverySceneRefreshToLoad();
             return true;
+        }
+
+        private static string GetRecoveryCleanupAckKey(int actorNumber)
+        {
+            return PhotonSessionPolicy.RecoveryCleanupAckPrefix + actorNumber;
+        }
+
+        /// <summary>Only the Master releases the reload after both actors report processing DestroyAll.</summary>
+        private void TryAdvanceRecoverySceneRefreshToLoad()
+        {
+            if (!PhotonNetwork.IsMasterClient || !recoveryRefreshInProgress || !AreBothRoomPlayersActive())
+                return;
+
+            Hashtable properties = PhotonNetwork.CurrentRoom.CustomProperties;
+            bool bothCleaned = PhotonNetwork.CurrentRoom.Players.Values.All(player =>
+                properties.TryGetValue(GetRecoveryCleanupAckKey(player.ActorNumber), out object value) &&
+                value is int acknowledgedEpoch && acknowledgedEpoch == recoveryRefreshEpoch);
+            if (!bothCleaned)
+                return;
+
+            if (properties.TryGetValue(PhotonSessionPolicy.RecoveryRefreshReadyKey, out object readyValue) &&
+                readyValue is int readyEpoch && readyEpoch == recoveryRefreshEpoch)
+            {
+                ScheduleLocalRecoverySceneReload(recoveryRefreshEpoch, recoveryRefreshTargetScene);
+                return;
+            }
+
+            PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable
+            {
+                { PhotonSessionPolicy.RecoveryRefreshReadyKey, recoveryRefreshEpoch }
+            });
         }
 
         private void ScheduleLocalRecoverySceneReload(int epoch, string targetScene)
@@ -962,7 +1002,8 @@ namespace Allan
             PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable
             {
                 { PhotonSessionPolicy.RecoveryRefreshEpochKey, 0 },
-                { PhotonSessionPolicy.RecoveryRefreshTargetKey, string.Empty }
+                { PhotonSessionPolicy.RecoveryRefreshTargetKey, string.Empty },
+                { PhotonSessionPolicy.RecoveryRefreshReadyKey, 0 }
             });
             recoveryRefreshInProgress = false;
             recoveryTargetLoadIssued = false;
@@ -1001,7 +1042,8 @@ namespace Allan
                 PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable
                 {
                     { PhotonSessionPolicy.RecoveryRefreshEpochKey, 0 },
-                    { PhotonSessionPolicy.RecoveryRefreshTargetKey, string.Empty }
+                    { PhotonSessionPolicy.RecoveryRefreshTargetKey, string.Empty },
+                    { PhotonSessionPolicy.RecoveryRefreshReadyKey, 0 }
                 });
             }
         }
@@ -1444,21 +1486,24 @@ namespace Allan
                 propertiesThatChanged.ContainsKey(PhotonSessionPolicy.RecoveryRefreshRequestKey))
                 TryBeginRecoverySceneRefresh();
 
-            if ((propertiesThatChanged.ContainsKey(PhotonSessionPolicy.RecoveryRefreshEpochKey) ||
-                 propertiesThatChanged.ContainsKey(PhotonSessionPolicy.RecoveryRefreshTargetKey)) &&
-                TryGetRecoveryRefreshRequest(out int epoch, out string targetScene))
+            bool recoveryPropertyChanged = propertiesThatChanged.ContainsKey(PhotonSessionPolicy.RecoveryRefreshEpochKey) ||
+                                           propertiesThatChanged.ContainsKey(PhotonSessionPolicy.RecoveryRefreshTargetKey) ||
+                                           propertiesThatChanged.ContainsKey(PhotonSessionPolicy.RecoveryRefreshReadyKey) ||
+                                           propertiesThatChanged.Keys.Cast<object>().Any(key =>
+                                               key is string keyString && keyString.StartsWith(
+                                                   PhotonSessionPolicy.RecoveryCleanupAckPrefix, System.StringComparison.Ordinal));
+            if (recoveryPropertyChanged && TryGetRecoveryRefreshRequest(out int epoch, out string targetScene))
             {
                 if (epoch != recoveryRefreshEpoch)
                 {
                     recoveryTargetLoadIssued = false;
                     recoveryLocalReloadIssued = false;
+                    recoveryLocalLoadCompletedEpoch = 0;
                 }
 
                 recoveryRefreshInProgress = true;
                 recoveryRefreshEpoch = epoch;
                 recoveryRefreshTargetScene = targetScene;
-                if (recoveryLocalLoadCompletedEpoch != epoch)
-                    recoveryLocalLoadCompletedEpoch = 0;
 
                 // Photon delivers the room-property update to its writer asynchronously. If this
                 // actor already loaded and acknowledged this exact epoch, this is only a late echo.
@@ -1470,7 +1515,22 @@ namespace Allan
 
                 SetRecoveryInputPause(true);
                 StartRecoveryRefreshTimeout();
-                ScheduleLocalRecoverySceneReload(epoch, targetScene);
+
+                string localAckKey = GetRecoveryCleanupAckKey(PhotonNetwork.LocalPlayer.ActorNumber);
+                Hashtable roomProperties = PhotonNetwork.CurrentRoom.CustomProperties;
+                if (!roomProperties.TryGetValue(localAckKey, out object localAck) ||
+                    !(localAck is int ackEpoch) || ackEpoch != epoch)
+                {
+                    // The Master's reliable cleanup event precedes the room update on this connection.
+                    PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable { { localAckKey, epoch } });
+                }
+
+                if (PhotonNetwork.IsMasterClient)
+                    TryAdvanceRecoverySceneRefreshToLoad();
+
+                if (roomProperties.TryGetValue(PhotonSessionPolicy.RecoveryRefreshReadyKey, out object ready) &&
+                    ready is int readyEpoch && readyEpoch == epoch)
+                    ScheduleLocalRecoverySceneReload(epoch, targetScene);
             }
         }
         #endregion
