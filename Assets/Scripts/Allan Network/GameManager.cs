@@ -45,8 +45,17 @@ namespace Allan
 
         private HashSet<string> roomInfoSet = new();
 
-        // A create request may arrive before Photon finishes joining the lobby.
-        private string pendingRoomName;
+        // A room-code request may arrive before Photon finishes returning to the Master Server.
+        private enum PrivateRoomRequest
+        {
+            None,
+            Create,
+            Join
+        }
+
+        private string pendingRoomCode;
+        private PrivateRoomRequest pendingRoomRequest;
+        private bool roomRequestInFlight;
 
         // These flags distinguish intentional navigation from a transport failure that should be recovered.
         private bool explicitLeaveRequested;
@@ -58,6 +67,14 @@ namespace Allan
         private Coroutine remoteRecoveryCoroutine;
         private Coroutine lobbyReconnectCoroutine;
         private int waitingForActorNumber = -1;
+
+        // A reconnect refresh uses a two-stage scene handshake because PUN does not synchronize reloading
+        // the same scene. The Master Client owns progression; every actor acknowledges cleanup and bridging.
+        private bool recoveryRefreshInProgress;
+        private bool recoveryBridgeLoadIssued;
+        private bool recoveryTargetLoadIssued;
+        private int recoveryRefreshEpoch;
+        private string recoveryRefreshTargetScene;
 
         // Runner and Drawer consult this flag before processing local gameplay input.
         public static bool InteractionsPausedForRecovery { get; private set; }
@@ -72,6 +89,8 @@ namespace Allan
         {
             // Photon separates incompatible room protocols by Application.version.
             PhotonNetwork.GameVersion = Application.version;
+            // A stable Photon UserId prevents a different actor from claiming a reserved reconnect slot.
+            PhotonSessionPolicy.EnsureStableUserIdentity();
             //if (Instance == null)
             //{
             //    Instance = this;
@@ -97,8 +116,6 @@ namespace Allan
 
             Instance = this;
             SetRecoveryPause(false);
-            gameObject.AddComponent<PhotonView>();
-            PhotonNetwork.AllocateViewID(photonView);
             DontDestroyOnLoad(this.gameObject);
 
             //Transform canvas = GameObject.Find("Canvas").transform;
@@ -123,6 +140,7 @@ namespace Allan
 
             //go.UpdateProperty(roomSelection, roleSelection, levelSelection, gridLayout, nameField);
             leaveGameButton.onClick.AddListener(() => { LeaveRoom(); });
+            ConfigurePrivateRoomCodeUi();
         }
         void Start()
         {
@@ -260,6 +278,69 @@ namespace Allan
             leaveGameButton.onClick.AddListener(() => { LeaveRoom(); });
 
             levelSelection.transform.Find("BackButton").GetComponent<Button>().onClick.AddListener(() => { Back2RoleSelection(); });
+            ConfigurePrivateRoomCodeUi();
+        }
+
+        /// <summary>Configures the existing room panel for direct private-code matchmaking.</summary>
+        private void ConfigurePrivateRoomCodeUi()
+        {
+            if (nameField != null)
+            {
+                nameField.characterLimit = PhotonSessionPolicy.MaximumRoomCodeLength;
+                nameField.contentType = TMP_InputField.ContentType.Alphanumeric;
+                if (nameField.placeholder is TMP_Text placeholderLabel)
+                    placeholderLabel.text = "Room code (blank = create)";
+            }
+
+            if (roomCreateOrJoinButton != null)
+            {
+                TMP_Text buttonLabel = roomCreateOrJoinButton.GetComponentInChildren<TMP_Text>();
+                if (buttonLabel != null) buttonLabel.text = "Create / Join Code";
+            }
+
+            if (gridLayout != null && gridLayout.parent != null && gridLayout.parent.parent != null)
+            {
+                // Private rooms are never listed, so hide the legacy public-room scroll view.
+                gridLayout.parent.parent.gameObject.SetActive(false);
+            }
+        }
+
+        /// <summary>Shows the private code in the waiting room so the host can share it with one client.</summary>
+        private void ShowCurrentRoomCode()
+        {
+            if (roleSelection == null || !PhotonNetwork.InRoom || PhotonNetwork.OfflineMode) return;
+
+            Transform existingLabel = roleSelection.transform.Find("PrivateRoomCodeLabel");
+            TMP_Text codeLabel;
+            if (existingLabel == null)
+            {
+                // The label is runtime-only so legacy scenes remain untouched and every scene reload gets fresh state.
+                GameObject labelObject = new GameObject(
+                    "PrivateRoomCodeLabel",
+                    typeof(RectTransform),
+                    typeof(TextMeshProUGUI));
+                labelObject.transform.SetParent(roleSelection.transform, false);
+
+                RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+                labelRect.anchorMin = new Vector2(0.5f, 1f);
+                labelRect.anchorMax = new Vector2(0.5f, 1f);
+                labelRect.pivot = new Vector2(0.5f, 1f);
+                labelRect.anchoredPosition = new Vector2(0f, -24f);
+                labelRect.sizeDelta = new Vector2(600f, 60f);
+
+                codeLabel = labelObject.GetComponent<TextMeshProUGUI>();
+                codeLabel.alignment = TextAlignmentOptions.Center;
+                codeLabel.fontSize = 30f;
+                codeLabel.fontStyle = FontStyles.Bold;
+                codeLabel.color = Color.black;
+                codeLabel.raycastTarget = false;
+            }
+            else
+            {
+                codeLabel = existingLabel.GetComponent<TMP_Text>();
+            }
+
+            codeLabel.text = $"Room Code: {PhotonNetwork.CurrentRoom.Name}";
         }
 
 
@@ -298,12 +379,12 @@ namespace Allan
 
                     currentLevel = levelUnlocked;
                     //LoadLevel(currentLevel);
-                    photonView.RPC("RPC_LoadLevel", RpcTarget.All, currentLevel);
+                    LoadLevel(currentLevel);
                 }
                 else
                 {
                     //LoadLevel(currentLevel + 1);
-                    photonView.RPC("RPC_LoadLevel", RpcTarget.All, currentLevel+1);
+                    LoadLevel(currentLevel + 1);
 
                 }
             }
@@ -374,12 +455,6 @@ namespace Allan
 
         private Room currentRoom;
 
-        void JoinLobbyAfterDelay()
-        {
-            Debug.Log("Waiting for room cleanup...");
-            PhotonNetwork.JoinLobby();
-        }
-
         public void LeaveRoom()
         {
             //currentRoom = PhotonNetwork.CurrentRoom;
@@ -417,8 +492,12 @@ namespace Allan
                 PhotonNetwork.LoadLevel("RoleSelection");
                 return;
             }
+            // Multiple UnityEvent bindings must not send LeaveRoom again while Photon is already leaving.
+            if (!PhotonNetwork.InRoom || explicitLeaveRequested) return;
+
             // Explicit exits remove the actor immediately instead of reserving it for reconnection.
             explicitLeaveRequested = true;
+            ClearPendingRoomRequest();
             SetRecoveryPause(false);
 
             if (PhotonNetwork.IsMasterClient)
@@ -456,6 +535,8 @@ namespace Allan
                 }
                 else SpawnPlayer();
 
+                CompleteLocalRecoverySceneRefresh(scene.name);
+
             }
             else if (scene.name == "RoleSelection")
             {
@@ -473,12 +554,29 @@ namespace Allan
                     return;
                 }
 
+                if (TryGetRecoveryRefreshRequest(out int refreshEpoch, out string refreshTarget))
+                {
+                    // RoleSelection is a synchronization bridge, not a return to matchmaking. Each actor
+                    // confirms that this different scene actually loaded before the Master restores the level.
+                    SetRecoveryPause(true);
+                    recoveryRefreshInProgress = true;
+                    recoveryRefreshEpoch = refreshEpoch;
+                    recoveryRefreshTargetScene = refreshTarget;
+                    PhotonNetwork.LocalPlayer.SetCustomProperties(new Hashtable
+                    {
+                        { PhotonSessionPolicy.RecoveryBridgeAckKey, refreshEpoch }
+                    });
+                    TryAdvanceRecoverySceneRefresh();
+                    return;
+                }
+
 
                 if (PhotonNetwork.InRoom)
                 {
                     roomSelection.SetActive(false);
                     roleSelection.SetActive(true);
                     levelSelection.SetActive(false);
+                    ShowCurrentRoomCode();
                 }
                 else
                 {
@@ -498,24 +596,19 @@ namespace Allan
 
         public void CreateJoinButton()
         {
-            Debug.Log("Enter CreateJoinButton" + PhotonNetwork.InLobby);
-            if (nameField.text.IsNullOrEmpty())
-            {
+            // Serialized and runtime UnityEvent bindings may both invoke this handler in the legacy scene.
+            // Only one Photon operation may be queued or in flight at a time.
+            if (PhotonNetwork.InRoom || roomRequestInFlight || pendingRoomRequest != PrivateRoomRequest.None)
                 return;
-            }
 
-            // Preserve the user's request until the asynchronous JoinLobby callback arrives.
-            pendingRoomName = nameField.text.Trim();
+            // A blank field creates a readable code; entering a code only joins that exact private room.
+            string roomCode = PhotonSessionPolicy.NormalizeRoomCode(nameField != null ? nameField.text : string.Empty);
+            pendingRoomRequest = string.IsNullOrEmpty(roomCode) ? PrivateRoomRequest.Create : PrivateRoomRequest.Join;
+            if (pendingRoomRequest == PrivateRoomRequest.Create) roomCode = PhotonSessionPolicy.GenerateRoomCode();
 
-            if (!PhotonNetwork.InLobby)
-            {
-                Debug.Log("Not in lobby; queueing room creation until OnJoinedLobby.");
-                if (PhotonNetwork.IsConnectedAndReady)
-                    PhotonNetwork.JoinLobby();
-                return;
-            }
-
-            TryCreatePendingRoom();
+            if (nameField != null) nameField.text = roomCode;
+            pendingRoomCode = roomCode;
+            TryStartPendingRoomRequest();
         }
 
         private void OnApplicationQuit()
@@ -523,54 +616,47 @@ namespace Allan
             explicitLeaveRequested = true;
         }
 
-        private void TryCreatePendingRoom()
+        private void TryStartPendingRoomRequest()
         {
-            // This method is safe to call from both the button handler and OnJoinedLobby.
-            if (string.IsNullOrWhiteSpace(pendingRoomName) || !PhotonNetwork.IsConnectedAndReady || !PhotonNetwork.InLobby)
+            // This method is safe from the button and connection callbacks; Photon accepts it on the Master Server.
+            if (roomRequestInFlight || string.IsNullOrWhiteSpace(pendingRoomCode) ||
+                !PhotonNetwork.IsConnectedAndReady || PhotonNetwork.InRoom)
                 return;
 
-            string roomName = pendingRoomName;
-            pendingRoomName = null;
-            PhotonNetwork.CreateRoom(roomName, PhotonSessionPolicy.CreateRoomOptions());
+            string roomCode = pendingRoomCode;
+            PrivateRoomRequest request = pendingRoomRequest;
+            bool requestStarted = false;
+            if (request == PrivateRoomRequest.Create)
+                requestStarted = PhotonNetwork.CreateRoom(roomCode, PhotonSessionPolicy.CreateRoomOptions(), TypedLobby.Default);
+            else if (request == PrivateRoomRequest.Join)
+                requestStarted = PhotonNetwork.JoinRoom(roomCode);
+
+            if (!requestStarted) return;
+
+            roomRequestInFlight = true;
+            pendingRoomCode = null;
+            pendingRoomRequest = PrivateRoomRequest.None;
+        }
+
+        private void ClearPendingRoomRequest()
+        {
+            pendingRoomCode = null;
+            pendingRoomRequest = PrivateRoomRequest.None;
+            roomRequestInFlight = false;
         }
 
         public void JoinButton(string name)
         {
-            // Lobby entries use the exact Photon room name; this is already a direct room-ID join.
-            PhotonNetwork.JoinRoom(name);
+            // Retained for serialized legacy buttons; all joins still resolve through the exact room code.
+            if (PhotonNetwork.InRoom || roomRequestInFlight || pendingRoomRequest != PrivateRoomRequest.None)
+                return;
+
+            pendingRoomCode = PhotonSessionPolicy.NormalizeRoomCode(name);
+            pendingRoomRequest = PrivateRoomRequest.Join;
+            TryStartPendingRoomRequest();
             //roomSelection.SetActive(false);
             //roleSelection.SetActive(true);
 
-        }
-
-
-        string test = "";
-
-        void UpdateRoomPlayerList()
-        {
-            // Get current room properties
-            Hashtable roomProperties = PhotonNetwork.CurrentRoom.CustomProperties;
-
-            string playerList;
-            Debug.Log($"RoomName: {PhotonNetwork.CurrentRoom.Name},{PhotonNetwork.NickName}");
-            //Add the new player name(avoid duplicates)
-            if ((string)roomProperties["p1"] == "" && (string)roomProperties["p2"] == "")
-            {
-                roomProperties["p1"] = PhotonNetwork.NickName;
-            }
-            else
-            {
-                if ((string)roomProperties["p1"] == "")
-                {
-                    roomProperties["p1"] = PhotonNetwork.NickName;
-                }
-                else
-                {
-                    roomProperties["p2"] = PhotonNetwork.NickName;
-                }
-            }
-
-            PhotonNetwork.CurrentRoom.SetCustomProperties(roomProperties);
         }
 
         void UpdateRoomPlayerList(Dictionary<int, Player> players)
@@ -628,38 +714,6 @@ namespace Allan
         }
 
         //RPCs only get call in rooms
-        //Only get call in lobby
-
-        public void RefreshRoomList()
-        {
-            foreach (Transform child in gridLayout)
-            {
-                child.GetComponentInChildren<Button>().onClick.RemoveListener(() => JoinButton(child.GetComponentInChildren<TMP_Text>().text));
-                Destroy(child.gameObject);
-            }
-
-            foreach(RoomInfo room in roomInfoList)
-            {
-                if ((bool)room.CustomProperties["show"])
-                {
-                    Transform newRoom = Instantiate(roomItemPrefab, gridLayout.transform).transform;
-
-                    string player1 = (string)room.CustomProperties["p1"] != "" ? (string)room.CustomProperties["p1"] : " ----";
-                    string player2 = (string)room.CustomProperties["p2"] != "" ? (string)room.CustomProperties["p2"] : " ----";
-                    string players = player1 + " X " + player2;
-                    newRoom.transform.Find("PlayerName").GetComponent<TMP_Text>().text = players;
-                    newRoom.transform.Find("RoomName").GetComponent<TMP_Text>().text = room.Name;// + "(" + room.PlayerCount +")";
-                    newRoom.GetComponentInChildren<Button>().onClick.AddListener(() => JoinButton(room.Name));
-                }
-
-
-            }
-
-        }
-
-
-        private List<RoomInfo> roomInfoList = new List<RoomInfo>();
-
         /// <summary>Checks the authoritative room state before accepting a late rejoin.</summary>
         private static bool IsSessionExpired()
         {
@@ -676,11 +730,147 @@ namespace Allan
                    Equals(state, PhotonSessionPolicy.SessionActive);
         }
 
+        /// <summary>Returns true after role selection has committed the room to gameplay.</summary>
+        private static bool IsSessionStarted()
+        {
+            return PhotonNetwork.InRoom &&
+                   PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(PhotonSessionPolicy.SessionStateKey, out object state) &&
+                   Equals(state, PhotonSessionPolicy.SessionStarted);
+        }
+
         /// <summary>Pauses physics and local input without stopping Photon message dispatch.</summary>
         private static void SetRecoveryPause(bool paused)
         {
             InteractionsPausedForRecovery = paused;
             Time.timeScale = paused ? 0f : 1f;
+        }
+
+        /// <summary>Reads the active recovery refresh request shared by the Master Client.</summary>
+        private static bool TryGetRecoveryRefreshRequest(out int epoch, out string targetScene)
+        {
+            epoch = 0;
+            targetScene = string.Empty;
+            if (!PhotonNetwork.InRoom || !IsSessionStarted()) return false;
+
+            Hashtable properties = PhotonNetwork.CurrentRoom.CustomProperties;
+            if (!properties.TryGetValue(PhotonSessionPolicy.RecoveryRefreshEpochKey, out object epochValue) ||
+                !properties.TryGetValue(PhotonSessionPolicy.RecoveryRefreshTargetKey, out object targetValue))
+                return false;
+
+            epoch = (int)epochValue;
+            targetScene = targetValue as string;
+            return epoch > 0 && !string.IsNullOrEmpty(targetScene);
+        }
+
+        /// <summary>Returns true only after both reserved actors are online and ready for a synchronized reset.</summary>
+        private static bool AreBothRoomPlayersActive()
+        {
+            return PhotonNetwork.InRoom &&
+                   PhotonNetwork.CurrentRoom.Players.Count == 2 &&
+                   PhotonNetwork.CurrentRoom.Players.Values.All(player => !player.IsInactive);
+        }
+
+        /// <summary>Begins a full two-client level rebuild after an inactive actor successfully rejoins.</summary>
+        private void TryBeginRecoverySceneRefresh()
+        {
+            if (recoveryRefreshInProgress || !PhotonNetwork.IsMasterClient || !IsSessionStarted() ||
+                !AreBothRoomPlayersActive())
+                return;
+
+            string activeScene = SceneManager.GetActiveScene().name;
+            if (!activeScene.StartsWith("Level_")) return;
+
+            int previousEpoch = 0;
+            if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(
+                    PhotonSessionPolicy.RecoveryRefreshEpochKey, out object previousEpochValue))
+                previousEpoch = (int)previousEpochValue;
+
+            recoveryRefreshInProgress = true;
+            recoveryBridgeLoadIssued = false;
+            recoveryTargetLoadIssued = false;
+            recoveryRefreshEpoch = previousEpoch + 1;
+            recoveryRefreshTargetScene = activeScene;
+            SetRecoveryPause(true);
+
+            // The Master clears all runtime instantiations, buffered RPCs, and cached drawing/gameplay events
+            // before either client leaves the old level. Scene-owned objects are rebuilt by the bridge reload.
+            PhotonNetwork.DestroyAll();
+
+            PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable
+            {
+                { PhotonSessionPolicy.RecoveryRefreshEpochKey, recoveryRefreshEpoch },
+                { PhotonSessionPolicy.RecoveryRefreshTargetKey, recoveryRefreshTargetScene }
+            });
+
+            PrepareLocalRecoverySceneRefresh(recoveryRefreshEpoch);
+        }
+
+        private IEnumerator BeginRecoverySceneRefreshNextFrame()
+        {
+            yield return null;
+            TryBeginRecoverySceneRefresh();
+        }
+
+        /// <summary>
+        /// Acknowledges that this actor received the authoritative cleanup request. DestroyAll is sent first by
+        /// the Master Client, so reaching this request means the old room cache is no longer used for rebuilding.
+        /// </summary>
+        private void PrepareLocalRecoverySceneRefresh(int epoch)
+        {
+            if (!PhotonNetwork.InRoom || epoch <= 0) return;
+
+            if (PhotonNetwork.LocalPlayer.CustomProperties.TryGetValue(
+                    PhotonSessionPolicy.RecoveryCleanupAckKey, out object acknowledgedEpoch) &&
+                (int)acknowledgedEpoch == epoch)
+                return;
+
+            SetRecoveryPause(true);
+            PhotonNetwork.LocalPlayer.SetCustomProperties(new Hashtable
+            {
+                { PhotonSessionPolicy.RecoveryCleanupAckKey, epoch }
+            });
+        }
+
+        /// <summary>Advances the Master-owned cleanup → bridge → restored-level handshake.</summary>
+        private void TryAdvanceRecoverySceneRefresh()
+        {
+            if (!recoveryRefreshInProgress || !PhotonNetwork.IsMasterClient || !AreBothRoomPlayersActive()) return;
+
+            Player[] players = PhotonNetwork.CurrentRoom.Players.Values.ToArray();
+            bool cleanupComplete = players.All(player =>
+                player.CustomProperties.TryGetValue(PhotonSessionPolicy.RecoveryCleanupAckKey, out object value) &&
+                (int)value == recoveryRefreshEpoch);
+            if (!cleanupComplete) return;
+
+            if (!recoveryBridgeLoadIssued)
+            {
+                recoveryBridgeLoadIssued = true;
+                PhotonNetwork.LoadLevel("RoleSelection");
+                return;
+            }
+
+            if (SceneManager.GetActiveScene().name != "RoleSelection") return;
+
+            bool bridgeComplete = players.All(player =>
+                player.CustomProperties.TryGetValue(PhotonSessionPolicy.RecoveryBridgeAckKey, out object value) &&
+                (int)value == recoveryRefreshEpoch);
+            if (!bridgeComplete || recoveryTargetLoadIssued) return;
+
+            recoveryTargetLoadIssued = true;
+            PhotonNetwork.LoadLevel(recoveryRefreshTargetScene);
+        }
+
+        /// <summary>Releases recovery input pause after this client rebuilt the requested gameplay scene.</summary>
+        private void CompleteLocalRecoverySceneRefresh(string loadedScene)
+        {
+            if (!TryGetRecoveryRefreshRequest(out int epoch, out string targetScene) ||
+                epoch != recoveryRefreshEpoch || loadedScene != targetScene)
+                return;
+
+            recoveryRefreshInProgress = false;
+            recoveryBridgeLoadIssued = false;
+            recoveryTargetLoadIssued = false;
+            SetRecoveryPause(false);
         }
 
         /// <summary>Restores normal gameplay state after the local actor successfully rejoins.</summary>
@@ -776,17 +966,18 @@ namespace Allan
                 SceneManager.LoadScene("RoleSelection");
 
             if (lobbyReconnectCoroutine == null)
-                lobbyReconnectCoroutine = StartCoroutine(ConnectToLobbyWhenReady());
+                lobbyReconnectCoroutine = StartCoroutine(ConnectToRoomSelectionWhenReady());
         }
 
-        /// <summary>Waits for any in-progress disconnect before establishing a clean lobby connection.</summary>
-        private IEnumerator ConnectToLobbyWhenReady()
+        /// <summary>Waits for any in-progress disconnect before returning to private-code matchmaking.</summary>
+        private IEnumerator ConnectToRoomSelectionWhenReady()
         {
             while (!PhotonNetwork.IsConnectedAndReady)
             {
                 if (PhotonNetwork.NetworkClientState == ClientState.Disconnected)
                 {
                     PhotonNetwork.GameVersion = Application.version;
+                    PhotonSessionPolicy.EnsureStableUserIdentity();
                     PhotonNetwork.ConnectUsingSettings();
                 }
 
@@ -794,8 +985,12 @@ namespace Allan
             }
 
             lobbyReconnectCoroutine = null;
-            if (!PhotonNetwork.InLobby && !PhotonNetwork.InRoom)
-                PhotonNetwork.JoinLobby();
+            returningToLobby = false;
+            explicitLeaveRequested = false;
+            if (SceneManager.GetActiveScene().name != "RoleSelection")
+                SceneManager.LoadScene("RoleSelection");
+
+            TryStartPendingRoomRequest();
         }
 
         /// <summary>Closes, hides, and deletes a finished room as soon as its final actor leaves.</summary>
@@ -840,13 +1035,22 @@ namespace Allan
         public override void OnConnectedToMaster()
         {
             Debug.Log("Enter Callback OnConnectedToMaster");
-            // ReconnectAndRejoin controls its own server transition, so normal lobby joining must stay out of its way.
-            if (!reconnecting && !PhotonNetwork.InLobby)
-                PhotonNetwork.JoinLobby();
+            // ReconnectAndRejoin owns its connection path; normal room-code requests resume on the Master Server.
+            if (reconnecting) return;
+
+            if (returningToLobby)
+            {
+                returningToLobby = false;
+                explicitLeaveRequested = false;
+                if (SceneManager.GetActiveScene().name != "RoleSelection")
+                    SceneManager.LoadScene("RoleSelection");
+            }
+
+            TryStartPendingRoomRequest();
         }
         public override void OnJoinedLobby()
         {
-            Debug.Log("Enter Callback OnJoinedLobby");
+            Debug.Log("Enter Callback OnJoinedLobby (legacy compatibility)");
 
             //Debug.Log("ding zhengasds");
             List<Transform> childs = new List<Transform>();
@@ -860,7 +1064,8 @@ namespace Allan
                 DestroyImmediate(child.gameObject);
             }
 
-            TryCreatePendingRoom();
+            // A client upgraded while already in a lobby can still use the same direct room-code request.
+            TryStartPendingRoomRequest();
 
             if (returningToLobby)
             {
@@ -885,12 +1090,15 @@ namespace Allan
                 return;
             }
 
+            ClearPendingRoomRequest();
+            bool completedReconnect = reconnecting;
             CompleteRecovery();
             if (SceneManager.GetActiveScene().name == "RoleSelection" && roomSelection != null)
             {
                 roomSelection.SetActive(false);
                 roleSelection.SetActive(true);
                 levelSelection.SetActive(false);
+                ShowCurrentRoomCode();
             }
 
 
@@ -898,7 +1106,6 @@ namespace Allan
 
 
             print("Room X" + PhotonNetwork.CurrentRoom.Name);
-            photonView.RPC("RPC_AddRoomInfoSet", RpcTarget.All, PhotonNetwork.CurrentRoom.Name);
             Debug.Log("PUN Basics Tutorial/Launcher: OnJoinedRoom() called by PUN. Now this client is in a room.");
             // #Critical: We only load if we are the first player, else we rely on `PhotonNetwork.AutomaticallySyncScene` to sync our instance scene.
             if (PhotonNetwork.CurrentRoom.PlayerCount == 1)
@@ -911,6 +1118,8 @@ namespace Allan
                 //levelSelection.SetActive(false);
 
             }
+            if (completedReconnect)
+                TryBeginRecoverySceneRefresh();
             //RefreshRoomList();
 
         }
@@ -918,6 +1127,7 @@ namespace Allan
         public override void OnLeftRoom()
         {
             Debug.Log("Enter Callback OnLeftRoom");
+            ClearPendingRoomRequest();
             SetRecoveryPause(false);
 
             if (PhotonNetwork.OfflineMode)
@@ -992,6 +1202,11 @@ namespace Allan
                 SetRecoveryPause(false);
             }
 
+            // Only the current Master Client starts the refresh. A one-frame delay lets PUN apply the
+            // reactivated actor state before the active-player gate is evaluated.
+            if (PhotonNetwork.IsMasterClient && IsSessionStarted())
+                StartCoroutine(BeginRecoverySceneRefreshNextFrame());
+
 
         }
 
@@ -1044,7 +1259,13 @@ namespace Allan
 
         public override void OnJoinRoomFailed(short returnCode, string message)
         {
-            if (!reconnecting) return;
+            if (!reconnecting)
+            {
+                // Direct-code joins never create a room on typo; keep the entered code visible for correction.
+                ClearPendingRoomRequest();
+                Debug.LogWarning($"Room code join failed ({returnCode}): {message}");
+                return;
+            }
 
             Debug.LogWarning($"ReconnectAndRejoin failed ({returnCode}): {message}");
             // Return to Disconnected so the unscaled retry loop can make another clean attempt.
@@ -1052,109 +1273,52 @@ namespace Allan
                 PhotonNetwork.Disconnect();
         }
 
+        public override void OnCreateRoomFailed(short returnCode, string message)
+        {
+            // A generated-code collision is extremely unlikely; the user can clear the field to generate another.
+            ClearPendingRoomRequest();
+            Debug.LogWarning($"Private room creation failed ({returnCode}): {message}");
+        }
+
         public override void OnRoomListUpdate(List<RoomInfo> roomList)
         {
-            Debug.Log("Enter Callback OnRoomListUpdate");
-
-            //foreach (Transform child in gridLayout)
-            //{
-            //    DestroyImmediate(child.gameObject);
-            //}
-
-
-            List<string> activeRooms = new List<string>();
-            List<string> removingRooms = new List<string>();
-            foreach (RoomInfo room in roomList)
-            {
-                if (room.RemovedFromList)
-                {
-                    print("Removing room: " + room.Name);
-                    removingRooms.Add(room.Name);
-                }
-                else
-                {
-                    print("Active room: " + room.Name);
-                    activeRooms.Add(room.Name);
-                }
-            }
-
-
-            List<Transform> toRemove = new List<Transform>();
-            foreach (Transform child in gridLayout)
-            {
-                if (removingRooms.Contains(child.name) || activeRooms.Contains(child.name))
-                {
-                    toRemove.Add(child);
-
-                }
-            }
-
-            foreach (Transform child in toRemove)
-            {
-                DestroyImmediate(child.gameObject);
-            }
-
-            foreach (RoomInfo r in roomList)
-            {
-                print(r.Name + r.RemovedFromList);
-            }
-
-            roomList.RemoveAll(room => room.RemovedFromList);
-            print("____");
-            foreach (RoomInfo room in roomList)
-            {
-
-                // Delta updates can still contain a retained but closed room. Never recreate a UI
-                // entry unless the server says that the room is open and its lobby flag is enabled.
-                bool shouldShowRoom = room.IsOpen &&
-                                      room.CustomProperties.TryGetValue(PhotonSessionPolicy.ShowRoomKey, out object showValue) &&
-                                      showValue is bool showRoom &&
-                                      showRoom;
-                if (!shouldShowRoom)
-                {
-                    continue;
-                }
-                print("Cleaning" + room.Name + room.PlayerCount + (string)room.CustomProperties["p1"] + (string)room.CustomProperties["p2"]);
-                //GameObject newRoom = Instantiate(roomItemPrefab, gridLayout.position, Quaternion.identity);
-                Transform newRoom = null;
-                if ((string)room.CustomProperties["p1"] != "" || (string)room.CustomProperties["p2"] != "")
-                {
-                    newRoom = Instantiate(roomItemPrefab, gridLayout.transform).transform;
-                    newRoom.name = room.Name;
-                }
-
-                if (newRoom != null)
-                {
-                    if (room.PlayerCount == 2)
-                    {
-                        newRoom.GetComponentInChildren<Button>().interactable = false;
-                    }
-                    else
-                    {
-                        newRoom.GetComponentInChildren<Button>().interactable = true;
-
-                    }
-
-                    string player1 = (string)room.CustomProperties["p1"] != "" ? (string)room.CustomProperties["p1"] : " ----";
-                    string player2 = (string)room.CustomProperties["p2"] != "" ? (string)room.CustomProperties["p2"] : " ----";
-                    string players = player1 + " X " + player2;
-                    newRoom.transform.Find("PlayerName").GetComponent<TMP_Text>().text = players;
-                    Debug.Log($"Room: {room.Name}, Players: {players}");
-
-                    newRoom.transform.Find("RoomName").GetComponent<TMP_Text>().text = room.Name;// + "(" + room.PlayerCount +")";
-                    newRoom.GetComponentInChildren<Button>().onClick.AddListener(() => JoinButton(room.Name));
-                }
-
-            }
-
-
+            // Protocol 0.4 uses invisible exact-code rooms. Ignore any legacy lobby delta instead of
+            // rebuilding stale join buttons that can outlive a closed or retained Photon room.
+            Debug.Log($"Ignored {roomList.Count} legacy lobby room updates in private-code mode.");
         }
+
+        public override void OnPlayerPropertiesUpdate(Player targetPlayer, Hashtable changedProps)
+        {
+            if (!PhotonNetwork.IsMasterClient || !recoveryRefreshInProgress) return;
+
+            if (changedProps.ContainsKey(PhotonSessionPolicy.RecoveryCleanupAckKey) ||
+                changedProps.ContainsKey(PhotonSessionPolicy.RecoveryBridgeAckKey))
+                TryAdvanceRecoverySceneRefresh();
+        }
+
         public override void OnRoomPropertiesUpdate(Hashtable propertiesThatChanged)
         {
             Debug.Log("Enter Callback OnRoomPropertiesUpdate");
             foreach (var key in propertiesThatChanged.Keys)
             {
                 Debug.Log($"Room Properly changed:{key} ->{propertiesThatChanged[key]}, ROOM:{PhotonNetwork.CurrentRoom.Name}");
+            }
+
+            if ((propertiesThatChanged.ContainsKey(PhotonSessionPolicy.RecoveryRefreshEpochKey) ||
+                 propertiesThatChanged.ContainsKey(PhotonSessionPolicy.RecoveryRefreshTargetKey)) &&
+                TryGetRecoveryRefreshRequest(out int epoch, out string targetScene))
+            {
+                if (epoch != recoveryRefreshEpoch)
+                {
+                    recoveryBridgeLoadIssued = false;
+                    recoveryTargetLoadIssued = false;
+                }
+
+                recoveryRefreshInProgress = true;
+                recoveryRefreshEpoch = epoch;
+                recoveryRefreshTargetScene = targetScene;
+                PrepareLocalRecoverySceneRefresh(epoch);
+                TryAdvanceRecoverySceneRefresh();
             }
         }
         #endregion

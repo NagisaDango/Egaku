@@ -58,6 +58,8 @@ namespace Phantom
             PhotonNetwork.AutomaticallySyncScene = true;
             // Application.version is the network protocol boundary for incompatible releases.
             PhotonNetwork.GameVersion = Application.version;
+            // Photon rejoin authorization depends on a stable UserId being assigned before the first connection.
+            PhotonSessionPolicy.EnsureStableUserIdentity();
         }
 
         /// <summary>
@@ -93,10 +95,11 @@ namespace Phantom
             // Store the request before connecting so OnConnectedToMaster never guesses user intent.
             launchRequest = LaunchRequest.OnlineLobby;
             PhotonNetwork.GameVersion = Application.version;
+            PhotonSessionPolicy.EnsureStableUserIdentity();
 
             if (PhotonNetwork.IsConnectedAndReady)
             {
-                ContinueToOnlineLobby();
+                ContinueToOnlineRoomSelection();
             }
             else
             {
@@ -128,21 +131,19 @@ namespace Phantom
             }
         }
 
-        private void ContinueToOnlineLobby()
+        private void ContinueToOnlineRoomSelection()
         {
-            // Each state advances once; this method never starts a second connection.
+            // Private room codes join directly through the Master Server, so a public lobby is unnecessary.
             if (PhotonNetwork.InRoom)
             {
                 PhotonNetwork.LoadLevel("RoleSelection");
             }
-            else if (PhotonNetwork.InLobby)
+            else if (PhotonNetwork.IsConnectedAndReady)
             {
                 PhotonNetwork.LoadLevel("RoleSelection");
             }
-            else
-            {
-                PhotonNetwork.JoinLobby();
-            }
+
+            launchRequest = LaunchRequest.None;
         }
 
         private void EnterOfflineGame()
@@ -163,7 +164,7 @@ namespace Phantom
         {
             Debug.Log("PUN Basics Tutorial/Launcher: OnConnectedToMaster() was called by PUN");
             if (launchRequest == LaunchRequest.OnlineLobby)
-                ContinueToOnlineLobby();
+                ContinueToOnlineRoomSelection();
         }
 
         public override void OnDisconnected(DisconnectCause cause)
@@ -192,6 +193,7 @@ namespace Phantom
 
         public override void OnJoinedLobby()
         {
+            // Compatibility fallback for a client that was already in a lobby before this protocol version.
             if (launchRequest != LaunchRequest.OnlineLobby) return;
 
             PhotonNetwork.LoadLevel("RoleSelection");

@@ -3,8 +3,9 @@
 ## Project intent
 
 - Egaku is a two-player cooperative 2D platformer. One player is the Runner; the other is the Drawer.
-- Treat the committed game design and the latest `origin/main` history as the functional source of truth.
-- The active upgrade target is Unity `6000.5.1f1`. The complete `main` baseline was last serialized by Unity `6000.2.0b2`.
+- Treat the committed game design and the latest `origin/codex/egaku-development` history as the active development source of truth.
+- Keep `main` frozen as the final historical pre-development baseline unless the user explicitly changes this policy.
+- The active upgrade target is Unity `6000.5.1f1`.
 - Networking uses Photon PUN 2. Preserve two-client behavior while upgrading or refactoring.
 
 ## Safety and Git
@@ -12,6 +13,7 @@
 - Preserve user changes, `.meta` files, GUIDs, and serialized references. Never regenerate or replace them casually.
 - Do not merge the old `version-change-test` branch into this branch. It is an incomplete historical baseline.
 - Keep Unity migration, dependency upgrades, Photon compatibility fixes, gameplay fixes, and performance refactors in separate commits.
+- Create feature branches from `codex/egaku-development` and target pull requests back to that branch, not `main`.
 - Do not use destructive Git commands or discard Unity-generated changes without explicit approval.
 - Do not push, merge, rebase, or rewrite shared history unless the user requests it.
 - Ignore generated folders such as `Library`, `Temp`, `Logs`, `obj`, `Build`, and `Builds`; never commit them.
@@ -55,6 +57,7 @@
 ## Change discipline
 
 - Make the smallest change that resolves the current verified problem.
+- Comment newly added state, networking, authority, recovery, and compatibility code so future debugging can identify its purpose, authoritative owner, and fallback behavior.
 - Do not mix speculative cleanup with compatibility repairs.
 - Explain generated Unity changes separately from intentional code changes.
 - Stop and report when a change would alter gameplay design, networking protocol, serialized GUIDs, or scene ownership semantics.
