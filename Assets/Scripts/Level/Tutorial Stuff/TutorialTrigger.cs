@@ -42,7 +42,16 @@ public class TutorialTrigger : MonoBehaviourPun
         if(closeTrigger)
             closeTrigger.onTrigger.AddListener(Close);
         if(destroyObj)
-            destroyObj._OnDestroy += () => photonView.RPC("RPC_ValidateEventInvoke", RpcTarget.All, CustomTriggerType.ObserveItemDestroyed);
+        {
+            // DestroyAll and scene reload can destroy this trigger before the observed object.
+            // Capture the view now and guard it instead of accessing this component's photonView later.
+            PhotonView triggerView = photonView;
+            destroyObj._OnDestroy += () =>
+            {
+                if (triggerView != null && PhotonNetwork.InRoom)
+                    triggerView.RPC("RPC_ValidateEventInvoke", RpcTarget.All, CustomTriggerType.ObserveItemDestroyed);
+            };
+        }
         
         if (PhotonNetwork.OfflineMode || GameManager.Instance.devSpawn)
         {

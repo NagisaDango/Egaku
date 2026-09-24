@@ -44,12 +44,11 @@ public static class PhotonSessionPolicy
     public const string SessionStarted = "started";
     public const string SessionExpired = "expired";
 
-    // Recovery refresh handshake. The Master names the level to rebuild; both actors acknowledge
-    // the bridge and restored level before the request is cleared.
+    // Recovery refresh state. The Master names the level to rebuild; each actor acknowledges
+    // its restored scene before the request is cleared.
     public const string RecoveryRefreshEpochKey = "recovery_refresh_epoch";
     public const string RecoveryRefreshTargetKey = "recovery_refresh_target";
     public const string RecoveryRefreshRequestKey = "recovery_refresh_request";
-    public const string RecoveryBridgeAckKey = "recovery_bridge_ack";
     public const string RecoveryTargetAckKey = "recovery_target_ack";
 
     /// <summary>

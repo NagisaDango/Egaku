@@ -83,7 +83,6 @@ MonoBehaviour:
   - RPC_HoldBattery
   - RPC_ReleaseBattery
   - RPC_SetHoldingEyes
-  - RPC_PlayGameBGM
   - RPC_QueueDialogue
   - RPC_Release
   - RPC_EnablePen
