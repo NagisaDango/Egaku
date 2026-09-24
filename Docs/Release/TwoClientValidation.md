@@ -14,14 +14,14 @@ Record the commit, Application.version, Unity version, Windows version, and each
 
 Start the two built Players from Builds/EgakuReleaseValidation/ClientA and ClientB. Give each a separate -logFile path. Repeat the role flow once with A as Runner and once with B as Runner.
 
-- [ ] Create a private room, join by code, choose unique Runner and Drawer roles, and leave back to the launcher.
-- [ ] Verify scene sync through all enabled levels and the finish scene.
-- [ ] Draw and erase wood, iron, cloud, and electric wire on both screens; check ink use and collision.
-- [ ] Verify Runner movement, jump, grabbing, wire travel, death, respawn, checkpoints, and level transition.
-- [ ] Disconnect each role for less than 30 seconds; confirm recovery, interactions, and state on both screens.
-- [ ] Disconnect the Master Client; confirm the new Master takes over and play continues after recovery.
-- [ ] Let recovery exceed 30 seconds, then try explicit leave; confirm the correct launcher UI and no stale player or room state.
-- [ ] Search both Player logs for Error, Missing Script, serialization layout, Xenia errors, and Photon ownership warnings. Record any findings.
+- [x] Create a private room, join by code, choose unique Runner and Drawer roles, and leave back to the launcher.
+- [x] Verify scene sync through all enabled levels and the finish scene.
+- [x] Draw and erase wood, iron, cloud, and electric wire on both screens; check ink use and collision.
+- [x] Verify Runner movement, jump, grabbing, wire travel, death, respawn, checkpoints, and level transition.
+- [x] Disconnect each role for less than 30 seconds; confirm recovery, interactions, and state on both screens.
+- [x] Disconnect the Master Client; confirm the new Master takes over and play continues after recovery.
+- [x] Let recovery exceed 30 seconds, then try explicit leave; confirm the correct launcher UI and no stale player or room state.
+- [x] Search both Player logs for Error, Missing Script, serialization layout, Xenia errors, and Photon ownership warnings. Record any findings.
 
 ## Result
 
