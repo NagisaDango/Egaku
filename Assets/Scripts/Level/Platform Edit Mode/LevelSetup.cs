@@ -139,8 +139,8 @@ public class LevelSetup : MonoBehaviourPun
                 break;
         }
 
-        Drawer.Instance.photonView.RPC("ChangeSliderColor", RpcTarget.All, color.r, color.g, color.b, (int)type);
-        Drawer.Instance.photonView.RPC("UpdateSlider", RpcTarget.All, 1f);
+        Drawer.Instance.ChangeSliderColor(color.r, color.g, color.b, (int)type);
+        Drawer.Instance.UpdateSlider(1f);
 
     }
 }

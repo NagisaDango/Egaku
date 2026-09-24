@@ -102,6 +102,10 @@ MonoBehaviour:
   - RPC_DestroySelf
   - ChangeSliderColor
   - ClearCoroutineQueue
+  - RPC_ApplySceneObjectErase
+  - RPC_RequestErase
+  - RPC_RequestSceneObjectErase
+  - RPC_RequestSelfDestroy
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1
