@@ -410,10 +410,8 @@ namespace Allan
 
         public void SpawnPlayer()
         {
-            if (PhotonNetwork.LocalPlayer.CustomProperties.ContainsKey("Role"))
+            if (TryGetLocalAssignedRole(out PlayerRole playerRole))
             {
-                PlayerRole playerRole = (PlayerRole)(int)PhotonNetwork.LocalPlayer.CustomProperties["Role"];
-
                 Vector3 spawnPosition = (playerRole == PlayerRole.Runner) ? new Vector3(0, 5, 0) : new Vector3(0, 0, 0);
 
                 GameObject playerPrefab = (playerRole == PlayerRole.Runner) ? runnerPrefab : drawerPrefab;
@@ -425,8 +423,55 @@ namespace Allan
             }
             else
             {
-                Debug.LogError("Role not assigned to player!");
+                Debug.LogError($"Cannot spawn local player: actor {PhotonNetwork.LocalPlayer.ActorNumber} has no valid role in player or room properties.");
             }
+        }
+
+        /// <summary>Recovers the local role from the room's authoritative actor slots if its player property is missing.</summary>
+        private static bool TryGetLocalAssignedRole(out PlayerRole role)
+        {
+            role = PlayerRole.None;
+            if (!PhotonNetwork.InRoom || PhotonNetwork.LocalPlayer == null || PhotonNetwork.CurrentRoom == null)
+                return false;
+
+            int actorNumber = PhotonNetwork.LocalPlayer.ActorNumber;
+            if (TryReadPlayerRole(PhotonNetwork.LocalPlayer.CustomProperties, "Role", out role))
+                return true;
+
+            if (TryReadPlayerRole(PhotonNetwork.CurrentRoom.CustomProperties, "Role_" + actorNumber, out role) ||
+                ReadRoomRoleOwner(PhotonSessionPolicy.DrawerOwnerKey, actorNumber, PlayerRole.Drawer, out role) ||
+                ReadRoomRoleOwner(PhotonSessionPolicy.RunnerOwnerKey, actorNumber, PlayerRole.Runner, out role))
+            {
+                PhotonNetwork.LocalPlayer.SetCustomProperties(new Hashtable { { "Role", (int)role } });
+                Debug.LogWarning($"Restored missing player role for actor {actorNumber} from room role ownership.");
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryReadPlayerRole(Hashtable properties, string key, out PlayerRole role)
+        {
+            role = PlayerRole.None;
+            if (properties == null || !properties.TryGetValue(key, out object value) || !(value is int roleValue))
+                return false;
+
+            if (roleValue != (int)PlayerRole.Drawer && roleValue != (int)PlayerRole.Runner)
+                return false;
+
+            role = (PlayerRole)roleValue;
+            return true;
+        }
+
+        private static bool ReadRoomRoleOwner(string key, int actorNumber, PlayerRole candidate, out PlayerRole role)
+        {
+            role = PlayerRole.None;
+            if (!PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(key, out object owner) ||
+                !(owner is int ownerActor) || ownerActor != actorNumber)
+                return false;
+
+            role = candidate;
+            return true;
         }
 
         public void LoadArena()
