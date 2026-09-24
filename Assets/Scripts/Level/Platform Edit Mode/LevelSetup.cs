@@ -2,7 +2,6 @@ using System;
 using Photon.Pun;
 using Unity.Cinemachine;
 using UnityEngine;
-using System.IO;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
@@ -56,9 +55,17 @@ public class LevelSetup : MonoBehaviourPun
 
     private void TempLevelSetting()
     {
-        string csvPath = "Assets/Resources/LevelSetup.csv";
+        // Assets paths only exist in the Editor. Resources.Load resolves the CSV from the
+        // packaged player as well, so recovery reloads use the same pen limits as fresh runs.
+        TextAsset levelSetupCsv = Resources.Load<TextAsset>("LevelSetup");
+        if (levelSetupCsv == null)
+        {
+            Debug.LogError("LevelSetup.csv was not found in Resources; pen limits cannot be initialized.");
+            return;
+        }
 
-        string[] lines = File.ReadAllLines(csvPath);
+        string[] lines = levelSetupCsv.text.Split(
+            new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
 
         Dictionary<int, int[]> inkDict = new Dictionary<int, int[]>();
         for (int i = 1; i < lines.Length; i++)
@@ -70,16 +77,23 @@ public class LevelSetup : MonoBehaviourPun
             inks[1] = int.Parse(values[2]);
             inks[2] = int.Parse(values[3]);
             inks[3] = int.Parse(values[4]);
-            inkDict.Add(i-1, inks);
+            int levelId = int.Parse(values[0]);
+            inkDict.Add(levelId, inks);
 
         }
 
         int level = int.Parse( SceneManager.GetActiveScene().name.Split("_")[1]);
 
-        Drawer.Instance.woodPen.maxStrokes = inkDict[level][0];
-        Drawer.Instance.cloudPen.maxStrokes = inkDict[level][1];
-        Drawer.Instance.steelPen.maxStrokes = inkDict[level][2];
-        Drawer.Instance.electricPen.maxStrokes = inkDict[level][3];
+        if (!inkDict.TryGetValue(level, out int[] levelInks))
+        {
+            Debug.LogError($"LevelSetup.csv has no pen configuration for Level_{level}.");
+            return;
+        }
+
+        Drawer.Instance.woodPen.maxStrokes = levelInks[0];
+        Drawer.Instance.cloudPen.maxStrokes = levelInks[1];
+        Drawer.Instance.steelPen.maxStrokes = levelInks[2];
+        Drawer.Instance.electricPen.maxStrokes = levelInks[3];
 
 
         if (drawerUI != null)

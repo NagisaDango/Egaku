@@ -89,7 +89,17 @@ namespace Egaku.Tests.Editor
         public void NetworkProtocolVersionMatchesRelease()
         {
             // Network-incompatible room rules must always be isolated by the Unity application version.
-            Assert.That(PlayerSettings.bundleVersion, Is.EqualTo("0.6"));
+            Assert.That(PlayerSettings.bundleVersion, Is.EqualTo("0.8"));
+        }
+
+        [Test]
+        public void PackagedLevelSetupCsvIsAvailableThroughResources()
+        {
+            TextAsset csv = Resources.Load<TextAsset>("LevelSetup");
+
+            Assert.That(csv, Is.Not.Null);
+            Assert.That(csv.text, Does.Contain("level_id,wood,cloud,steel,electric"));
+            Assert.That(csv.text, Does.Contain("1,300,-1,-1,-1"));
         }
 
         [Test]
