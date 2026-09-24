@@ -51,6 +51,7 @@ namespace Egaku.Tests.Editor
             var properties = (System.Collections.IDictionary)customProperties;
             Assert.That(properties["recovery_refresh_epoch"], Is.EqualTo(0));
             Assert.That(properties["recovery_refresh_target"], Is.EqualTo(string.Empty));
+            Assert.That(properties["recovery_refresh_request"], Is.EqualTo(0));
         }
 
         [Test]
@@ -89,7 +90,7 @@ namespace Egaku.Tests.Editor
         public void NetworkProtocolVersionMatchesRelease()
         {
             // Network-incompatible room rules must always be isolated by the Unity application version.
-            Assert.That(PlayerSettings.bundleVersion, Is.EqualTo("0.8"));
+            Assert.That(PlayerSettings.bundleVersion, Is.EqualTo("0.9"));
         }
 
         [Test]

@@ -106,7 +106,6 @@ MonoBehaviour:
   - RPC_RequestErase
   - RPC_RequestSceneObjectErase
   - RPC_RequestSelfDestroy
-  - RPC_RequestLevelRefresh
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1
