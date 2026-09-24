@@ -91,7 +91,7 @@ namespace Egaku.Tests.Editor
         public void NetworkProtocolVersionMatchesRelease()
         {
             // Network-incompatible room rules must always be isolated by the Unity application version.
-            Assert.That(PlayerSettings.bundleVersion, Is.EqualTo("0.13"));
+            Assert.That(PlayerSettings.bundleVersion, Is.EqualTo("0.14"));
         }
 
         [Test]
