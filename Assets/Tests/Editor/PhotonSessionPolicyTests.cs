@@ -89,7 +89,35 @@ namespace Egaku.Tests.Editor
         public void NetworkProtocolVersionMatchesRelease()
         {
             // Network-incompatible room rules must always be isolated by the Unity application version.
-            Assert.That(PlayerSettings.bundleVersion, Is.EqualTo("0.5"));
+            Assert.That(PlayerSettings.bundleVersion, Is.EqualTo("0.6"));
+        }
+
+        [Test]
+        public void PenUnlockWaitsForDrawerUiDuringRecoveryReload()
+        {
+            Type levelSetupType = Type.GetType("LevelSetup, Assembly-CSharp", throwOnError: true);
+            GameObject levelSetupObject = new GameObject("Recovery LevelSetup Test");
+
+            try
+            {
+                Component levelSetup = levelSetupObject.AddComponent(levelSetupType);
+                MethodInfo receiveUnlock = levelSetupType.GetMethod(
+                    "RPC_EnablePen", BindingFlags.NonPublic | BindingFlags.Instance);
+                FieldInfo pendingUnlocks = levelSetupType.GetField(
+                    "pendingPenUnlocks", BindingFlags.NonPublic | BindingFlags.Instance);
+
+                receiveUnlock.Invoke(levelSetup, new object[] { "Wood" });
+                object queuedUnlocks = pendingUnlocks.GetValue(levelSetup);
+                bool containsWood = (bool)queuedUnlocks.GetType().GetMethod("Contains")
+                    .Invoke(queuedUnlocks, new object[] { "Wood" });
+
+                Assert.That(containsWood, Is.True,
+                    "A pickup received before Drawer UI initialization must be replayed after Init.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(levelSetupObject);
+            }
         }
     }
 }

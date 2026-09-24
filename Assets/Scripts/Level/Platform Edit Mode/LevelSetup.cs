@@ -16,6 +16,9 @@ public class LevelSetup : MonoBehaviourPun
     [SerializeField] private bool SteelEnable;
     [SerializeField] private bool ElectricEnable;
     [SerializeField] private PenUI.PenType initPenType;
+    // A recovery scene reload can fire a pickup trigger before the Drawer UI's Start method.
+    // Keep those local unlocks until Init binds the new UI instead of losing or buffering them.
+    private readonly HashSet<string> pendingPenUnlocks = new HashSet<string>();
     public void Init(Runner runner)
     {
         runner.GetComponent<Runner>().SetRevivePos(revivePos);
@@ -27,6 +30,15 @@ public class LevelSetup : MonoBehaviourPun
         Drawer.OnPenSelect.Invoke(initPenType);
         drawerUI = drawUI;
         TempLevelSetting();
+
+        if (pendingPenUnlocks.Count > 0)
+        {
+            string[] queuedUnlocks = new string[pendingPenUnlocks.Count];
+            pendingPenUnlocks.CopyTo(queuedUnlocks);
+            pendingPenUnlocks.Clear();
+            foreach (string penType in queuedUnlocks)
+                ApplyPenUnlock(penType);
+        }
     }
 
     public void SetUpCamera(Runner runner)
@@ -94,13 +106,36 @@ public class LevelSetup : MonoBehaviourPun
     public void EnablePenStatus(string penType)
     {
         if (drawerUI != null)
-            RPC_EnablePen(penType);
-        else
-            photonView.RPC("RPC_EnablePen", RpcTarget.OthersBuffered, penType);
+        {
+            ApplyPenUnlock(penType);
+            return;
+        }
+
+        if (IsLocalDrawer())
+        {
+            pendingPenUnlocks.Add(penType);
+            return;
+        }
+
+        // Pickups are detected by the Runner's local physics. Forward once to the Drawer;
+        // a full recovery reload reconstructs the level, so this transient command is not buffered.
+        if (PhotonNetwork.InRoom)
+            photonView.RPC(nameof(RPC_EnablePen), RpcTarget.Others, penType);
     }
 
     [PunRPC]
     private void RPC_EnablePen(string penType)
+    {
+        if (drawerUI == null)
+        {
+            pendingPenUnlocks.Add(penType);
+            return;
+        }
+
+        ApplyPenUnlock(penType);
+    }
+
+    private void ApplyPenUnlock(string penType)
     {
         Color color = Color.white;
         PenProperty.PenType type = PenProperty.PenType.Wood;
@@ -142,5 +177,15 @@ public class LevelSetup : MonoBehaviourPun
         Drawer.Instance.ChangeSliderColor(color.r, color.g, color.b, (int)type);
         Drawer.Instance.UpdateSlider(1f);
 
+    }
+
+    private static bool IsLocalDrawer()
+    {
+        if (PhotonNetwork.OfflineMode || (Allan.GameManager.Instance != null && Allan.GameManager.Instance.devSpawn))
+            return true;
+
+        return PhotonNetwork.LocalPlayer != null &&
+               PhotonNetwork.LocalPlayer.CustomProperties.TryGetValue("Role", out object roleValue) &&
+               (RolesManager.PlayerRole)(int)roleValue == RolesManager.PlayerRole.Drawer;
     }
 }

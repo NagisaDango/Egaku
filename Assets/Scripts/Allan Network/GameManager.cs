@@ -1282,7 +1282,7 @@ namespace Allan
 
         public override void OnRoomListUpdate(List<RoomInfo> roomList)
         {
-            // Protocol 0.4 uses invisible exact-code rooms. Ignore any legacy lobby delta instead of
+            // Private-code protocol rooms are invisible. Ignore any legacy lobby delta instead of
             // rebuilding stale join buttons that can outlive a closed or retained Photon room.
             Debug.Log($"Ignored {roomList.Count} legacy lobby room updates in private-code mode.");
         }
