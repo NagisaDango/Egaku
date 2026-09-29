@@ -4734,7 +4734,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Local coop / Single
+  m_text: Local Co-op
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 20c8bcaa44bd38941a9fdea4c66825a9, type: 2}
   m_sharedMaterial: {fileID: -3643828317548328607, guid: 20c8bcaa44bd38941a9fdea4c66825a9, type: 2}

@@ -44,6 +44,7 @@ public class LevelManager : MonoBehaviourPunCallbacks
 
             go.GetComponent<Button>().onClick.AddListener(() =>
             {
+                if (!GameManager.Instance.CanStartSelectedMode()) return;
                 if (PhotonNetwork.OfflineMode || !PhotonNetwork.InRoom)
                     RPC_LoadLevel(display.levelIndex);
                 else

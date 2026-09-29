@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 6112224755599682419}
   - component: {fileID: 1062793013008971530}
   - component: {fileID: 710215222860650240}
+  - component: {fileID: 7866314311325278215}
   m_Layer: 0
   m_Name: Float
   m_TagString: Water
@@ -37,6 +38,7 @@ Transform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &7884783138466886635
 SpriteRenderer:
+  serializedVersion: 3
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -60,7 +62,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: -876546973899608171, guid: b098a0834b92acd448735228191d38ee, type: 3}
+  - {fileID: 2100000, guid: 4275fd3164b05da4199ca13b8fe0d53a, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -82,6 +84,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
   m_Color: {r: 0.23175496, g: 0.78365755, b: 0.7924528, a: 0.5254902}
   m_FlipX: 0
@@ -91,8 +94,8 @@ SpriteRenderer:
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
-  m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+  m_BlendShapeWeights: []
 --- !u!253 &6112224755599682419
 BuoyancyEffector2D:
   serializedVersion: 2
@@ -186,3 +189,15 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!114 &7866314311325278215
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3135041146664397529}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 76d2cd093ba9e7b4db7567585c96263a, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::WaterSurfaceVisual

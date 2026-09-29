@@ -12,6 +12,8 @@ using System.Linq;
 using WebSocketSharp;
 using Hashtable = ExitGames.Client.Photon.Hashtable;
 using JetBrains.Annotations;
+using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
 
 
 
@@ -30,6 +32,13 @@ namespace Allan
         public GameObject roomSelection;
         public GameObject roleSelection;
         public GameObject levelSelection;
+        // Device choices are local presentation/input state. They are never Photon
+        // room properties: online peers may use different devices independently.
+        public bool keyboardRunnerInLocal = true;
+        // Retained for existing launcher serialization; online gameplay now detects
+        // the active device locally instead of requiring a pre-game choice.
+        public bool onlineUseGamepad;
+        private LocalDeviceClaimView localDeviceClaimView;
         
         public GameObject roomItemPrefab;
         
@@ -83,6 +92,10 @@ namespace Allan
         public static bool InteractionsPausedForRecovery { get; private set; }
         public bool devSpawn = false;
 
+        // Offline Photon owns both role objects on one client; input routing still
+        // assigns one physical device to each local player.
+        public static bool IsLocalMultiplayer => PhotonNetwork.OfflineMode && Instance != null && Instance.devSpawn;
+
         public int levelCounts = 3;
         public int levelUnlocked = 3;
         public int currentLevel = 0;
@@ -118,6 +131,8 @@ namespace Allan
 
 
             Instance = this;
+            // Local device assignment is a machine preference, never a Photon role property.
+            keyboardRunnerInLocal = EgakuSettings.KeyboardRunnerInLocal;
             SetRecoveryPause(false);
             DontDestroyOnLoad(this.gameObject);
 
@@ -144,6 +159,15 @@ namespace Allan
             //go.UpdateProperty(roomSelection, roleSelection, levelSelection, gridLayout, nameField);
             leaveGameButton.onClick.AddListener(() => { LeaveRoom(); });
             ConfigurePrivateRoomCodeUi();
+            ConfigureGameplayDeviceUi();
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
         }
         void Start()
         {
@@ -400,10 +424,46 @@ namespace Allan
             roomSelection.SetActive(false);
             roleSelection.SetActive(false);
             levelSelection.SetActive(true);
+            if (localDeviceClaimView != null)
+                localDeviceClaimView.gameObject.SetActive(PhotonNetwork.OfflineMode && devSpawn);
+            if (EventSystem.current != null)
+            {
+                // Online play has automatic switching, so focus the Back button
+                // rather than an inactive device selector for gamepad navigation.
+                GameObject selection = PhotonNetwork.OfflineMode && devSpawn && localDeviceClaimView != null
+                    ? localDeviceClaimView.FirstCard
+                    : levelSelection.transform.Find("BackButton").gameObject;
+                EventSystem.current.SetSelectedGameObject(selection);
+            }
+        }
+
+        private void ConfigureGameplayDeviceUi()
+        {
+            // The authored Prefab owns the long-lived visual hierarchy and its
+            // persistent card UnityEvents; this code only places an instance.
+            LocalDeviceClaimView prefab = Resources.Load<LocalDeviceClaimView>("UI/LocalDeviceClaimView");
+            if (prefab == null) { Debug.LogError("LocalDeviceClaimView Prefab is missing."); return; }
+            localDeviceClaimView = Instantiate(prefab, levelSelection.transform, false);
+            localDeviceClaimView.gameObject.SetActive(false);
+        }
+
+        public bool CanStartSelectedMode()
+        {
+            // The offline button now starts local two-player play. Do not launch a
+            // level with a role that has no physical controller assigned.
+            if (PhotonNetwork.OfflineMode && devSpawn &&
+                !InputDeviceRouter.BothClaimed)
+            {
+                Debug.LogWarning("Both local roles must claim different devices before starting.");
+                return false;
+            }
+            return true;
         }
 
         public void DevSpawnPlayers()
         {
+            // Kept under its serialized legacy name; the offline launcher now uses
+            // this two-role spawn path for keyboard/mouse plus gamepad co-op.
             devSpawn = true;
             LoadLevelSelection();
             //LoadArena();

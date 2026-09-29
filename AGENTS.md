@@ -22,6 +22,7 @@
 
 - Before operating on the Editor, confirm the active Unity instance and project path.
 - Prefer Unity-aware tools for scenes, prefabs, components, and serialized assets. Avoid manual edits to large Unity YAML files unless no safe Editor operation exists.
+- For UI and other objects likely to need visual iteration or long-term maintenance, author their hierarchy and appearance as editable Unity scenes or Prefabs. Runtime code may instantiate an authored Prefab, but must not construct its visual hierarchy or appearance dynamically unless there is a clear optimization benefit and the user explicitly approves that approach.
 - After changing scripts, wait for compilation to finish and inspect the full Console before continuing.
 - Resolve compile errors in dependency order: packages, third-party plugins, project assemblies, serialized references, then runtime behavior.
 - Do not enter Play Mode or save scenes while compilation is failing.

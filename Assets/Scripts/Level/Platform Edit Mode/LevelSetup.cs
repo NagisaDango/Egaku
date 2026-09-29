@@ -10,6 +10,9 @@ public class LevelSetup : MonoBehaviourPun
     [SerializeField] private Vector2 revivePos;
     private DrawerUICOntrol drawerUI;
     [SerializeField] private CinemachineCamera _camera;
+    // The camera controller belongs only to the local Drawer; the Runner client keeps its usual follow camera.
+    private DrawerCameraController drawerCameraController;
+    private Transform runnerCameraTarget;
     [SerializeField] private bool WoodEnable;
     [SerializeField] private bool CloudEnable;
     [SerializeField] private bool SteelEnable;
@@ -42,10 +45,36 @@ public class LevelSetup : MonoBehaviourPun
 
     public void SetUpCamera(Runner runner)
     {
-        //Debug.LogError("ENTER SET UP CAMERA" );
-        _camera.PreviousStateIsValid = false;
-        _camera.Follow = runner.transform;
-        //Debug.LogError(_camera.Follow.gameObject.name);
+        // Runner can respawn while the Drawer is exploring or holding a stroke. Refresh the target
+        // without taking control away from the Drawer's local camera until that mode ends.
+        runnerCameraTarget = runner.transform;
+        if (drawerCameraController != null)
+            drawerCameraController.SetRunnerTarget(runnerCameraTarget);
+        else
+        {
+            _camera.PreviousStateIsValid = false;
+            _camera.Follow = runnerCameraTarget;
+        }
+    }
+
+    public bool TryRegisterDrawerCamera(DrawerCameraController controller, float panSpeed)
+    {
+        // Every production level already uses this Confiner shape as its authored camera boundary.
+        // If a future level omits it, retain the original follow camera instead of allowing unbounded travel.
+        CinemachineConfiner2D confiner = _camera != null ? _camera.GetComponent<CinemachineConfiner2D>() : null;
+        Collider2D bound = confiner != null ? confiner.BoundingShape2D : null;
+        if (_camera == null || bound == null || Camera.main == null)
+            return false;
+
+        drawerCameraController = controller;
+        controller.Initialize(this, _camera, Camera.main, bound, runnerCameraTarget, panSpeed);
+        return true;
+    }
+
+    public void UnregisterDrawerCamera(DrawerCameraController controller)
+    {
+        if (drawerCameraController == controller)
+            drawerCameraController = null;
     }
 
     public Vector2 GetRevivePos()

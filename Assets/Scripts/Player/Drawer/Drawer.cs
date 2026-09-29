@@ -25,6 +25,15 @@ public class Drawer : MonoBehaviourPun
     [SerializeField] private Texture2D electricCursorTexture;
     [SerializeField] private Texture2D steelCursorTexture;
     [SerializeField] private Texture2D eraserCursorTexture;
+    // The local gamepad pointer reads the same selected icon as the mouse cursor;
+    // cursor appearance is presentation only and does not enter Photon state.
+    public Texture2D ActiveCursorTexture { get; private set; }
+    // Tracks the physical cursor mode so hot swapping restores the same pen icon.
+    private bool cursorUsedGamepad;
+    [Header("Camera")]
+    [SerializeField, Min(0f)] private float cameraPanSpeed = 15f;
+    // Only the owning Drawer creates this local controller; it never becomes Photon state.
+    private DrawerCameraController cameraController;
     
     public static Action<PenUI.PenType> OnPenSelect;
     private PenUI.PenType currentPenType;
@@ -83,10 +92,13 @@ public class Drawer : MonoBehaviourPun
         //}
         if (photonView.IsMine)
         {
+            EgakuSettings.Changed += RefreshCursorForSettings;
             print("This is the draweer spawning UI");
             OnPenSelect += SetPenProperties;
             GameObject UI = Instantiate(drawerPanelPrefab).transform.GetChild(0).gameObject;
-            GameObject.Find("LevelSetup").GetComponent<LevelSetup>().Init(UI.GetComponent<DrawerUICOntrol>());
+            LevelSetup levelSetup = GameObject.Find("LevelSetup").GetComponent<LevelSetup>();
+            DrawerUICOntrol drawerUI = UI.GetComponent<DrawerUICOntrol>();
+            levelSetup.Init(drawerUI);
 
             // The level setup may intentionally leave the initial tool as None. Pick an
             // unlocked tool before reading its material so a scene reload cannot abort Start.
@@ -107,6 +119,18 @@ public class Drawer : MonoBehaviourPun
             {
                 Color color = initialPen.material.color;
                 ChangeSliderColor(color.r, color.g, color.b, (int)initialPen.penType);
+            }
+
+            cameraController = gameObject.AddComponent<DrawerCameraController>();
+            // Keep the local pointer ready even if the online Drawer starts with
+            // mouse input and plugs in a gamepad later. It draws only in gamepad mode.
+            gameObject.AddComponent<GamepadDrawerPointer>();
+            if (!levelSetup.TryRegisterDrawerCamera(cameraController, cameraPanSpeed))
+            {
+                // A level without its authored Confiner remains playable with the original follow view.
+                Debug.LogWarning("Drawer free camera is unavailable because this level has no camera boundary.");
+                Destroy(cameraController);
+                cameraController = null;
             }
         }
     }
@@ -135,6 +159,9 @@ public class Drawer : MonoBehaviourPun
 
     private void OnDestroy()
     {
+        EgakuSettings.Changed -= RefreshCursorForSettings;
+        if (photonView.IsMine) Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+        if (scaledCursor != null) Destroy(scaledCursor);
         // Remove the static Unity event hook so a destroyed network Drawer cannot keep receiving scene loads.
         SceneManager.sceneLoaded -= ResetEraseDedupeForLoadedScene;
     }
@@ -161,16 +188,30 @@ public class Drawer : MonoBehaviourPun
 
     void Update()
     {
+        if (EgakuSettingsMenu.IsOpen) return;
         // Freeze drawing and erasing while Photon preserves the two-player session for reconnection.
         if (GameManager.InteractionsPausedForRecovery) return;
 
         if(!photonView.IsMine || currentPenType == PenUI.PenType.None)
             return;
-        if(Input.GetAxis("Mouse ScrollWheel") != 0)
+        if (cursorUsedGamepad != GameplayInput.DrawerUsesGamepad)
+        {
+            // A disconnected controller can end a held stroke without sending RT
+            // release. Finish it before changing cursor coordinates or icon mode.
+            if (currentDrawer != null)
+            {
+                drawStrokeTotal -= currentDrawer.drawStrokes;
+                currentDrawer.RequestFinishDraw();
+                currentDrawer = null;
+            }
+            ApplyCursor(ActiveCursorTexture);
+        }
+        int brushStep = GameplayInput.BrushStep;
+        if(brushStep != 0)
         {
             eraserMode = false;
             // TODO: hard code 4 length here
-            if (Input.GetAxis("Mouse ScrollWheel") > 0)
+            if (brushStep > 0)
             {
                 int tempIndex = (currentPenIndex - 1 + 4) % 4;
                 while (tempIndex != currentPenIndex)
@@ -206,7 +247,7 @@ public class Drawer : MonoBehaviourPun
                     UpdateSlider(1 - penProperties[tempIndex].currentStrokes * 1f / penProperties[tempIndex].maxStrokes);
                 }
             }
-            if (Input.GetAxis("Mouse ScrollWheel") < 0)
+            if (brushStep < 0)
             {
                 int tempIndex = (currentPenIndex + 1 + 4) % 4;
                 while (tempIndex != currentPenIndex)
@@ -246,7 +287,7 @@ public class Drawer : MonoBehaviourPun
             }
         }
 
-        if (Input.GetMouseButtonDown(1))
+        if (GameplayInput.EraserPressed)
         {
             if (eraserMode)
             {
@@ -255,19 +296,23 @@ public class Drawer : MonoBehaviourPun
             else
             {
                 SetPenProperties(PenUI.PenType.Eraser);
-                Vector2 erasePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-                EraseDrawnObj(erasePosition);
+                Vector2 erasePosition = Camera.main.ScreenToWorldPoint(GameplayInput.PointerScreenPosition(false));
+                if (CanUsePointer(erasePosition))
+                    EraseDrawnObj(erasePosition);
             }
         }
-        if (Input.GetMouseButtonDown(0))//&& !EventSystem.current.IsPointerOverGameObject())
+        // Opening the persistent Settings button must not also create a network stroke.
+        if (GameplayInput.DrawPressed &&
+            !EgakuSettingsMenu.PointerIsOverOpenButton(GameplayInput.PointerScreenPosition(false)))
         {
             if (eraserMode) //&& EventSystem.current.IsPointerOverGameObject())
             {
                 lastErasePos = GetMouseWorldPosition();
                 //if(EventSystem.current.IsPointerOverGameObject())
-                EraseDrawnObj(Camera.main.ScreenToWorldPoint(Input.mousePosition));
+                if (CanUsePointer(lastErasePos))
+                    EraseDrawnObj(lastErasePos);
             }
-            else if (currentDrawer == null)
+            else if (currentDrawer == null && CanUsePointer(GetMouseWorldPosition()))
             {
                 //currentDrawer = Instantiate(drawMeshPrefab);
                 currentDrawer = PhotonNetwork.Instantiate(drawMeshPrefab.name, this.transform.position, this.transform.rotation).GetComponent<DrawMesh>();
@@ -277,9 +322,22 @@ public class Drawer : MonoBehaviourPun
                 currentDrawer.photonView.RPC("RPC_InitializedDrawProperty", RpcTarget.All, mousePos, currentPenType.ToString(), interactable);
             }
         }
-        if (Input.GetMouseButton(0))
+        if (GameplayInput.DrawHeld)
         {
             Vector3 mousePos = GetMouseWorldPosition();
+            if (!CanUsePointer(mousePos))
+            {
+                // End a stroke at the boundary rather than letting an off-level pointer
+                // create a long segment when it returns to the visible drawing area.
+                if (currentDrawer != null)
+                {
+                    drawStrokeTotal -= currentDrawer.drawStrokes;
+                    currentDrawer.RequestFinishDraw();
+                    currentDrawer = null;
+                }
+                lastErasePos = mousePos;
+                return;
+            }
             if (eraserMode)
             {
                 float eraseDistance = Vector3.Distance(mousePos, lastErasePos);
@@ -334,7 +392,7 @@ public class Drawer : MonoBehaviourPun
             }
         }
         SkipDrawMesh:
-        if (Input.GetMouseButtonUp(0))
+        if (GameplayInput.DrawReleased || (GameplayInput.DrawerUsesGamepad && GameplayInput.PadFor(false) == null && currentDrawer != null))
         {
             if (currentDrawer)
             {
@@ -360,28 +418,28 @@ public class Drawer : MonoBehaviourPun
         switch (penType)
         {
             case PenUI.PenType.None:
-                Cursor.SetCursor(null, new Vector2(0, 0), CursorMode.Auto);
+                ApplyCursor(null);
                 break;
             case PenUI.PenType.Wood:
                 currentPenIndex = 0;
-                Cursor.SetCursor(woodCursorTexture, new Vector2(0, woodCursorTexture.height), CursorMode.Auto);
+                ApplyCursor(woodCursorTexture);
                 break;
             case PenUI.PenType.Cloud:
                 currentPenIndex = 1;
-                Cursor.SetCursor(cloudCursorTexture, new Vector2(0, cloudCursorTexture.height), CursorMode.Auto);
+                ApplyCursor(cloudCursorTexture);
                 break;
             case PenUI.PenType.Steel:
                 currentPenIndex = 2;
-                Cursor.SetCursor(steelCursorTexture, new Vector2(0, steelCursorTexture.height), CursorMode.Auto);
+                ApplyCursor(steelCursorTexture);
                 break;
             case PenUI.PenType.Electric:
                 currentPenIndex = 3;
-                Cursor.SetCursor(electricCursorTexture, new Vector2(0, electricCursorTexture.height), CursorMode.Auto);
+                ApplyCursor(electricCursorTexture);
                 break;
             case PenUI.PenType.Eraser:
                 lastPenType = currentPenType;
                 eraserMode = true;
-                Cursor.SetCursor(eraserCursorTexture, new Vector2(0, eraserCursorTexture.height), CursorMode.Auto);
+                ApplyCursor(eraserCursorTexture);
                 break;
         }
         currentPenType = penType;
@@ -398,31 +456,85 @@ public class Drawer : MonoBehaviourPun
             case PenProperty.PenType.Wood:
                 currentPenIndex = 0;
                 currentPenType = PenUI.PenType.Wood;
-                Cursor.SetCursor(woodCursorTexture, new Vector2(0, woodCursorTexture.height), CursorMode.Auto);
+                ApplyCursor(woodCursorTexture);
                 break;
             case PenProperty.PenType.Cloud:
                 currentPenIndex = 1;
                 currentPenType = PenUI.PenType.Cloud;
-                Cursor.SetCursor(cloudCursorTexture, new Vector2(0, cloudCursorTexture.height), CursorMode.Auto);
+                ApplyCursor(cloudCursorTexture);
                 break;
             case PenProperty.PenType.Steel:
                 currentPenIndex = 2;
                 currentPenType = PenUI.PenType.Steel;
-                Cursor.SetCursor(steelCursorTexture, new Vector2(0, steelCursorTexture.height), CursorMode.Auto);
+                ApplyCursor(steelCursorTexture);
                 break;
             case PenProperty.PenType.Electric:
                 currentPenIndex = 3;
                 currentPenType = PenUI.PenType.Electric;
-                Cursor.SetCursor(electricCursorTexture, new Vector2(0, electricCursorTexture.height), CursorMode.Auto);
+                ApplyCursor(electricCursorTexture);
                 break;
         }
     }
     
     private Vector3 GetMouseWorldPosition()
     {
-        Vector3 worldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        Vector3 worldPosition = Camera.main.ScreenToWorldPoint(GameplayInput.PointerScreenPosition(false));
         worldPosition.z = 0;
         return worldPosition;
+    }
+
+    private Texture2D scaledCursor;
+
+    public void FinishStrokeForSettings()
+    {
+        // A local settings pause must finish an existing network stroke before input is blocked.
+        if (!photonView.IsMine || currentDrawer == null) return;
+        drawStrokeTotal -= currentDrawer.drawStrokes;
+        currentDrawer.RequestFinishDraw();
+        currentDrawer = null;
+    }
+
+    public void RefreshCursorForSettings()
+    {
+        if (photonView.IsMine) ApplyCursor(ActiveCursorTexture);
+    }
+
+    private void ApplyCursor(Texture2D texture)
+    {
+        ActiveCursorTexture = texture;
+        cursorUsedGamepad = GameplayInput.DrawerUsesGamepad;
+        // A gamepad Drawer has a separate on-screen pointer. Keep the physical
+        // mouse ordinary so the local keyboard Runner's cursor is not a pen icon.
+        if (scaledCursor != null)
+        {
+            Destroy(scaledCursor);
+            scaledCursor = null;
+        }
+        Texture2D visibleTexture = cursorUsedGamepad || EgakuSettingsMenu.IsOpen ? null : texture;
+        if (visibleTexture != null && !Mathf.Approximately(EgakuSettings.DrawerBrushCursorScale, 1f))
+        {
+            // The existing cursor textures are readable but have different source sizes.
+            // Resample the selected texture locally; neither the pen nor its Photon state changes.
+            int width = Mathf.Max(1, Mathf.RoundToInt(texture.width * EgakuSettings.DrawerBrushCursorScale));
+            int height = Mathf.Max(1, Mathf.RoundToInt(texture.height * EgakuSettings.DrawerBrushCursorScale));
+            RenderTexture target = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32);
+            RenderTexture previous = RenderTexture.active;
+            Graphics.Blit(texture, target);
+            RenderTexture.active = target;
+            scaledCursor = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            scaledCursor.ReadPixels(new Rect(0f, 0f, width, height), 0, 0);
+            scaledCursor.Apply();
+            RenderTexture.active = previous;
+            RenderTexture.ReleaseTemporary(target);
+            visibleTexture = scaledCursor;
+        }
+        Vector2 hotspot = visibleTexture != null ? new Vector2(0f, visibleTexture.height) : Vector2.zero;
+        Cursor.SetCursor(visibleTexture, hotspot, CursorMode.Auto);
+    }
+
+    private bool CanUsePointer(Vector3 worldPosition)
+    {
+        return cameraController == null || cameraController.CanUsePointer(worldPosition);
     }
 
     [PunRPC]
@@ -449,6 +561,10 @@ public class Drawer : MonoBehaviourPun
 
     private void EraseAtPosition(Vector2 position)
     {
+        // Eraser drag sampling can straddle the edge even when the current cursor is inside.
+        if (cameraController != null && !cameraController.CanEraseAt(position))
+            return;
+
         Collider2D[] colliders = Physics2D.OverlapCircleAll(position, eraseBrushRadius, LayerMask.GetMask("Draw"));
         foreach (Collider2D hitCollider in colliders)
         {

@@ -68,7 +68,6 @@ MonoBehaviour:
     currentStrokes: 0
   rb2d: {fileID: 1433935798187040207}
   col2d: {fileID: 7309415233719333893}
-  earsingSelf: 0
   _vertices: []
   _uv: []
   _triangles: 
@@ -129,6 +128,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!50 &1433935798187040207
 Rigidbody2D:

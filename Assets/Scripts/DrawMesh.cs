@@ -13,6 +13,10 @@ using Allan;
 
 public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
 {
+    // Let a complete stroke pass below the level's death plane before refunding ink.
+    // The small gap avoids deleting it while its top edge is still touching the plane.
+    private const float DeathPlaneClearance = 0.05f;
+
     // Keep only live stroke meshes here so the eraser can query visible geometry even when its local physics collider is inactive.
     private static readonly HashSet<DrawMesh> activeDrawMeshes = new HashSet<DrawMesh>();
 
@@ -43,6 +47,9 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
     private bool destroyRequestSent;
     private bool destroyDispatchSent;
     private bool destroyApplied;
+    // Cache this scene's authored kill volume after first contact or finish; a
+    // destroyed scene collider compares null and is resolved again if needed.
+    private Collider2D deathZone;
 
     public override void OnEnable()
     {
@@ -595,6 +602,10 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
             {
                 this.AddComponent<WoodPen>();
             }
+
+            // A stroke can finish already below the kill plane. Check once after
+            // geometry and simulation are ready, without polling every drawn object.
+            CheckBelowDeathZone();
         }
     }
 
@@ -710,8 +721,9 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
     
     public void OnOwnerChange(Player newOwner, Player previousOwner)
     {
-        // Ownership changes are state transitions only. Destruction is serialized
-        // through the Master Client and must never be inferred from a transfer.
+        // The Runner may become the first simulated owner after the stroke is finished.
+        // Recheck its geometry, but still use Master approval for any destruction.
+        CheckBelowDeathZone();
     }
 
     public void SelfDestroy()
@@ -721,11 +733,63 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("DeathDesuwa") && photonView.IsMine)
+        CheckDeathZoneContact(other);
+    }
+
+    private void OnTriggerStay2D(Collider2D other)
+    {
+        // Only objects actually touching the death volume are checked each physics
+        // step; long strokes remain until their highest point has fallen below it.
+        CheckDeathZoneContact(other);
+    }
+
+    private void OnTriggerExit2D(Collider2D other)
+    {
+        // Once contact was reported, a falling object can leave the finite trigger
+        // before another Stay callback. Check the departure as well as overlap.
+        CheckDeathZoneContact(other);
+    }
+
+    private void CheckDeathZoneContact(Collider2D other)
+    {
+        if (other == null || !other.CompareTag("DeathDesuwa"))
+            return;
+
+        deathZone = other;
+        TryRequestDestroyBelow(other.bounds.max.y);
+    }
+
+    private void CheckBelowDeathZone()
+    {
+        if (!CanCheckDeathPlane())
+            return;
+
+        if (deathZone == null)
         {
-            print("Wood into death");
-            RequestAuthoritativeDestroy();
+            // Production levels have one authored Death volume. Resolve it only at
+            // finish or ownership change, never once per frame or on the passive copy.
+            GameObject zone = GameObject.FindWithTag("DeathDesuwa");
+            if (zone != null)
+                deathZone = zone.GetComponent<Collider2D>();
         }
+
+        if (deathZone != null)
+            TryRequestDestroyBelow(deathZone.bounds.max.y);
+    }
+
+    private bool CanCheckDeathPlane()
+    {
+        // The Drawer's visual copy has Rigidbody2D.simulated disabled, so its collider
+        // bounds cannot decide gameplay deletion even if it still owns the PhotonView.
+        return photonView.IsMine && finishApplied && !destroyRequestSent &&
+               currProperty != null && rb2d != null && rb2d.simulated &&
+               col2d != null && col2d.enabled;
+    }
+
+    private void TryRequestDestroyBelow(float deathPlaneY)
+    {
+        if (CanCheckDeathPlane() && col2d.bounds.max.y < deathPlaneY - DeathPlaneClearance)
+            RequestAuthoritativeDestroy();
     }
 
     private void RequestAuthoritativeDestroy()

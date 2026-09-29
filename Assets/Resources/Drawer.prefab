@@ -55,6 +55,7 @@ MonoBehaviour:
   electricCursorTexture: {fileID: 2800000, guid: 7a7e930e3d4277d4199352e356980cd9, type: 3}
   steelCursorTexture: {fileID: 2800000, guid: b515c9ce0fe668b4088a965a229f38d7, type: 3}
   eraserCursorTexture: {fileID: 2800000, guid: 2c839905c9ce95f40869c9f9f6ee0cc5, type: 3}
+  cameraPanSpeed: 15
   drawSize: 0
   drawStrokeLimit: 300
   inkSlider: {fileID: 0}
@@ -102,6 +103,7 @@ MonoBehaviour:
     currentStrokes: 0
   penProperties: []
   minEraseDis: 1
+  eraseBrushRadius: 0.2
   isCoroutineRunning: 0
 --- !u!114 &1436348200338379537
 MonoBehaviour:

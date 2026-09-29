@@ -76,6 +76,8 @@ public class AudioManager : MonoBehaviour, IOnEventCallback
 
         m_photonView = GetComponent<PhotonView>();
         InitAudioDict();
+        EgakuSettings.Changed += ApplyLocalVolumes;
+        ApplyLocalVolumes();
         DontDestroyOnLoad(this.gameObject);
     }
 
@@ -180,6 +182,24 @@ public class AudioManager : MonoBehaviour, IOnEventCallback
     private void OnDisable()
     {
         PhotonNetwork.RemoveCallbackTarget(this);
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            EgakuSettings.Changed -= ApplyLocalVolumes;
+            Instance = null;
+        }
+    }
+
+    private void ApplyLocalVolumes()
+    {
+        // Photon may request a sound on both clients, but each listener applies its own preference.
+        float master = EgakuSettings.MasterVolume;
+        BGMChannel.channel.volume = 0.1f * master * EgakuSettings.MusicVolume;
+        foreach (Channel channel in channels)
+            channel.channel.volume = master * EgakuSettings.EffectsVolume;
     }
 
     public void OnEvent(EventData photonEvent)

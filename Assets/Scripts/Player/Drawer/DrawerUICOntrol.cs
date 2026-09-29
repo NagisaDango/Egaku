@@ -60,7 +60,8 @@ public class DrawerUICOntrol : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetMouseButtonDown(0)) // Left-click detection
+        if (EgakuSettingsMenu.IsOpen) return;
+        if (!GameplayInput.DrawerUsesGamepad && Input.GetMouseButtonDown(0)) // Only the keyboard Drawer's mouse closes this panel.
         {
             if (!IsClickInsidePanel(drawerPanel))
             {
@@ -68,7 +69,7 @@ public class DrawerUICOntrol : MonoBehaviour
             }
         }
 
-        if (Input.GetKeyDown(KeyCode.Tab))
+        if (GameplayInput.PenPanelPressed && !GameplayInput.DrawHeld)
         {
             ToggleDrawerPanel();
         }

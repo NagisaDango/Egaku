@@ -112,6 +112,8 @@ namespace Phantom
 
         public void OfflineConnect()
         {
+            // The serialized launcher action now enters local two-player co-op.
+            // Photon OfflineMode still supplies the existing local object lifecycle.
             if(PhotonNetwork.NickName.IsNullOrEmpty()) return;
 
             progressLabel.SetActive(true);
