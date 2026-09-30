@@ -37,6 +37,14 @@ public static class PhotonSessionPolicy
     public const string DrawerOwnerKey = "role_drawer_actor";
     public const string RunnerOwnerKey = "role_runner_actor";
 
+    // Ready values store the actor occupying that role. Matching actor numbers
+    // prevent readiness from surviving a role release or being applied to a replacement player.
+    public const string DrawerReadyActorKey = "role_drawer_ready_actor";
+    public const string RunnerReadyActorKey = "role_runner_ready_actor";
+    public const string RoleSelectionPhaseKey = "role_selection_phase";
+    public const string RoleSelectionPhaseRoles = "roles";
+    public const string RoleSelectionPhaseLevels = "levels";
+
     // Session state prevents an expired or already-started match from accepting unrelated players.
     public const string SessionStateKey = "session_state";
 
@@ -75,6 +83,9 @@ public static class PhotonSessionPolicy
                 { ShowRoomKey, false },
                 { DrawerOwnerKey, 0 },
                 { RunnerOwnerKey, 0 },
+                { DrawerReadyActorKey, 0 },
+                { RunnerReadyActorKey, 0 },
+                { RoleSelectionPhaseKey, RoleSelectionPhaseRoles },
                 { SessionStateKey, SessionActive },
                 { RecoveryRefreshEpochKey, 0 },
                 { RecoveryRefreshCounterKey, 0 },
@@ -152,5 +163,25 @@ public static class PhotonSessionPolicy
     public static string GetRoleOwnerKey(RolesManager.PlayerRole role)
     {
         return role == RolesManager.PlayerRole.Drawer ? DrawerOwnerKey : RunnerOwnerKey;
+    }
+
+    public static string GetRoleReadyKey(RolesManager.PlayerRole role)
+    {
+        return role == RolesManager.PlayerRole.Drawer ? DrawerReadyActorKey : RunnerReadyActorKey;
+    }
+
+    public static int GetActorProperty(string key)
+    {
+        if (!PhotonNetwork.InRoom || PhotonNetwork.CurrentRoom == null ||
+            !PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(key, out object value) || !(value is int actor))
+            return 0;
+        return actor;
+    }
+
+    public static bool IsRoleSelectionPhase()
+    {
+        if (!PhotonNetwork.InRoom || PhotonNetwork.CurrentRoom == null) return false;
+        return !PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoleSelectionPhaseKey, out object phase) ||
+               phase is string phaseName && phaseName == RoleSelectionPhaseRoles;
     }
 }

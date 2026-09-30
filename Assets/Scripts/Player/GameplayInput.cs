@@ -121,6 +121,15 @@ public static class GameplayInput
         }
     }
 
+    /// <summary>
+    /// Returns the exact online gamepad selected by the same Auto/Keyboard/Gamepad Preferred
+    /// policy as gameplay. Lobby UI uses this instead of Gamepad.current so device switching
+    /// behaves consistently before and after the level starts.
+    /// </summary>
+    public static Gamepad OnlineUiGamepad => !PhotonNetwork.OfflineMode && OnlineUsesGamepad
+        ? AvailableOnlineGamepad()
+        : null;
+
     public static Vector2 PointerScreenPosition(bool runner)
     {
         if (!(runner ? RunnerUsesGamepad : DrawerUsesGamepad))

@@ -10,9 +10,9 @@ using System.Linq; // Required for Hashtable
 
 public class RolesManager : MonoBehaviourPunCallbacks
 {
-    public Button drawerButton;
-    public Button runnerButton;
-    public Button startGameButton;
+    //public Button drawerButton;
+    //public Button runnerButton;
+    //public Button startGameButton;
     public GameObject playerDisplay;
     public Transform playerDisplayParent;
 
@@ -31,14 +31,14 @@ public class RolesManager : MonoBehaviourPunCallbacks
     void Start()
     {
         // Set up button listeners
-        drawerButton.onClick.AddListener(() => SelectRole(PlayerRole.Drawer));
-        runnerButton.onClick.AddListener(() => { SelectRole(PlayerRole.Runner); });
+        //drawerButton.onClick.AddListener(() => SelectRole(PlayerRole.Drawer));
+        //runnerButton.onClick.AddListener(() => { SelectRole(PlayerRole.Runner); });
 
         confirmedRole = GetLocalOwnedRole();
         selectedRole = confirmedRole;
 
         //startGameButton.onClick.AddListener(() => GameManager.Instance.LoadArena());
-        startGameButton.interactable = false; // Disable until valid selections
+        //startGameButton.interactable = false; // Disable until valid selections
         thisPlayerDisplay =
             PhotonNetwork.Instantiate(playerDisplay.name, new Vector3(0,0,0), this.transform.rotation);
 
@@ -56,7 +56,7 @@ public class RolesManager : MonoBehaviourPunCallbacks
 
         if (!PhotonNetwork.IsMasterClient)
         {
-            startGameButton.gameObject.SetActive(false);
+            //startGameButton.gameObject.SetActive(false);
         }
 
         RefreshRoleUi();
@@ -223,15 +223,17 @@ public class RolesManager : MonoBehaviourPunCallbacks
 
         // Once this client owns a role, both role-selection buttons stay hidden until the X button is used.
         bool localPlayerHasRole = confirmedRole != PlayerRole.None;
-        drawerButton.gameObject.SetActive(!localPlayerHasRole && drawerOwner == 0);
-        runnerButton.gameObject.SetActive(!localPlayerHasRole && runnerOwner == 0);
-        startGameButton.gameObject.SetActive(PhotonNetwork.IsMasterClient);
+        //drawerButton.gameObject.SetActive(!localPlayerHasRole && drawerOwner == 0);
+        //runnerButton.gameObject.SetActive(!localPlayerHasRole && runnerOwner == 0);
+        //startGameButton.gameObject.SetActive(PhotonNetwork.IsMasterClient);
 
         // Distinct owners are required so one actor can never satisfy both role requirements during a role switch.
+        /*
         startGameButton.interactable = PhotonNetwork.IsMasterClient &&
                                        drawerOwner != 0 &&
                                        runnerOwner != 0 &&
                                        drawerOwner != runnerOwner;
+        */
 
         if (confirmedRole != PlayerRole.None &&
             GetRoleOwner(confirmedRole) != localActorNumber)

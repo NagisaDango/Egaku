@@ -39,14 +39,17 @@ namespace Allan
         // the active device locally instead of requiring a pre-game choice.
         public bool onlineUseGamepad;
         private LocalDeviceClaimView localDeviceClaimView;
+        private OnlineRoleSelectionView onlineRoleSelectionView;
         
         public GameObject roomItemPrefab;
         
         [Header("Buttons")]
         public Button roomCreateOrJoinButton;
-        public Button startGameButton;
-        public Button devStartGameButton;
-        public Button leaveGameButton;
+        // Legacy RoleSelect buttons are retained in history for reference. OnlineSelection
+        // now owns role confirmation, readiness, leaving, and progression.
+        // public Button startGameButton;
+        // public Button devStartGameButton;
+        // public Button leaveGameButton;
         
         [Header("Other")]
         public Transform gridLayout;
@@ -153,11 +156,12 @@ namespace Allan
 
 
             roomCreateOrJoinButton.onClick.AddListener(() => { CreateJoinButton(); });
-            startGameButton.onClick.AddListener(() => { LoadLevelSelection(); });
+            //startGameButton.onClick.AddListener(() => { LoadLevelSelection(); });
             //devStartGameButton.onClick.AddListener(() => { DevSpawnPlayers(); });
 
             //go.UpdateProperty(roomSelection, roleSelection, levelSelection, gridLayout, nameField);
-            leaveGameButton.onClick.AddListener(() => { LeaveRoom(); });
+            // Legacy RoleSelect leave button. OnlineSelection invokes LeaveRoom through its Prefab event.
+            // leaveGameButton.onClick.AddListener(() => { LeaveRoom(); });
             ConfigurePrivateRoomCodeUi();
             ConfigureGameplayDeviceUi();
         }
@@ -258,6 +262,19 @@ namespace Allan
                 return;
             }
 
+            if (PhotonNetwork.InRoom)
+            {
+                // Returning from level selection is a shared lobby transition. Clearing
+                // both ready actors lets either player revise roles without split-screen state.
+                PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable
+                {
+                    { PhotonSessionPolicy.RoleSelectionPhaseKey, PhotonSessionPolicy.RoleSelectionPhaseRoles },
+                    { PhotonSessionPolicy.RunnerReadyActorKey, 0 },
+                    { PhotonSessionPolicy.DrawerReadyActorKey, 0 }
+                });
+                return;
+            }
+
 
             roomSelection.SetActive(false);
             roleSelection.SetActive(true);
@@ -294,18 +311,21 @@ namespace Allan
 
 
             roomCreateOrJoinButton = roomSelection.transform.Find("Button").GetComponent<Button>();
-            startGameButton = roleSelection.transform.Find("Start").GetComponent<Button>();
-            leaveGameButton = roleSelection.transform.Find("LeaveRoomButton").GetComponent<Button>();
-            devStartGameButton = roleSelection.transform.Find("DevButton").GetComponent<Button>();
+            // Legacy RoleSelect controls are no longer present in the reorganized scene.
+            // startGameButton = roleSelection.transform.Find("Start").GetComponent<Button>();
+            // leaveGameButton = roleSelection.transform.Find("LeaveRoomButton").GetComponent<Button>();
+            // devStartGameButton = roleSelection.transform.Find("DevButton").GetComponent<Button>();
 
 
             roomCreateOrJoinButton.onClick.AddListener(() => { CreateJoinButton(); });
-            startGameButton.onClick.AddListener(() => { LoadLevelSelection(); });
-            devStartGameButton.onClick.AddListener(() => { DevSpawnPlayers(); });
-            leaveGameButton.onClick.AddListener(() => { LeaveRoom(); });
+            // Legacy RoleSelect listeners. Current Selection views own these transitions.
+            // startGameButton.onClick.AddListener(() => { LoadLevelSelection(); });
+            // devStartGameButton.onClick.AddListener(() => { DevSpawnPlayers(); });
+            // leaveGameButton.onClick.AddListener(() => { LeaveRoom(); });
 
             levelSelection.transform.Find("BackButton").GetComponent<Button>().onClick.AddListener(() => { Back2RoleSelection(); });
             ConfigurePrivateRoomCodeUi();
+            ConfigureGameplayDeviceUi();
         }
 
         /// <summary>Configures the existing room panel for direct private-code matchmaking.</summary>
@@ -440,11 +460,56 @@ namespace Allan
         private void ConfigureGameplayDeviceUi()
         {
             // The authored Prefab owns the long-lived visual hierarchy and its
-            // persistent card UnityEvents; this code only places an instance.
-            LocalDeviceClaimView prefab = Resources.Load<LocalDeviceClaimView>("UI/LocalDeviceClaimView");
-            if (prefab == null) { Debug.LogError("LocalDeviceClaimView Prefab is missing."); return; }
-            localDeviceClaimView = Instantiate(prefab, levelSelection.transform, false);
-            localDeviceClaimView.gameObject.SetActive(false);
+            // persistent card UnityEvents. Reuse an authored scene instance when present.
+            if (localDeviceClaimView == null && levelSelection != null)
+            {
+                localDeviceClaimView = levelSelection.GetComponentInChildren<LocalDeviceClaimView>(true);
+                if (localDeviceClaimView == null)
+                {
+                    LocalDeviceClaimView prefab = Resources.Load<LocalDeviceClaimView>("UI/LocalDeviceClaimView");
+                    if (prefab == null) Debug.LogError("LocalDeviceClaimView Prefab is missing.");
+                    else localDeviceClaimView = Instantiate(prefab, levelSelection.transform, false);
+                }
+
+                if (localDeviceClaimView != null) localDeviceClaimView.gameObject.SetActive(false);
+            }
+
+            if (onlineRoleSelectionView == null && roleSelection != null)
+            {
+                onlineRoleSelectionView = roleSelection.GetComponentInChildren<OnlineRoleSelectionView>(true);
+                if (onlineRoleSelectionView == null)
+                {
+                    OnlineRoleSelectionView prefab = Resources.Load<OnlineRoleSelectionView>("UI/OnlineSelection");
+                    if (prefab == null) Debug.LogError("OnlineSelection Prefab is missing or has no OnlineRoleSelectionView.");
+                    else onlineRoleSelectionView = Instantiate(prefab, roleSelection.transform, false);
+                }
+
+                if (onlineRoleSelectionView != null)
+                    onlineRoleSelectionView.gameObject.SetActive(!PhotonNetwork.OfflineMode);
+            }
+
+            // Legacy RoleSelect manager disabling. The reorganized scene no longer contains
+            // these controls; keep this block commented for reference instead of deleting it.
+            // if (!PhotonNetwork.OfflineMode && roleSelection != null &&
+            //     roleSelection.TryGetComponent(out RolesManager legacyRoles))
+            // {
+            //     legacyRoles.enabled = false;
+            //     legacyRoles.runnerButton.gameObject.SetActive(false);
+            //     legacyRoles.drawerButton.gameObject.SetActive(false);
+            //     legacyRoles.startGameButton.gameObject.SetActive(false);
+            // }
+        }
+
+        private void ApplyRoleSelectionPhase()
+        {
+            if (PhotonNetwork.OfflineMode || !PhotonNetwork.InRoom || roleSelection == null || levelSelection == null)
+                return;
+
+            bool selectRoles = PhotonSessionPolicy.IsRoleSelectionPhase();
+            roomSelection.SetActive(false);
+            roleSelection.SetActive(selectRoles);
+            levelSelection.SetActive(!selectRoles);
+            if (onlineRoleSelectionView != null) onlineRoleSelectionView.gameObject.SetActive(selectRoles);
         }
 
         public bool CanStartSelectedMode()
@@ -664,9 +729,7 @@ namespace Allan
 
                 if (PhotonNetwork.InRoom)
                 {
-                    roomSelection.SetActive(false);
-                    roleSelection.SetActive(true);
-                    levelSelection.SetActive(false);
+                    ApplyRoleSelectionPhase();
                     ShowCurrentRoomCode();
                 }
                 else
@@ -1283,7 +1346,10 @@ namespace Allan
 
             PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable
             {
-                { "Role_" + actorNumber, (int)PlayerRole.None }
+                { "Role_" + actorNumber, (int)PlayerRole.None },
+                { PhotonSessionPolicy.RunnerReadyActorKey, 0 },
+                { PhotonSessionPolicy.DrawerReadyActorKey, 0 },
+                { PhotonSessionPolicy.RoleSelectionPhaseKey, PhotonSessionPolicy.RoleSelectionPhaseRoles }
             });
         }
 
@@ -1362,9 +1428,7 @@ namespace Allan
             bool resumedExistingRefresh = ResumeExistingRecoverySceneRefresh();
             if (SceneManager.GetActiveScene().name == "RoleSelection" && roomSelection != null)
             {
-                roomSelection.SetActive(false);
-                roleSelection.SetActive(true);
-                levelSelection.SetActive(false);
+                ApplyRoleSelectionPhase();
                 ShowCurrentRoomCode();
             }
 
@@ -1571,6 +1635,10 @@ namespace Allan
             {
                 Debug.Log($"Room Properly changed:{key} ->{propertiesThatChanged[key]}, ROOM:{PhotonNetwork.CurrentRoom.Name}");
             }
+
+            if (propertiesThatChanged.ContainsKey(PhotonSessionPolicy.RoleSelectionPhaseKey) &&
+                SceneManager.GetActiveScene().name == "RoleSelection")
+                ApplyRoleSelectionPhase();
 
             if (PhotonNetwork.IsMasterClient &&
                 propertiesThatChanged.ContainsKey(PhotonSessionPolicy.RecoveryRefreshRequestKey))
