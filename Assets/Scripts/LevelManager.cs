@@ -19,19 +19,22 @@ public class LevelManager : MonoBehaviourPunCallbacks
     {
         print(GameManager.Instance.levelCounts);
 
-        int levelCount = GameManager.Instance.levelCounts;
-        int levelUnlocked = GameManager.Instance.levelUnlocked;
-
-
-        for (int i = 1; i < levelCount; i++)
+        LevelCatalog catalog = LevelCatalog.Load();
+        if (catalog == null) { Debug.LogError("LevelCatalog is missing.", this); return; }
+        foreach (LevelCatalog.Definition definition in catalog.levels)
         {
+            // Level_0 remains excluded from the current selection screen.
+            if (definition.id == 0) continue;
+            int i = definition.id;
             GameObject go = Instantiate(levelDisplayPrefab, grid);
             go.name = "LevelDisplay_" + i;
             go.GetComponentInChildren<TMP_Text>().text = "Level " + i;
-            go.transform.Find("Image").GetComponent<Image>().sprite = Resources.Load<Sprite>("LevelSS/" + i);
+            go.transform.Find("Image").GetComponent<Image>().sprite = definition.thumbnail;
             levelDisplays.Add(go);
             
-            if (i >= levelUnlocked)
+            bool unlocked = catalog.IsUnlocked(i, GameManager.Instance.levelUnlocked);
+            go.GetComponent<Button>().interactable = unlocked;
+            if (!unlocked)
             {
                 go.transform.Find("Image").GetComponent<Image>().color = Color.grey;
             }

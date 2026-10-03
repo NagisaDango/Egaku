@@ -7,6 +7,15 @@ public class ElectricDoor : MonoBehaviourPun, IElectricControl
 {
     [SerializeField] private GameObject controllingDoor;
     private bool gotBattery;
+    // Scene transitions can retire the door while its animation or battery snap is still
+    // running. Cancel owned tweens so they cannot touch old objects or send a late RPC.
+    private Tween doorTween;
+    private Tween batteryTween;
+    private void OnDestroy()
+    {
+        doorTween?.Kill();
+        batteryTween?.Kill();
+    }
     public void BatteryIn()
     {
         photonView.RPC("RPC_BatteryIn", RpcTarget.All);
@@ -15,7 +24,8 @@ public class ElectricDoor : MonoBehaviourPun, IElectricControl
     [PunRPC]
     private void RPC_BatteryIn()
     {
-        DOTween.To(
+        doorTween?.Kill();
+        doorTween = DOTween.To(
                 ()=> controllingDoor.transform.localScale,
                 scale => controllingDoor.transform.localScale = scale,
                 new Vector3(controllingDoor.transform.localScale.x, 0),
@@ -27,7 +37,8 @@ public class ElectricDoor : MonoBehaviourPun, IElectricControl
     private void RPC_BatteryOut()
     {
         gotBattery = false;
-        DOTween.To(
+        doorTween?.Kill();
+        doorTween = DOTween.To(
                 ()=> controllingDoor.transform.localScale,
                 scale => controllingDoor.transform.localScale = scale,
                 new Vector3(controllingDoor.transform.localScale.x, 1),
@@ -51,7 +62,8 @@ public class ElectricDoor : MonoBehaviourPun, IElectricControl
         {
             gotBattery = true;
             other.gameObject.GetComponent<Battery>().ConnectToElectric(this);
-            DOTween.To(
+            batteryTween?.Kill();
+            batteryTween = DOTween.To(
                     ()=> other.transform.position,
                     pos => other.transform.position = pos,
                     this.transform.position,

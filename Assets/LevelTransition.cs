@@ -11,6 +11,9 @@ public class LevelTransition : MonoBehaviourPunCallbacks
     public float outTime;
     public float inTime;
 
+    // One accepted transition per scene prevents duplicate destination/skip events and RPC echoes.
+    private bool endRequested;
+    private bool ending;
     private Material matTransition;
     public Image image;
 
@@ -45,6 +48,8 @@ public class LevelTransition : MonoBehaviourPunCallbacks
 
     public void LoadEnd()
     {
+        if (endRequested || ending || GameManager.InteractionsPausedForRecovery) return;
+        endRequested = true;
         photonView.RPC("LoadLevelEnd", RpcTarget.All);
     }
        
@@ -52,12 +57,17 @@ public class LevelTransition : MonoBehaviourPunCallbacks
     [PunRPC]
     public void LoadLevelEnd()
     {
-        print("Enter LoadLevelEnd");
+        if (ending || GameManager.InteractionsPausedForRecovery) return;
+        ending = true;
+        StopAllCoroutines();
         StartCoroutine(ShowTransitionEndScene());
     }
 
     public void LoadLevelStart()
     {
+        // A delayed readiness event must not reopen a mask already closing for departure.
+        if (ending) return;
+        StopAllCoroutines();
         print("Enter LoadLevelStart");
         StartCoroutine(ShowTransitionStartScene());
     }
@@ -72,19 +82,9 @@ public class LevelTransition : MonoBehaviourPunCallbacks
         Vector2 uv = (localPoint + size * 0.5f) / size;
         matTransition.SetVector("_Center", new Vector4(uv.x, uv.y, 0, 0));
 
-        float elapsedTime = 0f;
+        yield return AnimateRadius(GetOpenRadius(uv, (float)Screen.width / Screen.height), 0f, outTime);
 
-        while (elapsedTime < outTime)
-        {
-            var p = elapsedTime / outTime;
-            p = Mathf.Clamp01(p);
-            var r = (1 - p) * 1.5;
-
-            matTransition.SetFloat("_Radius", (float)r);
-            elapsedTime += Time.deltaTime;
-            yield return null;
-        }
-
+        // The manager alone decides next/finish; animation has no progression state of its own.
         GameManager.Instance.OnReachDestination();
 
 
@@ -93,7 +93,7 @@ public class LevelTransition : MonoBehaviourPunCallbacks
     IEnumerator ShowTransitionStartScene()
     {
         RectTransform canvasRect = canvas.GetComponent<RectTransform>();
-        Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(Camera.main, (Vector3)GameObject.Find("LevelSetup").GetComponent<LevelSetup>().GetRevivePos());
+        Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(Camera.main, (Vector3)LevelSetup.FindInScene(gameObject.scene).GetRevivePos());
         Vector2 localPoint;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPoint, canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera, out localPoint);
         Vector2 size = canvasRect.rect.size;
@@ -101,18 +101,32 @@ public class LevelTransition : MonoBehaviourPunCallbacks
 
 
 
+        matTransition.SetVector("_Center", new Vector4(uv.x, uv.y, 0, 0));
+        yield return AnimateRadius(0f, GetOpenRadius(uv, (float)Screen.width / Screen.height), inTime);
+    }
+
+    private static float GetOpenRadius(Vector2 center, float aspect)
+    {
+        // Match CircleMask's aspect-corrected distance, including off-screen centers.
+        // A small margin keeps even the farthest corner outside the opaque mask.
+        float x = Mathf.Max(Mathf.Abs(center.x), Mathf.Abs(1f - center.x)) * aspect;
+        float y = Mathf.Max(Mathf.Abs(center.y), Mathf.Abs(1f - center.y));
+        return Mathf.Sqrt(x * x + y * y) + 0.01f;
+    }
+
+    private IEnumerator AnimateRadius(float from, float to, float duration)
+    {
         float elapsedTime = 0f;
-
-        while (elapsedTime < outTime)
+        while (elapsedTime < duration)
         {
-            var p = elapsedTime / outTime;
-            p = Mathf.Clamp01(p);
-            var r = p * 1.5;
-
-            matTransition.SetFloat("_Radius", (float)r);
+            matTransition.SetFloat("_Radius", Mathf.Lerp(from, to, elapsedTime / duration));
             elapsedTime += Time.deltaTime;
             yield return null;
         }
+
+        // Frame steps rarely land exactly on duration. Explicitly finish even for zero duration,
+        // before loading another scene, so closing leaves no hole and opening leaves no border.
+        matTransition.SetFloat("_Radius", to);
     }
 
 }

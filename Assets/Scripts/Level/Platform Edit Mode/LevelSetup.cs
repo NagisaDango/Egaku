@@ -21,6 +21,22 @@ public class LevelSetup : MonoBehaviourPun
     // A recovery scene reload can fire a pickup trigger before the Drawer UI's Start method.
     // Keep those local unlocks until Init binds the new UI instead of losing or buffering them.
     private readonly HashSet<string> pendingPenUnlocks = new HashSet<string>();
+    // Scene-scoped lookup avoids object-name coupling and excludes preview/additive scenes.
+    public static LevelSetup FindInScene(Scene scene)
+    {
+        if (!scene.IsValid() || !scene.isLoaded) return null;
+        foreach (GameObject root in scene.GetRootGameObjects())
+        {
+            LevelSetup setup = root.GetComponentInChildren<LevelSetup>(true);
+            if (setup != null) return setup;
+        }
+        return null;
+    }
+    // Both role copies must have completed Start. Only the owning Drawer creates local UI.
+    public bool IsGameplayReady => _camera != null && Camera.main != null &&
+        Runner.Instance != null && Runner.Instance.gameObject.scene == gameObject.scene && Runner.Instance.SceneReady &&
+        Drawer.Instance != null && Drawer.Instance.gameObject.scene == gameObject.scene && Drawer.Instance.SceneReady;
+
     public void Init(Runner runner)
     {
         runner.GetComponent<Runner>().SetRevivePos(revivePos);
@@ -29,9 +45,15 @@ public class LevelSetup : MonoBehaviourPun
 
     public void Init(DrawerUICOntrol drawUI)
     {
-        Drawer.OnPenSelect.Invoke(initPenType);
         drawerUI = drawUI;
         TempLevelSetting();
+        // Select after budgets and availability are applied; never start with a locked pen.
+        PenUI.PenType initial = initPenType;
+        // penStatus uses material order (wood/cloud/steel/electric), unlike PenUI's enum order.
+        int initialIndex = initial == PenUI.PenType.Steel ? 2 : initial == PenUI.PenType.Electric ? 3 : (int)initial;
+        if (initialIndex >= 0 && initialIndex < Drawer.penStatus.Length && !Drawer.penStatus[initialIndex])
+            initial = PenUI.PenType.None;
+        Drawer.OnPenSelect?.Invoke(initial);
 
         if (pendingPenUnlocks.Count > 0)
         {
@@ -84,46 +106,18 @@ public class LevelSetup : MonoBehaviourPun
 
     private void TempLevelSetting()
     {
-        // Assets paths only exist in the Editor. Resources.Load resolves the CSV from the
-        // packaged player as well, so recovery reloads use the same pen limits as fresh runs.
-        TextAsset levelSetupCsv = Resources.Load<TextAsset>("LevelSetup");
-        if (levelSetupCsv == null)
+        // The catalog is packaged as Resources data; legacy CSV remains as a migration reference.
+        LevelCatalog catalog = LevelCatalog.Load();
+        LevelCatalog.Definition definition = catalog != null ? catalog.FindScene(gameObject.scene.name) : null;
+        if (definition == null)
         {
-            Debug.LogError("LevelSetup.csv was not found in Resources; pen limits cannot be initialized.");
+            Debug.LogError($"No level definition for {gameObject.scene.name}.", this);
             return;
         }
-
-        string[] lines = levelSetupCsv.text.Split(
-            new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
-
-        Dictionary<int, int[]> inkDict = new Dictionary<int, int[]>();
-        for (int i = 1; i < lines.Length; i++)
-        {
-            string[] values = lines[i].Split(',');
-            Debug.Log("LevelSetup " + string.Join(" | ", values));
-            int[] inks = new int[4];
-            inks[0] = int.Parse(values[1]);
-            inks[1] = int.Parse(values[2]);
-            inks[2] = int.Parse(values[3]);
-            inks[3] = int.Parse(values[4]);
-            int levelId = int.Parse(values[0]);
-            inkDict.Add(levelId, inks);
-
-        }
-
-        int level = int.Parse( SceneManager.GetActiveScene().name.Split("_")[1]);
-
-        if (!inkDict.TryGetValue(level, out int[] levelInks))
-        {
-            Debug.LogError($"LevelSetup.csv has no pen configuration for Level_{level}.");
-            return;
-        }
-
-        Drawer.Instance.woodPen.maxStrokes = levelInks[0];
-        Drawer.Instance.cloudPen.maxStrokes = levelInks[1];
-        Drawer.Instance.steelPen.maxStrokes = levelInks[2];
-        Drawer.Instance.electricPen.maxStrokes = levelInks[3];
-
+        Drawer.Instance.woodPen.maxStrokes = definition.wood;
+        Drawer.Instance.cloudPen.maxStrokes = definition.cloud;
+        Drawer.Instance.steelPen.maxStrokes = definition.steel;
+        Drawer.Instance.electricPen.maxStrokes = definition.electric;
 
         if (drawerUI != null)
         {

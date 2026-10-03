@@ -10,9 +10,12 @@ public class GeneralUI : MonoBehaviourPunCallbacks
     public void LeaveRoom()
     {
         print("Enter LeaveRoom");
-        GameManager.Instance.LeaveRoom();
-        //PhotonNetwork.LeaveRoom();
+        // Preserve the serialized button method name; gameplay Back now keeps the room and roles.
+        GameManager.Instance.BackToRoomSelectionPage();
     }
+
+    // Explicit alias for future authored return controls; existing buttons retain their method name.
+    public void ReturnToLevelSelection() => GameManager.Instance.BackToRoomSelectionPage();
 
     public void ResetGame()
     {

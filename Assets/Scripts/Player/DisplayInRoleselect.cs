@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Photon.Pun;
 using TMPro;
+using System.Linq;
 
 public class DisplayInRoleselect : MonoBehaviourPunCallbacks
 {
@@ -22,23 +23,13 @@ public class DisplayInRoleselect : MonoBehaviourPunCallbacks
         if (boundAsLocalUi) return;
         if (isFinal)
         {
-            TMP_Text name = transform.Find("PlayerName").GetComponent<TMP_Text>();
-            if (isMine)
-            {
-                SetUpAppearance((int)PhotonNetwork.LocalPlayer.CustomProperties["Eyes"]
-                    , (int)PhotonNetwork.LocalPlayer.CustomProperties["Mouth"]
-                    , (Vector3)PhotonNetwork.LocalPlayer.CustomProperties["Color"]);
-                name.text = PhotonNetwork.LocalPlayer.NickName;
-
-            }
-            else
-            {
-                SetUpAppearance((int)PhotonNetwork.PlayerListOthers[0].CustomProperties["Eyes"]
-                    , (int)PhotonNetwork.PlayerListOthers[0].CustomProperties["Mouth"]
-                    , (Vector3)PhotonNetwork.PlayerListOthers[0].CustomProperties["Color"]);
-                name.text = PhotonNetwork.PlayerListOthers[0].NickName;
-
-            }
+            // Local co-op has two roles but only one Photon actor. A final display must not
+            // index a nonexistent remote actor; use the existing safe property binding.
+            var player = isMine || PhotonNetwork.OfflineMode
+                ? PhotonNetwork.LocalPlayer : PhotonNetwork.PlayerListOthers.FirstOrDefault();
+            if (player != null) BindPlayer(player);
+            else gameObject.SetActive(false);
+            return;
         }
         else
         {

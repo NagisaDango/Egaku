@@ -2601,6 +2601,7 @@ GameObject:
   - component: {fileID: 1402294035}
   - component: {fileID: 1402294034}
   - component: {fileID: 1402294033}
+  - component: {fileID: 1402294036}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -2696,6 +2697,25 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
+--- !u!114 &1402294036
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1402294031}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 909e4bc03ea9e184bb77f1006e70d105, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SelectionSceneBindings
+  roomSelection: {fileID: 1250564875}
+  roleSelection: {fileID: 1130844069}
+  levelSelection: {fileID: 279528520}
+  gridLayout: {fileID: 161853600}
+  nameField: {fileID: 272134059}
+  createJoinButton: {fileID: 2056125280}
+  backButton: {fileID: 1105151108}
 --- !u!1 &1562104430
 GameObject:
   m_ObjectHideFlags: 0

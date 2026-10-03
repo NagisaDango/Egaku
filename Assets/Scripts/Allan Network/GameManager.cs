@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using Photon.Pun;
@@ -102,6 +102,15 @@ namespace Allan
         public int levelCounts = 3;
         public int levelUnlocked = 3;
         public int currentLevel = 0;
+        // Retain serialized unlock counts: today's test scene starts fully unlocked.
+        private LevelCatalog levelCatalog;
+        private bool sceneLoadInFlight;
+        private bool returnHomeAfterLeave;
+        private Coroutine gameplayReadyCoroutine;
+        // Commands use room properties because this persistent object's PhotonView does not
+        // survive scene changes reliably. Only the Master executes shared navigation.
+        private const string ReturnSelectionRequestKey = "sceneReturnSelectionRequest";
+        private const string UnlockedLevelsKey = "sceneUnlockedLevels";
 
         public bool offline = false;
         private void Awake()
@@ -139,31 +148,11 @@ namespace Allan
             SetRecoveryPause(false);
             DontDestroyOnLoad(this.gameObject);
 
-            //Transform canvas = GameObject.Find("Canvas").transform;
-            //roomSelection = canvas.Find("RoomSelection").gameObject;
-            //roleSelection = canvas.Find("RoleSelection").gameObject;
-            //levelSelection = canvas.Find("LevelSelection").gameObject;
+            levelCatalog = LevelCatalog.Load();
+            if (levelCatalog == null) Debug.LogError("LevelCatalog is missing; scene navigation is unavailable.", this);
+            else levelCounts = levelCatalog.levels.Count;
+            UpdateProperty();
 
-            //gridLayout = roomSelection.transform.Find("Scroll View/Viewport/Content");
-            //nameField = roomSelection.transform.Find("RoomNameInputField").GetComponent<TMP_InputField>();
-            roomSelection.SetActive(true);
-            roleSelection.SetActive(false);
-            levelSelection.SetActive(false);
-
-
-
-            levelSelection.transform.Find("BackButton").GetComponent<Button>().onClick.AddListener(() => { Back2RoleSelection(); });
-
-
-            roomCreateOrJoinButton.onClick.AddListener(() => { CreateJoinButton(); });
-            //startGameButton.onClick.AddListener(() => { LoadLevelSelection(); });
-            //devStartGameButton.onClick.AddListener(() => { DevSpawnPlayers(); });
-
-            //go.UpdateProperty(roomSelection, roleSelection, levelSelection, gridLayout, nameField);
-            // Legacy RoleSelect leave button. OnlineSelection invokes LeaveRoom through its Prefab event.
-            // leaveGameButton.onClick.AddListener(() => { LeaveRoom(); });
-            ConfigurePrivateRoomCodeUi();
-            ConfigureGameplayDeviceUi();
         }
 
         private void OnDestroy()
@@ -207,6 +196,9 @@ namespace Allan
 
         public override void OnEnable()
         {
+            // A duplicate scene manager is destroyed at end of frame; it must not bind the
+            // fresh scene UI or register callbacks during that interval.
+            if (Instance != this) return;
             base.OnEnable();
             SceneManager.sceneLoaded += OnSceneLoaded;
             //EventHandler.ReachDestinationEvent += OnReachDestination;
@@ -225,11 +217,18 @@ namespace Allan
 
         public void LoadLevel(int level)
         {
-            if (level < levelUnlocked)
+            if (sceneLoadInFlight || recoveryRefreshInProgress ||
+                (!PhotonNetwork.OfflineMode && !PhotonNetwork.IsMasterClient)) return;
+            LevelCatalog.Definition target = levelCatalog != null ? levelCatalog.Find(level) : null;
+            if (target == null || !levelCatalog.IsUnlocked(level, levelUnlocked) ||
+                !Application.CanStreamedLevelBeLoaded(target.sceneName))
             {
-                currentLevel = level;
-                PhotonNetwork.LoadLevel("Level_" + level);
+                Debug.LogWarning($"Cannot load level {level}: missing scene/catalog entry or locked level.");
+                return;
             }
+            sceneLoadInFlight = true;
+            currentLevel = level;
+            PhotonNetwork.LoadLevel(target.sceneName);
         }
 
         [PunRPC] public void RPC_LoadLevel(int level)
@@ -300,30 +299,27 @@ namespace Allan
 
         public void UpdateProperty()
         {
-            Transform canvas = GameObject.Find("Canvas").transform;
-            roomSelection = canvas.Find("RoomSelection").gameObject;
-            roleSelection = canvas.Find("RoleSelection").gameObject;
-            levelSelection = canvas.Find("LevelSelection").gameObject;
-
-            gridLayout = roomSelection.transform.Find("Scroll View/Viewport/Content");
-            nameField = roomSelection.transform.Find("RoomNameInputField").GetComponent<TMP_InputField>();
-
-
-
-            roomCreateOrJoinButton = roomSelection.transform.Find("Button").GetComponent<Button>();
-            // Legacy RoleSelect controls are no longer present in the reorganized scene.
-            // startGameButton = roleSelection.transform.Find("Start").GetComponent<Button>();
-            // leaveGameButton = roleSelection.transform.Find("LeaveRoomButton").GetComponent<Button>();
-            // devStartGameButton = roleSelection.transform.Find("DevButton").GetComponent<Button>();
-
-
-            roomCreateOrJoinButton.onClick.AddListener(() => { CreateJoinButton(); });
-            // Legacy RoleSelect listeners. Current Selection views own these transitions.
-            // startGameButton.onClick.AddListener(() => { LoadLevelSelection(); });
-            // devStartGameButton.onClick.AddListener(() => { DevSpawnPlayers(); });
-            // leaveGameButton.onClick.AddListener(() => { LeaveRoom(); });
-
-            levelSelection.transform.Find("BackButton").GetComponent<Button>().onClick.AddListener(() => { Back2RoleSelection(); });
+            // Each selection scene owns its references. Rebinding is idempotent, including
+            // repeated callbacks on the same scene; persistent serialized fields remain compatible.
+            Scene selectionScene = SceneManager.GetSceneByName(LevelCatalog.SelectionScene);
+            if (!selectionScene.IsValid() || !selectionScene.isLoaded) return;
+            SelectionSceneBindings bindings = selectionScene.GetRootGameObjects()
+                .SelectMany(root => root.GetComponentsInChildren<SelectionSceneBindings>(true)).FirstOrDefault();
+            if (bindings == null)
+            {
+                Debug.LogError("RoleSelection is missing SelectionSceneBindings.", this);
+                return;
+            }
+            roomSelection = bindings.roomSelection;
+            roleSelection = bindings.roleSelection;
+            levelSelection = bindings.levelSelection;
+            gridLayout = bindings.gridLayout;
+            nameField = bindings.nameField;
+            roomCreateOrJoinButton = bindings.createJoinButton;
+            roomCreateOrJoinButton.onClick.RemoveListener(CreateJoinButton);
+            roomCreateOrJoinButton.onClick.AddListener(CreateJoinButton);
+            bindings.backButton.onClick.RemoveListener(Back2RoleSelection);
+            bindings.backButton.onClick.AddListener(Back2RoleSelection);
             ConfigurePrivateRoomCodeUi();
             ConfigureGameplayDeviceUi();
         }
@@ -393,13 +389,52 @@ namespace Allan
 
         public void BackToHomePage()
         {
-            PhotonNetwork.LoadLevel("AllanLaunch");
+            // Home leaves the session; returning to level selection preserves both actors and roles.
+            returnHomeAfterLeave = true;
+            explicitLeaveRequested = true;
+            ClearPendingRoomRequest();
+            if (PhotonNetwork.InRoom)
+            {
+                if (!PhotonNetwork.OfflineMode && PhotonNetwork.IsMasterClient) CloseSessionPermanently();
+                PhotonNetwork.LeaveRoom(false);
+            }
+            else PhotonNetwork.LoadLevel(LevelCatalog.LauncherScene);
         }
 
         public void BackToRoomSelectionPage()
         {
-            PhotonNetwork.LoadLevel("RoleSelection");
-            //LoadLevelSelection();
+            if (sceneLoadInFlight || recoveryRefreshInProgress) return;
+            if (PhotonNetwork.OfflineMode || PhotonNetwork.IsMasterClient)
+                ReturnTogetherToLevelSelection();
+            else if (PhotonNetwork.InRoom)
+            {
+                Hashtable properties = PhotonNetwork.CurrentRoom.CustomProperties;
+                bool hasRequest = properties.TryGetValue(ReturnSelectionRequestKey, out object value);
+                int previous = hasRequest ? (int)value : 0;
+                // Photon CAS cannot create an absent property. Initialize the first request
+                // without an expectation; subsequent clicks compare the existing counter.
+                PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable { { ReturnSelectionRequestKey, previous + 1 } },
+                    hasRequest ? new Hashtable { { ReturnSelectionRequestKey, previous } } : null);
+            }
+        }
+
+        private void ReturnTogetherToLevelSelection()
+        {
+            if (sceneLoadInFlight || recoveryRefreshInProgress || !PhotonNetwork.InRoom ||
+                (!PhotonNetwork.OfflineMode && !PhotonNetwork.IsMasterClient)) return;
+            string active = SceneManager.GetActiveScene().name;
+            if (active == LevelCatalog.SelectionScene) return;
+            sceneLoadInFlight = true;
+            // Retire spawned players/strokes and their cached RPCs before retaining the room.
+            // Room role slots and ready actors stay intact so both peers can select another level.
+            PhotonNetwork.DestroyAll();
+            if (!PhotonNetwork.OfflineMode)
+                PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable
+                {
+                    { PhotonSessionPolicy.RoleSelectionPhaseKey, PhotonSessionPolicy.RoleSelectionPhaseLevels },
+                    { UnlockedLevelsKey, levelUnlocked }
+                });
+            PhotonNetwork.LoadLevel(LevelCatalog.SelectionScene);
         }
 
         public void ExitGame()
@@ -410,32 +445,20 @@ namespace Allan
 
         public void OnReachDestination()
         {
-            print("Enter OnReachDestination");
-
-
-            if(PhotonNetwork.OfflineMode ||  PhotonNetwork.IsMasterClient)//PhotonNetwork.IsMasterClient)
+            if (sceneLoadInFlight || recoveryRefreshInProgress || levelCatalog == null ||
+                (!PhotonNetwork.OfflineMode && !PhotonNetwork.IsMasterClient)) return;
+            levelUnlocked = levelCatalog.UnlockedAfter(currentLevel, levelUnlocked);
+            if (PhotonNetwork.InRoom && !PhotonNetwork.OfflineMode)
+                PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable { { UnlockedLevelsKey, levelUnlocked } });
+            LevelCatalog.Definition next = levelCatalog.Next(currentLevel);
+            // Completing the last entry finishes the game, independently of unlock counts.
+            if (next == null)
             {
-                if (currentLevel+1 == levelUnlocked)
-                {
-                    levelUnlocked++;
-
-                    if(levelUnlocked >= levelCounts)
-                    {
-                        PhotonNetwork.LoadLevel("FinishGame");
-                    }
-
-                    currentLevel = levelUnlocked;
-                    //LoadLevel(currentLevel);
-                    LoadLevel(currentLevel);
-                }
-                else
-                {
-                    //LoadLevel(currentLevel + 1);
-                    LoadLevel(currentLevel + 1);
-
-                }
+                sceneLoadInFlight = true;
+                PhotonNetwork.LoadLevel(LevelCatalog.FinishScene);
+                return;
             }
-
+            LoadLevel(next.id);
         }
 
         public void LoadLevelSelection()
@@ -545,7 +568,7 @@ namespace Allan
                 var r = PhotonNetwork.Instantiate(playerPrefab.name, spawnPosition, Quaternion.identity);
                 r.name = playerPrefab.name;
                 if(playerRole == PlayerRole.Runner) 
-                    GameObject.Find("LevelSetup").GetComponent<LevelSetup>().Init(r.GetComponent<Runner>());
+                    LevelSetup.FindInScene(SceneManager.GetActiveScene()).Init(r.GetComponent<Runner>());
             }
             else
             {
@@ -662,7 +685,7 @@ namespace Allan
 
             if (PhotonNetwork.OfflineMode)
             {
-                PhotonNetwork.LoadLevel("RoleSelection");
+                BackToRoomSelectionPage();
                 return;
             }
             // Multiple UnityEvent bindings must not send LeaveRoom again while Photon is already leaving.
@@ -690,12 +713,14 @@ namespace Allan
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             Debug.Log("Enter OnSceneLoaded " + scene.name);
+            sceneLoadInFlight = false;
+            if (gameplayReadyCoroutine != null) StopCoroutine(gameplayReadyCoroutine);
+            gameplayReadyCoroutine = null;
 
-            if (scene.name.Contains("Level_"))
+            LevelCatalog.Definition definition = levelCatalog != null ? levelCatalog.FindScene(scene.name) : null;
+            if (definition != null)
             {
-                EventHandler.CallLevelStartEvent();
-
-                currentLevel = int.Parse(scene.name.Split('_')[1]);
+                currentLevel = definition.id;
 
                 Debug.Log($"Scene {scene.name} loaded. Spawning player...");
                 if (devSpawn)
@@ -704,11 +729,13 @@ namespace Allan
                     d.name = drawerPrefab.name;
                     var r = PhotonNetwork.Instantiate(runnerPrefab.name, new Vector3(0, 5, 0), Quaternion.identity);
                     r.name = runnerPrefab.name;
-                    GameObject.Find("LevelSetup").GetComponent<LevelSetup>().Init(r.GetComponent<Runner>());
+                    LevelSetup.FindInScene(scene).Init(r.GetComponent<Runner>());
                 }
                 else SpawnPlayer();
 
-                CompleteLocalRecoverySceneRefresh(scene.name);
+                // Start callbacks, remote role arrivals, camera binding and Drawer UI must finish
+                // before this actor acknowledges recovery. Never treat sceneLoaded as gameplay-ready.
+                gameplayReadyCoroutine = StartCoroutine(WaitForGameplayReady(scene, recoveryRefreshEpoch));
 
             }
             else if (scene.name == "RoleSelection")
@@ -746,6 +773,18 @@ namespace Allan
                 PhotonNetwork.OfflineMode = false;
                 Destroy(gameObject);
             }
+        }
+
+        private IEnumerator WaitForGameplayReady(Scene scene, int epoch)
+        {
+            yield return null;
+            LevelSetup setup = LevelSetup.FindInScene(scene);
+            while (scene.IsValid() && SceneManager.GetActiveScene() == scene &&
+                   (setup == null || !setup.IsGameplayReady)) yield return null;
+            gameplayReadyCoroutine = null;
+            if (!scene.IsValid() || SceneManager.GetActiveScene() != scene) yield break;
+            EventHandler.CallLevelStartEvent();
+            if (epoch == recoveryRefreshEpoch) CompleteLocalRecoverySceneRefresh(scene.name);
         }
 
         public void CreateJoinButton()
@@ -1082,7 +1121,7 @@ namespace Allan
             SceneManager.LoadScene(targetScene, LoadSceneMode.Single);
         }
 
-        /// <summary>Releases recovery input pause after this client rebuilt the requested gameplay scene.</summary>
+        /// <summary>Acknowledges local gameplay readiness; shared epoch completion releases input.</summary>
         private void CompleteLocalRecoverySceneRefresh(string loadedScene)
         {
             if (!recoveryRefreshInProgress || recoveryRefreshEpoch <= 0 ||
@@ -1101,12 +1140,7 @@ namespace Allan
             });
             if (PhotonNetwork.IsMasterClient)
                 recoveryTargetLoadIssued = true;
-            if (!PhotonNetwork.IsMasterClient)
-            {
-                recoveryRefreshInProgress = false;
-                StopRecoveryRefreshTimeout();
-            }
-            SetRecoveryInputPause(false);
+            // Keep both clients paused until the Master's room-property completion arrives.
             TryCompleteSharedRecoverySceneRefresh();
         }
 
@@ -1128,9 +1162,8 @@ namespace Allan
                 { PhotonSessionPolicy.RecoveryRefreshTargetKey, string.Empty },
                 { PhotonSessionPolicy.RecoveryRefreshReadyKey, 0 }
             });
-            recoveryRefreshInProgress = false;
+            // Stay paused until the epoch-zero echo releases the barrier on both peers.
             recoveryTargetLoadIssued = false;
-            recoveryLocalReloadIssued = false;
             StopRecoveryRefreshTimeout();
         }
 
@@ -1462,9 +1495,10 @@ namespace Allan
             ResetLocalRecoveryRefreshState();
             SetRecoveryPause(false);
 
-            if (PhotonNetwork.OfflineMode)
+            if (returnHomeAfterLeave || PhotonNetwork.OfflineMode)
             {
-                PhotonNetwork.LoadLevel("AllanLauncher");
+                returnHomeAfterLeave = false;
+                PhotonNetwork.LoadLevel(LevelCatalog.LauncherScene);
                 return;
             }
 
@@ -1576,7 +1610,15 @@ namespace Allan
             Debug.Log($"Master Client switched to actor {newMasterClient.ActorNumber}.");
             // The new master becomes the sole writer for lobby-visible player names.
             if (PhotonNetwork.IsMasterClient)
+            {
                 UpdateRoomPlayerList(PhotonNetwork.CurrentRoom.Players);
+                // A former non-Master may already have acknowledged its local initialization.
+                recoveryTargetLoadIssued = recoveryRefreshEpoch > 0 &&
+                    recoveryLocalLoadCompletedEpoch == recoveryRefreshEpoch;
+                // The new Master resumes the same epoch instead of waiting for another property change.
+                TryAdvanceRecoverySceneRefreshToLoad();
+                TryCompleteSharedRecoverySceneRefresh();
+            }
         }
 
         public override void OnDisconnected(DisconnectCause cause)
@@ -1634,6 +1676,18 @@ namespace Allan
             foreach (var key in propertiesThatChanged.Keys)
             {
                 Debug.Log($"Room Properly changed:{key} ->{propertiesThatChanged[key]}, ROOM:{PhotonNetwork.CurrentRoom.Name}");
+            }
+
+            if (propertiesThatChanged.TryGetValue(UnlockedLevelsKey, out object unlocked) && unlocked is int count)
+                levelUnlocked = Mathf.Clamp(count, 0, levelCounts);
+            if (PhotonNetwork.IsMasterClient && propertiesThatChanged.ContainsKey(ReturnSelectionRequestKey))
+                ReturnTogetherToLevelSelection();
+            if (propertiesThatChanged.TryGetValue(PhotonSessionPolicy.RecoveryRefreshEpochKey, out object completed) &&
+                completed is int completedEpoch && completedEpoch == 0 && recoveryRefreshInProgress)
+            {
+                // Epoch zero is published only after both gameplay-ready acknowledgements (or timeout).
+                ResetLocalRecoveryRefreshState();
+                SetRecoveryInputPause(false);
             }
 
             if (propertiesThatChanged.ContainsKey(PhotonSessionPolicy.RoleSelectionPhaseKey) &&

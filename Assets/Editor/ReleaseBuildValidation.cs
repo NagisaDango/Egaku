@@ -22,6 +22,10 @@ namespace Egaku.Editor
 
         private static void BuildWindowsDevelopment(string clientName)
         {
+            // Reject inconsistent catalog/scene references before packaging a Player.
+            string[] setupErrors = SceneSetupValidation.Validate();
+            if (setupErrors.Length != 0)
+                throw new BuildFailedException(string.Join("\n", setupErrors));
             // Use the production Build Settings order so a release check cannot silently omit a level.
             string[] scenes = EditorBuildSettings.scenes
                 .Where(scene => scene.enabled)

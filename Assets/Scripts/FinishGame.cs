@@ -12,8 +12,8 @@ public class FinishGame : MonoBehaviourPun
 
     public void BackToHomePage()
     {
-        //GameManager.Instance.LeaveRoom();
-        GameManager.Instance.LeaveRoom();
+        // Home is a local departure; shared level selection uses the separate handler below.
+        GameManager.Instance.BackToHomePage();
         //PhotonNetwork.LeaveRoom(); 
         //PhotonNetwork.LeaveLobby();
         //PhotonNetwork.LoadLevel("AllanLauncher");
@@ -21,7 +21,7 @@ public class FinishGame : MonoBehaviourPun
 
     public void BackToRoomSelectionPage()
     {
-        PhotonNetwork.LoadLevel("RoleSelection");
+        GameManager.Instance.BackToRoomSelectionPage();
         //LoadLevelSelection();
     }
 

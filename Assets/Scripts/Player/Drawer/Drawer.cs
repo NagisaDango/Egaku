@@ -12,6 +12,8 @@ using Allan;
 public class Drawer : MonoBehaviourPun
 {
     public static Drawer Instance;
+    // Remote copies need no UI; the local copy acknowledges only after UI/camera setup succeeds.
+    public bool SceneReady { get; private set; }
     public DrawMesh drawMeshPrefab;
     public DrawMesh drawMeshSpriteShapePrefab;
     private DrawMesh currentDrawer;
@@ -96,7 +98,7 @@ public class Drawer : MonoBehaviourPun
             print("This is the draweer spawning UI");
             OnPenSelect += SetPenProperties;
             GameObject UI = Instantiate(drawerPanelPrefab).transform.GetChild(0).gameObject;
-            LevelSetup levelSetup = GameObject.Find("LevelSetup").GetComponent<LevelSetup>();
+            LevelSetup levelSetup = LevelSetup.FindInScene(gameObject.scene);
             DrawerUICOntrol drawerUI = UI.GetComponent<DrawerUICOntrol>();
             levelSetup.Init(drawerUI);
 
@@ -133,6 +135,7 @@ public class Drawer : MonoBehaviourPun
                 cameraController = null;
             }
         }
+        SceneReady = true;
     }
 
 
@@ -159,6 +162,9 @@ public class Drawer : MonoBehaviourPun
 
     private void OnDestroy()
     {
+        // Scene changes destroy the owning Drawer; its static pen-selection subscription
+        // must not keep old cursor handlers alive through later levels and refreshes.
+        OnPenSelect -= SetPenProperties;
         EgakuSettings.Changed -= RefreshCursorForSettings;
         if (photonView.IsMine) Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
         if (scaledCursor != null) Destroy(scaledCursor);

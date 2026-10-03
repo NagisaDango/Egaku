@@ -14,6 +14,11 @@ public class DrawerUICOntrol : MonoBehaviour
 
     [SerializeField] private Button unLockBtn;
     [SerializeField] private Toggle eraseModeToggle;
+    // Refresh can destroy the UI during its opening animation. Own and retire that tween
+    // instead of letting DOTween continue writing to a destroyed RectTransform.
+    private Tween panelTween;
+
+    private void OnDestroy() => panelTween?.Kill();
 
 
     private void Awake()
@@ -88,7 +93,8 @@ public class DrawerUICOntrol : MonoBehaviour
     
     private void OpenDrawerPanel()
     {
-        DOTween.To(
+        panelTween?.Kill();
+        panelTween = DOTween.To(
             () => drawerPanel.anchoredPosition,
             pos => drawerPanel.anchoredPosition = pos,
             new Vector2(0, drawerPanel.anchoredPosition.y),
@@ -99,7 +105,8 @@ public class DrawerUICOntrol : MonoBehaviour
 
     private void CloseDrawerPanel()
     {
-        DOTween.To(
+        panelTween?.Kill();
+        panelTween = DOTween.To(
             () => drawerPanel.anchoredPosition,
             pos => drawerPanel.anchoredPosition = pos,
             new Vector2(-500, drawerPanel.anchoredPosition.y),

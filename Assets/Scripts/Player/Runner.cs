@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using ExitGames.Client.Photon;
 using Photon.Pun;
@@ -18,6 +18,8 @@ public class Runner : MonoBehaviourPunCallbacks
     [Tooltip("The local player instance. Use this to know if the local player is represented in the Scene")]
     public static GameObject LocalPlayerInstance;
     public static Runner Instance;
+    // Local readiness includes authority, camera and input initialization; refreshed instances start false.
+    public bool SceneReady { get; private set; }
     private RunnerMovement _RunnerMovement;
     private Rigidbody2D rb;
     private Collider2D col;
@@ -125,7 +127,7 @@ public class Runner : MonoBehaviourPunCallbacks
         col = GetComponent<Collider2D>();
         fixedJoint2D.enabled = false;
         fixedJoint2D.connectedBody = null;
-        LevelSetup LevelM = GameObject.Find("LevelSetup").GetComponent<LevelSetup>();
+        LevelSetup LevelM = LevelSetup.FindInScene(gameObject.scene);
         if (LevelM != null)
             LevelM.SetUpCamera(this);
         if (!photonView.IsMine)
@@ -152,6 +154,7 @@ public class Runner : MonoBehaviourPunCallbacks
         _RunnerMovement = new RunnerMovement(rb, col, movementTuning, grabTuning);
         if (respawnVisual == null)
             respawnVisual = new RunnerRespawnVisual(gameObject);
+        SceneReady = LevelM != null;
     }
 
     private bool holdingShift;
