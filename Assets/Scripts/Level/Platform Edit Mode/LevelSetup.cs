@@ -33,7 +33,15 @@ public class LevelSetup : MonoBehaviourPun
         return null;
     }
     // Both role copies must have completed Start. Only the owning Drawer creates local UI.
-    public bool IsGameplayReady => _camera != null && Camera.main != null &&
+    private Camera GameplayCamera
+    {
+        get
+        {
+            var context = GameplaySceneContext.FindInScene(gameObject.scene);
+            return context != null ? context.gameplayCamera : Camera.main;
+        }
+    }
+    public bool IsGameplayReady => _camera != null && GameplayCamera != null &&
         Runner.Instance != null && Runner.Instance.gameObject.scene == gameObject.scene && Runner.Instance.SceneReady &&
         Drawer.Instance != null && Drawer.Instance.gameObject.scene == gameObject.scene && Drawer.Instance.SceneReady;
 
@@ -85,11 +93,11 @@ public class LevelSetup : MonoBehaviourPun
         // If a future level omits it, retain the original follow camera instead of allowing unbounded travel.
         CinemachineConfiner2D confiner = _camera != null ? _camera.GetComponent<CinemachineConfiner2D>() : null;
         Collider2D bound = confiner != null ? confiner.BoundingShape2D : null;
-        if (_camera == null || bound == null || Camera.main == null)
+        if (_camera == null || bound == null || GameplayCamera == null)
             return false;
 
         drawerCameraController = controller;
-        controller.Initialize(this, _camera, Camera.main, bound, runnerCameraTarget, panSpeed);
+        controller.Initialize(this, _camera, GameplayCamera, bound, runnerCameraTarget, panSpeed);
         return true;
     }
 

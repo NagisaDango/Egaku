@@ -14,6 +14,7 @@ public class Drawer : MonoBehaviourPun
     public static Drawer Instance;
     // Remote copies need no UI; the local copy acknowledges only after UI/camera setup succeeds.
     public bool SceneReady { get; private set; }
+    private Camera gameplayCamera;
     public DrawMesh drawMeshPrefab;
     public DrawMesh drawMeshSpriteShapePrefab;
     private DrawMesh currentDrawer;
@@ -67,7 +68,15 @@ public class Drawer : MonoBehaviourPun
 
         //DontDestroyOnLoad(this.gameObject);
         Instance = this;
-        inkSlider = GameObject.Find("GameCanvas/Panel/Slider").GetComponent<Slider>();
+        // Production levels bind their authored UI; Level_0 keeps its legacy setup for compatibility.
+        var context = GameplaySceneContext.FindInScene(gameObject.scene);
+        gameplayCamera = context != null ? context.gameplayCamera : Camera.main;
+        if (context != null) inkSlider = context.inkSlider;
+        else if (gameObject.scene.name == "Level_0")
+        {
+            var legacySlider = GameObject.Find("GameCanvas/Panel/Slider");
+            if (legacySlider != null) inkSlider = legacySlider.GetComponent<Slider>();
+        }
         currentPenType = PenUI.PenType.None;
         penProperties =
             new List<PenProperty>
@@ -83,6 +92,14 @@ public class Drawer : MonoBehaviourPun
     
     private void Start()
     {
+        // Leave readiness false on broken scene references; the manager reports and exits the stalled load.
+        LevelSetup levelSetup = LevelSetup.FindInScene(gameObject.scene);
+        if (levelSetup == null || inkSlider == null || gameplayCamera == null || (photonView.IsMine && drawerPanelPrefab == null))
+        {
+            Debug.LogError("Drawer initialization failed: missing level setup, ink slider or UI prefab.", this);
+            enabled = false;
+            return;
+        }
         //if (Instance == null)
         //{
         //    Instance = this;
@@ -98,7 +115,6 @@ public class Drawer : MonoBehaviourPun
             print("This is the draweer spawning UI");
             OnPenSelect += SetPenProperties;
             GameObject UI = Instantiate(drawerPanelPrefab).transform.GetChild(0).gameObject;
-            LevelSetup levelSetup = LevelSetup.FindInScene(gameObject.scene);
             DrawerUICOntrol drawerUI = UI.GetComponent<DrawerUICOntrol>();
             levelSetup.Init(drawerUI);
 
@@ -302,7 +318,7 @@ public class Drawer : MonoBehaviourPun
             else
             {
                 SetPenProperties(PenUI.PenType.Eraser);
-                Vector2 erasePosition = Camera.main.ScreenToWorldPoint(GameplayInput.PointerScreenPosition(false));
+                Vector2 erasePosition = gameplayCamera.ScreenToWorldPoint(GameplayInput.PointerScreenPosition(false));
                 if (CanUsePointer(erasePosition))
                     EraseDrawnObj(erasePosition);
             }
@@ -484,7 +500,7 @@ public class Drawer : MonoBehaviourPun
     
     private Vector3 GetMouseWorldPosition()
     {
-        Vector3 worldPosition = Camera.main.ScreenToWorldPoint(GameplayInput.PointerScreenPosition(false));
+        Vector3 worldPosition = gameplayCamera.ScreenToWorldPoint(GameplayInput.PointerScreenPosition(false));
         worldPosition.z = 0;
         return worldPosition;
     }

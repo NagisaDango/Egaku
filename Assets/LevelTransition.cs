@@ -22,6 +22,12 @@ public class LevelTransition : MonoBehaviourPunCallbacks
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Awake()
     {
+        // A missing visual is reported, but must not block the persistent departure controller.
+        if (image == null || image.material == null)
+        {
+            Debug.LogWarning("Transition mask is missing; scene flow will continue without the visual.", this);
+            return;
+        }
         matTransition = Instantiate(image.material);
         image.material = matTransition;
     }
@@ -60,7 +66,7 @@ public class LevelTransition : MonoBehaviourPunCallbacks
         if (ending || GameManager.InteractionsPausedForRecovery) return;
         ending = true;
         StopAllCoroutines();
-        StartCoroutine(ShowTransitionEndScene());
+        if (GameManager.Instance != null) GameManager.Instance.BeginLevelDeparture(this);
     }
 
     public void LoadLevelStart()
@@ -74,35 +80,56 @@ public class LevelTransition : MonoBehaviourPunCallbacks
 
     IEnumerator ShowTransitionEndScene()
     {
-        RectTransform canvasRect = canvas.GetComponent<RectTransform>();
-        Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(Camera.main, GameObject.FindGameObjectWithTag("Player").transform.position);
-        Vector2 localPoint;
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPoint, canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera, out localPoint);
-        Vector2 size = canvasRect.rect.size;
-        Vector2 uv = (localPoint + size * 0.5f) / size;
-        matTransition.SetVector("_Center", new Vector4(uv.x, uv.y, 0, 0));
-
+        if (matTransition == null) yield break;
+        // The role instance is explicit; remote/local ownership does not change the visual's target.
+        Vector2 uv = GetCenter(Runner.Instance != null ? Runner.Instance.transform.position : (Vector3?)null);
         yield return AnimateRadius(GetOpenRadius(uv, (float)Screen.width / Screen.height), 0f, outTime);
+    }
 
-        // The manager alone decides next/finish; animation has no progression state of its own.
-        GameManager.Instance.OnReachDestination();
+    public void PlayClosingVisual()
+    {
+        // Disabled presentation is a valid fallback; do not start a coroutine on an inactive GameObject.
+        if (isActiveAndEnabled) StartCoroutine(ShowTransitionEndScene());
+    }
 
-
+    public void FinishClosingVisual()
+    {
+        StopAllCoroutines();
+        if (matTransition != null) matTransition.SetFloat("_Radius", 0f);
     }
 
     IEnumerator ShowTransitionStartScene()
     {
-        RectTransform canvasRect = canvas.GetComponent<RectTransform>();
-        Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(Camera.main, (Vector3)LevelSetup.FindInScene(gameObject.scene).GetRevivePos());
-        Vector2 localPoint;
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPoint, canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera, out localPoint);
-        Vector2 size = canvasRect.rect.size;
-        Vector2 uv = (localPoint + size * 0.5f) / size;
-
-
-
-        matTransition.SetVector("_Center", new Vector4(uv.x, uv.y, 0, 0));
+        if (matTransition == null) yield break;
+        LevelSetup setup = LevelSetup.FindInScene(gameObject.scene);
+        Vector2 uv = GetCenter(setup != null ? (Vector3)setup.GetRevivePos() : (Vector3?)null);
         yield return AnimateRadius(0f, GetOpenRadius(uv, (float)Screen.width / Screen.height), inTime);
+    }
+
+    private Vector2 GetCenter(Vector3? position)
+    {
+        // Missing camera/target or a collapsed Canvas uses a centered wipe instead of throwing.
+        Vector2 uv = new Vector2(0.5f, 0.5f);
+        var context = GameplaySceneContext.FindInScene(gameObject.scene);
+        Camera viewCamera = context != null ? context.gameplayCamera : Camera.main;
+        if (canvas != null && viewCamera != null && position.HasValue)
+        {
+            var rect = canvas.GetComponent<RectTransform>();
+            Vector2 localPoint;
+            if (rect != null && rect.rect.width > 0f && rect.rect.height > 0f &&
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(rect,
+                    RectTransformUtility.WorldToScreenPoint(viewCamera, position.Value),
+                    canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera, out localPoint))
+                uv = (localPoint + rect.rect.size * 0.5f) / rect.rect.size;
+        }
+        matTransition.SetVector("_Center", new Vector4(uv.x, uv.y, 0, 0));
+        return uv;
+    }
+
+    private void OnDestroy()
+    {
+        // Each scene owns its cloned mask material; never destroy the authored shared asset.
+        if (matTransition != null) Destroy(matTransition);
     }
 
     private static float GetOpenRadius(Vector2 center, float aspect)
@@ -120,7 +147,7 @@ public class LevelTransition : MonoBehaviourPunCallbacks
         while (elapsedTime < duration)
         {
             matTransition.SetFloat("_Radius", Mathf.Lerp(from, to, elapsedTime / duration));
-            elapsedTime += Time.deltaTime;
+            elapsedTime += Time.unscaledDeltaTime;
             yield return null;
         }
 

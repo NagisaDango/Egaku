@@ -128,6 +128,15 @@ public class Runner : MonoBehaviourPunCallbacks
         fixedJoint2D.enabled = false;
         fixedJoint2D.connectedBody = null;
         LevelSetup LevelM = LevelSetup.FindInScene(gameObject.scene);
+        var sceneContext = GameplaySceneContext.FindInScene(gameObject.scene);
+        Camera sceneCamera = sceneContext != null ? sceneContext.gameplayCamera : Camera.main;
+        if (LevelM == null || sceneCamera == null)
+        {
+            // Do not acknowledge a partially initialized player or throw before the readiness watchdog can recover.
+            Debug.LogError("Runner initialization failed: missing level setup or camera.", this);
+            enabled = false;
+            return;
+        }
         if (LevelM != null)
             LevelM.SetUpCamera(this);
         if (!photonView.IsMine)
@@ -141,9 +150,9 @@ public class Runner : MonoBehaviourPunCallbacks
         }
         else
         {
-            runnerMouse = PhotonNetwork.Instantiate("RunnerMouse", Camera.main.ScreenToWorldPoint(Input.mousePosition),
+            runnerMouse = PhotonNetwork.Instantiate("RunnerMouse", sceneCamera.ScreenToWorldPoint(Input.mousePosition),
                 Quaternion.identity);
-            GameObject fog = GameObject.Find("FogCanvas/Fog");
+            GameObject fog = sceneContext != null ? sceneContext.fog : GameObject.Find("FogCanvas/Fog");
             if (fog != null)
                 fog.SetActive(false);
             photonView.RPC("RPC_SetUpAppearance", RpcTarget.AllBuffered, PhotonNetwork.LocalPlayer.CustomProperties["Eyes"], PhotonNetwork.LocalPlayer.CustomProperties["Mouth"], PhotonNetwork.LocalPlayer.CustomProperties["Color"]);

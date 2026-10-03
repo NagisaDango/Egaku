@@ -41,6 +41,14 @@ public sealed class OnlineRoleSelectionView : MonoBehaviourPunCallbacks
     [SerializeField] private Button drawerButton;
     [SerializeField] private Button leaveRoomButton;
 
+    [Header("Room code")]
+    [SerializeField] private TMP_Text roomCodeLabel;
+    [SerializeField] private Button copyRoomCodeButton;
+    [SerializeField] private TMP_Text copyRoomCodeText;
+    [SerializeField] private RectTransform roleColumnsRoot;
+    // Clipboard feedback uses unscaled time so it also expires while gameplay is paused.
+    private float copiedUntil;
+
     private readonly Dictionary<int, PlayerCard> cards = new();
     private RolesManager.PlayerRole pendingRole = RolesManager.PlayerRole.None;
     private RolesManager.PlayerRole queuedRole = RolesManager.PlayerRole.None;
@@ -51,6 +59,8 @@ public sealed class OnlineRoleSelectionView : MonoBehaviourPunCallbacks
     {
         base.OnEnable();
         ResolveReadyImages();
+        RefreshRoomCode();
+        FitRoleColumns();
         if (PhotonNetwork.OfflineMode || !PhotonNetwork.InRoom) return;
 
         completing = false;
@@ -86,6 +96,12 @@ public sealed class OnlineRoleSelectionView : MonoBehaviourPunCallbacks
 
     private void Update()
     {
+        FitRoleColumns();
+        if (copiedUntil > 0f && Time.unscaledTime >= copiedUntil)
+        {
+            copiedUntil = 0f;
+            if (copyRoomCodeText != null) copyRoomCodeText.text = "Copy";
+        }
         if (PhotonNetwork.OfflineMode || !PhotonNetwork.InRoom || completing ||
             !PhotonSessionPolicy.IsRoleSelectionPhase()) return;
 
@@ -111,6 +127,46 @@ public sealed class OnlineRoleSelectionView : MonoBehaviourPunCallbacks
     // second time is the mouse equivalent of pressing Enter/A to become ready.
     public void SelectRunner() => SelectFromPointer(RolesManager.PlayerRole.Runner);
     public void SelectDrawer() => SelectFromPointer(RolesManager.PlayerRole.Drawer);
+
+    public void RefreshRoomCode()
+    {
+        // The online Prefab owns this presentation; offline play has no shareable room code.
+        bool available = PhotonNetwork.InRoom && !PhotonNetwork.OfflineMode &&
+                         PhotonNetwork.CurrentRoom != null;
+        if (roomCodeLabel != null)
+        {
+            roomCodeLabel.gameObject.SetActive(available);
+            roomCodeLabel.text = available ? $"Room Code: {PhotonNetwork.CurrentRoom.Name}" : string.Empty;
+        }
+        if (copyRoomCodeButton != null)
+        {
+            copyRoomCodeButton.gameObject.SetActive(available);
+            copyRoomCodeButton.interactable = available;
+        }
+        copiedUntil = 0f;
+        if (copyRoomCodeText != null) copyRoomCodeText.text = "Copy";
+    }
+
+    public void CopyRoomCode()
+    {
+        // Copy only the raw room name, which the join field accepts; never copy the label prefix.
+        // Read current Photon state rather than cached display text after a leave/rejoin.
+        if (!isActiveAndEnabled || !PhotonNetwork.InRoom || PhotonNetwork.OfflineMode ||
+            PhotonNetwork.CurrentRoom == null) return;
+        GUIUtility.systemCopyBuffer = PhotonNetwork.CurrentRoom.Name;
+        if (copyRoomCodeText != null) copyRoomCodeText.text = "Copied!";
+        copiedUntil = Time.unscaledTime + 1.5f;
+    }
+
+    private void FitRoleColumns()
+    {
+        if (roleColumnsRoot == null || transform is not RectTransform root) return;
+        // The scene Canvas scales by width, leaving less logical height on wide screens.
+        // Reserve the authored header area and scale the existing cards/columns together.
+        float scale = Mathf.Clamp01(Mathf.Min((root.rect.height - 180f) / 300f,
+                                             (root.rect.width - 40f) / 750f));
+        roleColumnsRoot.localScale = Vector3.one * scale;
+    }
 
     public void LeaveRoom()
     {
@@ -476,6 +532,7 @@ public sealed class OnlineRoleSelectionView : MonoBehaviourPunCallbacks
 
     public override void OnJoinedRoom()
     {
+        RefreshRoomCode();
         RecoverLocalRoleProperty();
         RebuildCards();
         RefreshReadyVisuals();

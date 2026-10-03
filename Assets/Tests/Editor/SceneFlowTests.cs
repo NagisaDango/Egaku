@@ -49,6 +49,47 @@ namespace Egaku.Tests.Editor
             Assert.That(errors, Is.Empty, string.Join("\n", errors));
         }
 
+        [Test]
+        public void GameplayContextRejectsUiFromAnotherLevel()
+        {
+            // Two loaded scenes must never share an ink UI, even if both have identically named objects.
+            var first = UnityEditor.SceneManagement.EditorSceneManager.OpenPreviewScene("Assets/Scenes/Level_1.unity");
+            var second = UnityEditor.SceneManagement.EditorSceneManager.OpenPreviewScene("Assets/Scenes/Level_2.unity");
+            try
+            {
+                Type contextType = Type.GetType("GameplaySceneContext, Assembly-CSharp", true);
+                var find = contextType.GetMethod("FindInScene");
+                object a = find.Invoke(null, new object[] { first });
+                object b = find.Invoke(null, new object[] { second });
+                Assert.That(contextType.GetProperty("IsConfigured").GetValue(a), Is.True);
+                var slider = contextType.GetField("inkSlider");
+                slider.SetValue(a, slider.GetValue(b));
+                Assert.That(contextType.GetProperty("IsConfigured").GetValue(a), Is.False);
+            }
+            finally
+            {
+                UnityEditor.SceneManagement.EditorSceneManager.ClosePreviewScene(first);
+                UnityEditor.SceneManagement.EditorSceneManager.ClosePreviewScene(second);
+            }
+        }
+
+        [Test]
+        public void MissingMaskDoesNotThrowDuringClosing()
+        {
+            var root = new GameObject("Missing transition visual test");
+            root.SetActive(false);
+            try
+            {
+                Type transition = Type.GetType("LevelTransition, Assembly-CSharp", true);
+                var component = root.AddComponent(transition);
+                var visual = (IEnumerator)transition.GetMethod("ShowTransitionEndScene", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .Invoke(component, null);
+                Assert.That(visual.MoveNext(), Is.False);
+                Assert.DoesNotThrow(() => transition.GetMethod("FinishClosingVisual").Invoke(component, null));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(root); }
+        }
+
         [TestCase(0.5f, 0.5f, 1.777778f)]
         [TestCase(0.05f, 0.9f, 2.333333f)]
         [TestCase(-0.2f, 1.1f, 1.777778f)]

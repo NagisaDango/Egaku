@@ -30,8 +30,8 @@ MonoBehaviour:
   - id: 2
     sceneName: Level_2
     thumbnail: {fileID: 6937817954938267909, guid: 8f2e8818256d8ab4fb104f6d6498c204, type: 3}
-    wood: -1
-    cloud: 150
+    wood: 50
+    cloud: -1
     steel: -1
     electric: -1
   - id: 3

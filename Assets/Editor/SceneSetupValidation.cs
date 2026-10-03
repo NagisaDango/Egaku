@@ -53,6 +53,13 @@ namespace Egaku.Editor
                             errors.Add(scene.name + ": camera is unassigned.");
                         if (scripts.OfType<LevelTransition>().Count() != 1)
                             errors.Add(scene.name + ": expected one LevelTransition.");
+                        // Level_0 is deliberately outside this migration; production selection starts at one.
+                        if (scene.name != "Level_0")
+                        {
+                            var contexts = scripts.OfType<GameplaySceneContext>().ToArray();
+                            if (contexts.Length != 1 || !contexts[0].IsConfigured)
+                                errors.Add(scene.name + ": missing, duplicate or invalid GameplaySceneContext.");
+                        }
                     }
                     if (scene.name == LevelCatalog.SelectionScene)
                     {
@@ -68,6 +75,16 @@ namespace Egaku.Editor
                     }
                 }
                 finally { EditorSceneManager.ClosePreviewScene(scene); }
+            }
+            // These controls now belong to the resource Prefab, not RoleSelection's scene bindings.
+            var online = AssetDatabase.LoadAssetAtPath<OnlineRoleSelectionView>("Assets/Resources/UI/OnlineSelection.prefab");
+            if (online == null) errors.Add("OnlineSelection Prefab is missing.");
+            else
+            {
+                var serialized = new SerializedObject(online);
+                foreach (string field in new[] { "roomCodeLabel", "copyRoomCodeButton", "copyRoomCodeText", "roleColumnsRoot" })
+                    if (serialized.FindProperty(field).objectReferenceValue == null)
+                        errors.Add("OnlineSelection: missing " + field + ".");
             }
             return errors.ToArray();
         }

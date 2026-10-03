@@ -1964,8 +1964,7 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1150175011}
+  m_Children: []
   m_Father: {fileID: 1402294032}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -2017,7 +2016,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1130844070}
+    m_TransformParent: {fileID: 1402294032}
     m_Modifications:
     - target: {fileID: 3791410681899048052, guid: c275c5ebb007c2f44917f128c77681d5, type: 3}
       propertyPath: m_LocalScale.x
@@ -2134,6 +2133,10 @@ PrefabInstance:
     - target: {fileID: 8015796337777889310, guid: c275c5ebb007c2f44917f128c77681d5, type: 3}
       propertyPath: m_Name
       value: LeaveRoomButton
+      objectReference: {fileID: 0}
+    - target: {fileID: 8015796337777889310, guid: c275c5ebb007c2f44917f128c77681d5, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8603772509254951052, guid: c275c5ebb007c2f44917f128c77681d5, type: 3}
       propertyPath: m_TargetGraphic
@@ -2623,9 +2626,10 @@ RectTransform:
   m_Children:
   - {fileID: 1399808276}
   - {fileID: 1250564876}
-  - {fileID: 1130844070}
   - {fileID: 279528521}
   - {fileID: 1027469676}
+  - {fileID: 1150175011}
+  - {fileID: 1130844070}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}

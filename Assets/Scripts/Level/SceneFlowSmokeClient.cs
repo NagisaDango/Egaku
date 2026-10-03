@@ -37,6 +37,7 @@ public sealed class SceneFlowSmokeClient : MonoBehaviourPunCallbacks
 
     private void Start()
     {
+        SceneManager.sceneLoaded += InjectReadinessFailure;
         deadline = Time.realtimeSinceStartup + 90f;
         PhotonNetwork.NickName = "Smoke" + role;
         PhotonNetwork.LocalPlayer.SetCustomProperties(new Hashtable
@@ -46,6 +47,8 @@ public sealed class SceneFlowSmokeClient : MonoBehaviourPunCallbacks
 
     public override void OnConnectedToMaster()
     {
+        // Returning after an intentional probe failure must not rejoin the just-closed test room.
+        if (failureStarted) return;
         if (create) PhotonNetwork.CreateRoom(room, PhotonSessionPolicy.CreateRoomOptions());
         else PhotonNetwork.JoinRoom(room);
     }
@@ -60,6 +63,11 @@ public sealed class SceneFlowSmokeClient : MonoBehaviourPunCallbacks
 
     private void Update()
     {
+        if (failureStarted)
+        {
+            if (faultArmed) BlockLocalReadiness();
+            return; // The probe owns its own deadline, including the intentional leave.
+        }
         if (Time.realtimeSinceStartup > deadline) { Fail("timeout at stage " + observedStage); return; }
         if (!PhotonNetwork.InRoom || PhotonNetwork.CurrentRoom.PlayerCount != 2 || GameManager.Instance == null) return;
         var properties = PhotonNetwork.CurrentRoom.CustomProperties;
@@ -94,6 +102,12 @@ public sealed class SceneFlowSmokeClient : MonoBehaviourPunCallbacks
         }
         if (stage == 11)
         {
+            if (System.Environment.GetCommandLineArgs().Any(a => a.StartsWith("-egaku-smoke-failure=")))
+            {
+                failureStarted = true;
+                StartCoroutine(VerifyFailureExit());
+                return;
+            }
             Debug.Log("[SceneFlowSmoke] PASS: loads, two refreshes, peer return, last level, finish and Master handoff.");
             Application.Quit(0);
             enabled = false;
@@ -143,9 +157,78 @@ public sealed class SceneFlowSmokeClient : MonoBehaviourPunCallbacks
                 PhotonNetwork.SetMasterClient(PhotonNetwork.PlayerListOthers[0]);
                 break;
             case 4: GameManager.Instance.LoadLevel(19); break;
-            case 5: case 6: EventHandler.CallReachDestinationEvent(); break;
+            case 5: case 6:
+                if (System.Environment.GetCommandLineArgs().Contains("-egaku-smoke-no-mask"))
+                {
+                    // Disable presentation, including its coroutines; the flow owner must still load the next scene.
+                    var transition = GameplaySceneContext.FindInScene(SceneManager.GetActiveScene()).transition;
+                    transition.gameObject.SetActive(false);
+                    GameManager.Instance.BeginLevelDeparture(transition);
+                }
+                else EventHandler.CallReachDestinationEvent();
+                // Two consecutive handoffs restore actor one before the existing stage-eight test.
+                if (System.Environment.GetCommandLineArgs().Contains("-egaku-smoke-transition-handoff"))
+                    PhotonNetwork.SetMasterClient(PhotonNetwork.PlayerListOthers[0]);
+                break;
             case 8: PhotonNetwork.SetMasterClient(PhotonNetwork.PlayerListOthers[0]); break;
         }
+    }
+
+    // Development-only fault injection runs after the ordinary two-client smoke sequence.
+    // One explicitly flagged client suppresses its own role Start; no production asset is changed.
+    private bool failureStarted;
+    private bool faultArmed;
+    private void OnDestroy() => SceneManager.sceneLoaded -= InjectReadinessFailure;
+
+    private void InjectReadinessFailure(Scene scene, LoadSceneMode mode)
+    {
+        if (!failureStarted || scene.name != "Level_3") return;
+        var args = System.Environment.GetCommandLineArgs();
+        if (!args.Contains("-egaku-smoke-inject")) return;
+        bool refresh = args.Contains("-egaku-smoke-failure=refresh");
+        // Callback registration order varies after scene refresh. Arm an Update fault instead of
+        // assuming the manager has already spawned a role when sceneLoaded is dispatched.
+        faultArmed = true;
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        typeof(GameManager).GetField("sceneReadyTimeout", flags).SetValue(GameManager.Instance, refresh ? 45f : 0.5f);
+        Debug.Log($"[SceneFlowSmoke] injected { (refresh ? "refresh" : "ready") } failure actor={PhotonNetwork.LocalPlayer.ActorNumber} master={PhotonNetwork.MasterClient.ActorNumber}");
+    }
+
+    private void BlockLocalReadiness()
+    {
+        // Unity resumes yield-null readiness checks after Update. Keep the owning role unready
+        // regardless of whether Start ran earlier this frame; remote physics authority stays unchanged.
+        if (SceneManager.GetActiveScene().name != "Level_3") return;
+        if (Runner.Instance != null && Runner.Instance.photonView.IsMine)
+        {
+            typeof(Runner).GetProperty("SceneReady").SetValue(Runner.Instance, false);
+            Runner.Instance.enabled = false;
+        }
+        if (Drawer.Instance != null && Drawer.Instance.photonView.IsMine)
+        {
+            typeof(Drawer).GetProperty("SceneReady").SetValue(Drawer.Instance, false);
+            Drawer.Instance.enabled = false;
+        }
+    }
+
+    private System.Collections.IEnumerator VerifyFailureExit()
+    {
+        float end = Time.realtimeSinceStartup + 60f;
+        // A third real refresh reloads both clients even though Level_3 is already active.
+        // Photon automatic scene sync intentionally skips an unchanged scene on the peer.
+        if (PhotonNetwork.IsMasterClient) GameManager.Instance.RequestLevelRefresh();
+        while (Time.realtimeSinceStartup < end)
+        {
+            if (!PhotonNetwork.InRoom && SceneManager.GetActiveScene().name == LevelCatalog.SelectionScene)
+            {
+                Debug.Log("[SceneFlowSmoke] PASS: failed readiness/refresh exits room on this independent client.");
+                Application.Quit(0);
+                enabled = false;
+                yield break;
+            }
+            yield return null;
+        }
+        Fail("failure probe did not exit to room entry");
     }
 
     private void Fail(string reason)

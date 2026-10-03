@@ -15,11 +15,9 @@ using JetBrains.Annotations;
 using UnityEngine.InputSystem;
 using UnityEngine.EventSystems;
 
-
-
 namespace Allan
 {
-    public class GameManager : MonoBehaviourPunCallbacks
+    public partial class GameManager : MonoBehaviourPunCallbacks
     {
         public static GameManager Instance;
         public static bool initialized = false;
@@ -38,8 +36,8 @@ namespace Allan
         // Retained for existing launcher serialization; online gameplay now detects
         // the active device locally instead of requiring a pre-game choice.
         public bool onlineUseGamepad;
-        private LocalDeviceClaimView localDeviceClaimView;
-        private OnlineRoleSelectionView onlineRoleSelectionView;
+        // The selection scene owns presentation and releases its button listeners when destroyed.
+        private SelectionSceneBindings selectionBindings;
         
         public GameObject roomItemPrefab;
         
@@ -107,6 +105,10 @@ namespace Allan
         private bool sceneLoadInFlight;
         private bool returnHomeAfterLeave;
         private Coroutine gameplayReadyCoroutine;
+        // Departure is scene-scoped, but the persistent flow owner survives a missing/disabled mask.
+        private Coroutine departureCoroutine;
+        private bool sceneFlowFailed;
+        [SerializeField, Min(1f)] private float sceneReadyTimeout = 30f;
         // Commands use room properties because this persistent object's PhotonView does not
         // survive scene changes reliably. Only the Master executes shared navigation.
         private const string ReturnSelectionRequestKey = "sceneReturnSelectionRequest";
@@ -140,7 +142,6 @@ namespace Allan
                 Destroy(this.gameObject);
                 return;
             }
-
 
             Instance = this;
             // Local device assignment is a machine preference, never a Photon role property.
@@ -212,25 +213,6 @@ namespace Allan
 
         }
 
-
-
-
-        public void LoadLevel(int level)
-        {
-            if (sceneLoadInFlight || recoveryRefreshInProgress ||
-                (!PhotonNetwork.OfflineMode && !PhotonNetwork.IsMasterClient)) return;
-            LevelCatalog.Definition target = levelCatalog != null ? levelCatalog.Find(level) : null;
-            if (target == null || !levelCatalog.IsUnlocked(level, levelUnlocked) ||
-                !Application.CanStreamedLevelBeLoaded(target.sceneName))
-            {
-                Debug.LogWarning($"Cannot load level {level}: missing scene/catalog entry or locked level.");
-                return;
-            }
-            sceneLoadInFlight = true;
-            currentLevel = level;
-            PhotonNetwork.LoadLevel(target.sceneName);
-        }
-
         [PunRPC] public void RPC_LoadLevel(int level)
         {
             //if (true)//(PhotonNetwork.IsMasterClient)
@@ -257,7 +239,6 @@ namespace Allan
                 PhotonNetwork.LeaveRoom();
                 //PhotonNetwork.LoadLevel("AllanLauncher");
 
-
                 return;
             }
 
@@ -274,15 +255,11 @@ namespace Allan
                 return;
             }
 
-
             roomSelection.SetActive(false);
             roleSelection.SetActive(true);
             levelSelection.SetActive(false);
 
-
         }
-
-
 
         public void UpdateProperty(GameObject roomSelection, GameObject roleSelection, GameObject levelSelection, Transform gridLayout, TMP_InputField nameField)
         {
@@ -292,8 +269,6 @@ namespace Allan
 
             this.gridLayout = gridLayout;
             this.nameField = nameField;
-
-
 
         }
 
@@ -316,223 +291,18 @@ namespace Allan
             gridLayout = bindings.gridLayout;
             nameField = bindings.nameField;
             roomCreateOrJoinButton = bindings.createJoinButton;
-            roomCreateOrJoinButton.onClick.RemoveListener(CreateJoinButton);
-            roomCreateOrJoinButton.onClick.AddListener(CreateJoinButton);
-            bindings.backButton.onClick.RemoveListener(Back2RoleSelection);
-            bindings.backButton.onClick.AddListener(Back2RoleSelection);
-            ConfigurePrivateRoomCodeUi();
-            ConfigureGameplayDeviceUi();
+            selectionBindings = bindings;
+            bindings.Bind(this);
         }
 
         /// <summary>Configures the existing room panel for direct private-code matchmaking.</summary>
-        private void ConfigurePrivateRoomCodeUi()
-        {
-            if (nameField != null)
-            {
-                nameField.characterLimit = PhotonSessionPolicy.MaximumRoomCodeLength;
-                nameField.contentType = TMP_InputField.ContentType.Alphanumeric;
-                if (nameField.placeholder is TMP_Text placeholderLabel)
-                    placeholderLabel.text = "Room code (blank = create)";
-            }
-
-            if (roomCreateOrJoinButton != null)
-            {
-                TMP_Text buttonLabel = roomCreateOrJoinButton.GetComponentInChildren<TMP_Text>();
-                if (buttonLabel != null) buttonLabel.text = "Create / Join Code";
-            }
-
-            if (gridLayout != null && gridLayout.parent != null && gridLayout.parent.parent != null)
-            {
-                // Private rooms are never listed, so hide the legacy public-room scroll view.
-                gridLayout.parent.parent.gameObject.SetActive(false);
-            }
-        }
 
         /// <summary>Shows the private code in the waiting room so the host can share it with one client.</summary>
-        private void ShowCurrentRoomCode()
-        {
-            if (roleSelection == null || !PhotonNetwork.InRoom || PhotonNetwork.OfflineMode) return;
-
-            Transform existingLabel = roleSelection.transform.Find("PrivateRoomCodeLabel");
-            TMP_Text codeLabel;
-            if (existingLabel == null)
-            {
-                // The label is runtime-only so legacy scenes remain untouched and every scene reload gets fresh state.
-                GameObject labelObject = new GameObject(
-                    "PrivateRoomCodeLabel",
-                    typeof(RectTransform),
-                    typeof(TextMeshProUGUI));
-                labelObject.transform.SetParent(roleSelection.transform, false);
-
-                RectTransform labelRect = labelObject.GetComponent<RectTransform>();
-                labelRect.anchorMin = new Vector2(0.5f, 1f);
-                labelRect.anchorMax = new Vector2(0.5f, 1f);
-                labelRect.pivot = new Vector2(0.5f, 1f);
-                labelRect.anchoredPosition = new Vector2(0f, -24f);
-                labelRect.sizeDelta = new Vector2(600f, 60f);
-
-                codeLabel = labelObject.GetComponent<TextMeshProUGUI>();
-                codeLabel.alignment = TextAlignmentOptions.Center;
-                codeLabel.fontSize = 30f;
-                codeLabel.fontStyle = FontStyles.Bold;
-                codeLabel.color = Color.black;
-                codeLabel.raycastTarget = false;
-            }
-            else
-            {
-                codeLabel = existingLabel.GetComponent<TMP_Text>();
-            }
-
-            codeLabel.text = $"Room Code: {PhotonNetwork.CurrentRoom.Name}";
-        }
-
-
-        public void BackToHomePage()
-        {
-            // Home leaves the session; returning to level selection preserves both actors and roles.
-            returnHomeAfterLeave = true;
-            explicitLeaveRequested = true;
-            ClearPendingRoomRequest();
-            if (PhotonNetwork.InRoom)
-            {
-                if (!PhotonNetwork.OfflineMode && PhotonNetwork.IsMasterClient) CloseSessionPermanently();
-                PhotonNetwork.LeaveRoom(false);
-            }
-            else PhotonNetwork.LoadLevel(LevelCatalog.LauncherScene);
-        }
-
-        public void BackToRoomSelectionPage()
-        {
-            if (sceneLoadInFlight || recoveryRefreshInProgress) return;
-            if (PhotonNetwork.OfflineMode || PhotonNetwork.IsMasterClient)
-                ReturnTogetherToLevelSelection();
-            else if (PhotonNetwork.InRoom)
-            {
-                Hashtable properties = PhotonNetwork.CurrentRoom.CustomProperties;
-                bool hasRequest = properties.TryGetValue(ReturnSelectionRequestKey, out object value);
-                int previous = hasRequest ? (int)value : 0;
-                // Photon CAS cannot create an absent property. Initialize the first request
-                // without an expectation; subsequent clicks compare the existing counter.
-                PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable { { ReturnSelectionRequestKey, previous + 1 } },
-                    hasRequest ? new Hashtable { { ReturnSelectionRequestKey, previous } } : null);
-            }
-        }
-
-        private void ReturnTogetherToLevelSelection()
-        {
-            if (sceneLoadInFlight || recoveryRefreshInProgress || !PhotonNetwork.InRoom ||
-                (!PhotonNetwork.OfflineMode && !PhotonNetwork.IsMasterClient)) return;
-            string active = SceneManager.GetActiveScene().name;
-            if (active == LevelCatalog.SelectionScene) return;
-            sceneLoadInFlight = true;
-            // Retire spawned players/strokes and their cached RPCs before retaining the room.
-            // Room role slots and ready actors stay intact so both peers can select another level.
-            PhotonNetwork.DestroyAll();
-            if (!PhotonNetwork.OfflineMode)
-                PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable
-                {
-                    { PhotonSessionPolicy.RoleSelectionPhaseKey, PhotonSessionPolicy.RoleSelectionPhaseLevels },
-                    { UnlockedLevelsKey, levelUnlocked }
-                });
-            PhotonNetwork.LoadLevel(LevelCatalog.SelectionScene);
-        }
 
         public void ExitGame()
         {
             LeaveRoom();
             Application.Quit();
-        }
-
-        public void OnReachDestination()
-        {
-            if (sceneLoadInFlight || recoveryRefreshInProgress || levelCatalog == null ||
-                (!PhotonNetwork.OfflineMode && !PhotonNetwork.IsMasterClient)) return;
-            levelUnlocked = levelCatalog.UnlockedAfter(currentLevel, levelUnlocked);
-            if (PhotonNetwork.InRoom && !PhotonNetwork.OfflineMode)
-                PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable { { UnlockedLevelsKey, levelUnlocked } });
-            LevelCatalog.Definition next = levelCatalog.Next(currentLevel);
-            // Completing the last entry finishes the game, independently of unlock counts.
-            if (next == null)
-            {
-                sceneLoadInFlight = true;
-                PhotonNetwork.LoadLevel(LevelCatalog.FinishScene);
-                return;
-            }
-            LoadLevel(next.id);
-        }
-
-        public void LoadLevelSelection()
-        {
-            print("Enter LoadLevelSelection");
-            roomSelection.SetActive(false);
-            roleSelection.SetActive(false);
-            levelSelection.SetActive(true);
-            if (localDeviceClaimView != null)
-                localDeviceClaimView.gameObject.SetActive(PhotonNetwork.OfflineMode && devSpawn);
-            if (EventSystem.current != null)
-            {
-                // Online play has automatic switching, so focus the Back button
-                // rather than an inactive device selector for gamepad navigation.
-                GameObject selection = PhotonNetwork.OfflineMode && devSpawn && localDeviceClaimView != null
-                    ? localDeviceClaimView.FirstCard
-                    : levelSelection.transform.Find("BackButton").gameObject;
-                EventSystem.current.SetSelectedGameObject(selection);
-            }
-        }
-
-        private void ConfigureGameplayDeviceUi()
-        {
-            // The authored Prefab owns the long-lived visual hierarchy and its
-            // persistent card UnityEvents. Reuse an authored scene instance when present.
-            if (localDeviceClaimView == null && levelSelection != null)
-            {
-                localDeviceClaimView = levelSelection.GetComponentInChildren<LocalDeviceClaimView>(true);
-                if (localDeviceClaimView == null)
-                {
-                    LocalDeviceClaimView prefab = Resources.Load<LocalDeviceClaimView>("UI/LocalDeviceClaimView");
-                    if (prefab == null) Debug.LogError("LocalDeviceClaimView Prefab is missing.");
-                    else localDeviceClaimView = Instantiate(prefab, levelSelection.transform, false);
-                }
-
-                if (localDeviceClaimView != null) localDeviceClaimView.gameObject.SetActive(false);
-            }
-
-            if (onlineRoleSelectionView == null && roleSelection != null)
-            {
-                onlineRoleSelectionView = roleSelection.GetComponentInChildren<OnlineRoleSelectionView>(true);
-                if (onlineRoleSelectionView == null)
-                {
-                    OnlineRoleSelectionView prefab = Resources.Load<OnlineRoleSelectionView>("UI/OnlineSelection");
-                    if (prefab == null) Debug.LogError("OnlineSelection Prefab is missing or has no OnlineRoleSelectionView.");
-                    else onlineRoleSelectionView = Instantiate(prefab, roleSelection.transform, false);
-                }
-
-                if (onlineRoleSelectionView != null)
-                    onlineRoleSelectionView.gameObject.SetActive(!PhotonNetwork.OfflineMode);
-            }
-
-            // Legacy RoleSelect manager disabling. The reorganized scene no longer contains
-            // these controls; keep this block commented for reference instead of deleting it.
-            // if (!PhotonNetwork.OfflineMode && roleSelection != null &&
-            //     roleSelection.TryGetComponent(out RolesManager legacyRoles))
-            // {
-            //     legacyRoles.enabled = false;
-            //     legacyRoles.runnerButton.gameObject.SetActive(false);
-            //     legacyRoles.drawerButton.gameObject.SetActive(false);
-            //     legacyRoles.startGameButton.gameObject.SetActive(false);
-            // }
-        }
-
-        private void ApplyRoleSelectionPhase()
-        {
-            if (PhotonNetwork.OfflineMode || !PhotonNetwork.InRoom || roleSelection == null || levelSelection == null)
-                return;
-
-            bool selectRoles = PhotonSessionPolicy.IsRoleSelectionPhase();
-            roomSelection.SetActive(false);
-            roleSelection.SetActive(selectRoles);
-            levelSelection.SetActive(!selectRoles);
-            if (onlineRoleSelectionView != null) onlineRoleSelectionView.gameObject.SetActive(selectRoles);
         }
 
         public bool CanStartSelectedMode()
@@ -679,7 +449,6 @@ namespace Allan
             //    roomProperties["show"] = true;
             //}
 
-
             //PhotonNetwork.CurrentRoom.SetCustomProperties(roomProperties);
             //RefreshRoomList();
 
@@ -710,82 +479,11 @@ namespace Allan
         }
 
         // Based on Loaded Scene, act differently
-        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-        {
-            Debug.Log("Enter OnSceneLoaded " + scene.name);
-            sceneLoadInFlight = false;
-            if (gameplayReadyCoroutine != null) StopCoroutine(gameplayReadyCoroutine);
-            gameplayReadyCoroutine = null;
 
-            LevelCatalog.Definition definition = levelCatalog != null ? levelCatalog.FindScene(scene.name) : null;
-            if (definition != null)
-            {
-                currentLevel = definition.id;
-
-                Debug.Log($"Scene {scene.name} loaded. Spawning player...");
-                if (devSpawn)
-                {
-                    var d = PhotonNetwork.Instantiate(drawerPrefab.name, new Vector3(0, 0, 0), Quaternion.identity);
-                    d.name = drawerPrefab.name;
-                    var r = PhotonNetwork.Instantiate(runnerPrefab.name, new Vector3(0, 5, 0), Quaternion.identity);
-                    r.name = runnerPrefab.name;
-                    LevelSetup.FindInScene(scene).Init(r.GetComponent<Runner>());
-                }
-                else SpawnPlayer();
-
-                // Start callbacks, remote role arrivals, camera binding and Drawer UI must finish
-                // before this actor acknowledges recovery. Never treat sceneLoaded as gameplay-ready.
-                gameplayReadyCoroutine = StartCoroutine(WaitForGameplayReady(scene, recoveryRefreshEpoch));
-
-            }
-            else if (scene.name == "RoleSelection")
-            {
-
-
-                Debug.Log("Scene RoleSelection loaded");
-                UpdateProperty();
-
-                if (PhotonNetwork.OfflineMode)
-                {
-                    //roomSelection.SetActive(false);
-                    //roleSelection.SetActive(false);
-                    //levelSelection.SetActive(true);
-                    DevSpawnPlayers();
-                    return;
-                }
-
-                if (PhotonNetwork.InRoom)
-                {
-                    ApplyRoleSelectionPhase();
-                    ShowCurrentRoomCode();
-                }
-                else
-                {
-                    roomSelection.SetActive(true);
-                    roleSelection.SetActive(false);
-                    levelSelection.SetActive(false);
-                }
-
-            }
-            else if (scene.name == "AllanLauncher")
-            {
-                GameManager.Instance = null;
-                PhotonNetwork.OfflineMode = false;
-                Destroy(gameObject);
-            }
-        }
-
-        private IEnumerator WaitForGameplayReady(Scene scene, int epoch)
-        {
-            yield return null;
-            LevelSetup setup = LevelSetup.FindInScene(scene);
-            while (scene.IsValid() && SceneManager.GetActiveScene() == scene &&
-                   (setup == null || !setup.IsGameplayReady)) yield return null;
-            gameplayReadyCoroutine = null;
-            if (!scene.IsValid() || SceneManager.GetActiveScene() != scene) yield break;
-            EventHandler.CallLevelStartEvent();
-            if (epoch == recoveryRefreshEpoch) CompleteLocalRecoverySceneRefresh(scene.name);
-        }
+        // Preserve serialized/public entry points while presentation stays with the scene.
+        public void LoadLevelSelection() { if (selectionBindings != null) selectionBindings.LoadLevelSelection(); }
+        private void ApplyRoleSelectionPhase() { if (selectionBindings != null) selectionBindings.ApplyRoleSelectionPhase(); }
+        private void ShowCurrentRoomCode() { if (selectionBindings != null) selectionBindings.ShowCurrentRoomCode(); }
 
         public void CreateJoinButton()
         {
@@ -891,8 +589,6 @@ namespace Allan
             }
         }
 
-
-
         [PunRPC]
         public void RPC_AddRoomInfoSet(string roomName)
         {
@@ -904,486 +600,6 @@ namespace Allan
         {
             roomInfoSet.Remove(roomName);
             print("Removing Room: " + roomName);
-        }
-
-        //RPCs only get call in rooms
-        /// <summary>Checks the authoritative room state before accepting a late rejoin.</summary>
-        private static bool IsSessionExpired()
-        {
-            return PhotonNetwork.InRoom &&
-                   PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(PhotonSessionPolicy.SessionStateKey, out object state) &&
-                   Equals(state, PhotonSessionPolicy.SessionExpired);
-        }
-
-        /// <summary>Returns true while the host is still waiting for both players to start the match.</summary>
-        private static bool IsSessionWaitingForPlayers()
-        {
-            return PhotonNetwork.InRoom &&
-                   PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(PhotonSessionPolicy.SessionStateKey, out object state) &&
-                   Equals(state, PhotonSessionPolicy.SessionActive);
-        }
-
-        /// <summary>Returns true after role selection has committed the room to gameplay.</summary>
-        private static bool IsSessionStarted()
-        {
-            return PhotonNetwork.InRoom &&
-                   PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(PhotonSessionPolicy.SessionStateKey, out object state) &&
-                   Equals(state, PhotonSessionPolicy.SessionStarted);
-        }
-
-        /// <summary>Pauses physics and local input without stopping Photon message dispatch.</summary>
-        private static void SetRecoveryPause(bool paused)
-        {
-            InteractionsPausedForRecovery = paused;
-            Time.timeScale = paused ? 0f : 1f;
-        }
-
-        /// <summary>Blocks gameplay input during a scene refresh without freezing Photon callbacks or Unity initialization.</summary>
-        private static void SetRecoveryInputPause(bool paused)
-        {
-            InteractionsPausedForRecovery = paused;
-        }
-
-        /// <summary>Reads the active recovery refresh request shared by the Master Client.</summary>
-        private static bool TryGetRecoveryRefreshRequest(out int epoch, out string targetScene)
-        {
-            epoch = 0;
-            targetScene = string.Empty;
-            if (!PhotonNetwork.InRoom || IsSessionExpired()) return false;
-
-            Hashtable properties = PhotonNetwork.CurrentRoom.CustomProperties;
-            if (!properties.TryGetValue(PhotonSessionPolicy.RecoveryRefreshEpochKey, out object epochValue) ||
-                !properties.TryGetValue(PhotonSessionPolicy.RecoveryRefreshTargetKey, out object targetValue))
-                return false;
-
-            epoch = (int)epochValue;
-            targetScene = targetValue as string;
-            return epoch > 0 && !string.IsNullOrEmpty(targetScene);
-        }
-
-        /// <summary>Returns true only after both reserved actors are online and ready for a synchronized reset.</summary>
-        private static bool AreBothRoomPlayersActive()
-        {
-            return PhotonNetwork.InRoom &&
-                   PhotonNetwork.CurrentRoom.Players.Count == 2 &&
-                   PhotonNetwork.CurrentRoom.Players.Values.All(player => !player.IsInactive);
-        }
-
-        /// <summary>Begins a full two-client level rebuild after an inactive actor successfully rejoins.</summary>
-        private void TryBeginRecoverySceneRefresh()
-        {
-            if (recoveryRefreshInProgress || !PhotonNetwork.IsMasterClient || IsSessionExpired() ||
-                !AreBothRoomPlayersActive())
-                return;
-
-            string activeScene = SceneManager.GetActiveScene().name;
-            if (!activeScene.StartsWith("Level_")) return;
-
-            int previousEpoch = 0;
-            if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(
-                    PhotonSessionPolicy.RecoveryRefreshCounterKey, out object previousEpochValue))
-                previousEpoch = (int)previousEpochValue;
-
-            recoveryRefreshInProgress = true;
-            recoveryTargetLoadIssued = false;
-            recoveryLocalReloadIssued = false;
-            recoveryLocalLoadCompletedEpoch = 0;
-            recoveryRefreshEpoch = previousEpoch + 1;
-            recoveryRefreshTargetScene = activeScene;
-            SetRecoveryInputPause(true);
-            StartRecoveryRefreshTimeout();
-
-            // Clear runtime instantiations and Photon room caches before sending the reload request.
-            PhotonNetwork.DestroyAll();
-
-            PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable
-            {
-                { PhotonSessionPolicy.RecoveryRefreshEpochKey, recoveryRefreshEpoch },
-                { PhotonSessionPolicy.RecoveryRefreshCounterKey, recoveryRefreshEpoch },
-                { PhotonSessionPolicy.RecoveryRefreshTargetKey, recoveryRefreshTargetScene },
-                { PhotonSessionPolicy.RecoveryRefreshReadyKey, 0 },
-                { GetRecoveryCleanupAckKey(PhotonNetwork.LocalPlayer.ActorNumber), recoveryRefreshEpoch }
-            });
-
-            // Wait for every actor to receive DestroyAll before allowing either client to respawn.
-            TryAdvanceRecoverySceneRefreshToLoad();
-        }
-
-        /// <summary>Routes the in-game reset button through the Master-owned full scene rebuild.</summary>
-        public void RequestLevelRefresh()
-        {
-            if (PhotonNetwork.OfflineMode)
-            {
-                LoadLevel(currentLevel);
-                return;
-            }
-
-            if (!PhotonNetwork.InRoom || recoveryRefreshInProgress) return;
-
-            if (PhotonNetwork.IsMasterClient)
-                TryBeginRecoverySceneRefresh();
-            else
-            {
-                // GameManager is a persistent scene object without a reliable PhotonView after
-                // scene changes. A room property delivers this request to the current Master.
-                Hashtable properties = PhotonNetwork.CurrentRoom.CustomProperties;
-                int previousRequest = properties.TryGetValue(
-                    PhotonSessionPolicy.RecoveryRefreshRequestKey, out object value) ? (int)value : 0;
-                PhotonNetwork.CurrentRoom.SetCustomProperties(
-                    new Hashtable { { PhotonSessionPolicy.RecoveryRefreshRequestKey, previousRequest + 1 } },
-                    new Hashtable { { PhotonSessionPolicy.RecoveryRefreshRequestKey, previousRequest } });
-            }
-        }
-
-        private IEnumerator BeginRecoverySceneRefreshNextFrame()
-        {
-            yield return null;
-            TryBeginRecoverySceneRefresh();
-        }
-
-        /// <summary>Adopts a refresh request that already existed when this actor joined the room.</summary>
-        private bool ResumeExistingRecoverySceneRefresh()
-        {
-            if (!TryGetRecoveryRefreshRequest(out int epoch, out string targetScene)) return false;
-
-            recoveryRefreshInProgress = true;
-            recoveryTargetLoadIssued = false;
-            recoveryLocalReloadIssued = false;
-            recoveryRefreshEpoch = epoch;
-            recoveryLocalLoadCompletedEpoch = 0;
-            recoveryRefreshTargetScene = targetScene;
-            SetRecoveryInputPause(true);
-            StartRecoveryRefreshTimeout();
-
-            // A returning actor may have missed the room-wide cleanup event while disconnected.
-            // Clean only its local Photon instances before acknowledging the cleanup barrier.
-            PhotonNetwork.DestroyAll(true);
-            PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable
-            {
-                { GetRecoveryCleanupAckKey(PhotonNetwork.LocalPlayer.ActorNumber), epoch }
-            });
-            TryAdvanceRecoverySceneRefreshToLoad();
-            return true;
-        }
-
-        private static string GetRecoveryCleanupAckKey(int actorNumber)
-        {
-            return PhotonSessionPolicy.RecoveryCleanupAckPrefix + actorNumber;
-        }
-
-        /// <summary>Only the Master releases the reload after both actors report processing DestroyAll.</summary>
-        private void TryAdvanceRecoverySceneRefreshToLoad()
-        {
-            if (!PhotonNetwork.IsMasterClient || !recoveryRefreshInProgress || !AreBothRoomPlayersActive())
-                return;
-
-            Hashtable properties = PhotonNetwork.CurrentRoom.CustomProperties;
-            bool bothCleaned = PhotonNetwork.CurrentRoom.Players.Values.All(player =>
-                properties.TryGetValue(GetRecoveryCleanupAckKey(player.ActorNumber), out object value) &&
-                value is int acknowledgedEpoch && acknowledgedEpoch == recoveryRefreshEpoch);
-            if (!bothCleaned)
-                return;
-
-            if (properties.TryGetValue(PhotonSessionPolicy.RecoveryRefreshReadyKey, out object readyValue) &&
-                readyValue is int readyEpoch && readyEpoch == recoveryRefreshEpoch)
-            {
-                ScheduleLocalRecoverySceneReload(recoveryRefreshEpoch, recoveryRefreshTargetScene);
-                return;
-            }
-
-            PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable
-            {
-                { PhotonSessionPolicy.RecoveryRefreshReadyKey, recoveryRefreshEpoch }
-            });
-        }
-
-        private void ScheduleLocalRecoverySceneReload(int epoch, string targetScene)
-        {
-            if (!recoveryRefreshInProgress || recoveryLocalReloadIssued || epoch != recoveryRefreshEpoch ||
-                string.IsNullOrEmpty(targetScene) || !PhotonNetwork.InRoom)
-                return;
-
-            recoveryLocalReloadIssued = true;
-            if (recoveryLocalReloadCoroutine != null)
-                StopCoroutine(recoveryLocalReloadCoroutine);
-            recoveryLocalReloadCoroutine = StartCoroutine(ReloadRecoverySceneNextFrame(epoch, targetScene));
-        }
-
-        private IEnumerator ReloadRecoverySceneNextFrame(int epoch, string targetScene)
-        {
-            yield return null;
-            recoveryLocalReloadCoroutine = null;
-            if (!PhotonNetwork.InRoom || !recoveryRefreshInProgress || epoch != recoveryRefreshEpoch ||
-                targetScene != recoveryRefreshTargetScene)
-                yield break;
-
-            Debug.Log($"Reloading {targetScene} locally for recovery refresh {epoch}.");
-            SceneManager.LoadScene(targetScene, LoadSceneMode.Single);
-        }
-
-        /// <summary>Acknowledges local gameplay readiness; shared epoch completion releases input.</summary>
-        private void CompleteLocalRecoverySceneRefresh(string loadedScene)
-        {
-            if (!recoveryRefreshInProgress || recoveryRefreshEpoch <= 0 ||
-                loadedScene != recoveryRefreshTargetScene)
-                return;
-
-            // The local Master may receive its own room-property callback after this sceneLoaded
-            // callback. Remember local completion so that late callback cannot re-pause controls.
-            recoveryLocalLoadCompletedEpoch = recoveryRefreshEpoch;
-
-            // Each player confirms its own rebuilt level before the Master retires the request.
-            // The Master keeps the request active until both scene loads have completed.
-            PhotonNetwork.LocalPlayer.SetCustomProperties(new Hashtable
-            {
-                { PhotonSessionPolicy.RecoveryTargetAckKey, recoveryRefreshEpoch }
-            });
-            if (PhotonNetwork.IsMasterClient)
-                recoveryTargetLoadIssued = true;
-            // Keep both clients paused until the Master's room-property completion arrives.
-            TryCompleteSharedRecoverySceneRefresh();
-        }
-
-        private void TryCompleteSharedRecoverySceneRefresh()
-        {
-            if (!PhotonNetwork.IsMasterClient || !recoveryRefreshInProgress ||
-                !AreBothRoomPlayersActive() || !recoveryTargetLoadIssued ||
-                SceneManager.GetActiveScene().name != recoveryRefreshTargetScene)
-                return;
-
-            bool bothLoaded = PhotonNetwork.CurrentRoom.Players.Values.All(player =>
-                player.CustomProperties.TryGetValue(PhotonSessionPolicy.RecoveryTargetAckKey, out object value) &&
-                (int)value == recoveryRefreshEpoch);
-            if (!bothLoaded) return;
-
-            PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable
-            {
-                { PhotonSessionPolicy.RecoveryRefreshEpochKey, 0 },
-                { PhotonSessionPolicy.RecoveryRefreshTargetKey, string.Empty },
-                { PhotonSessionPolicy.RecoveryRefreshReadyKey, 0 }
-            });
-            // Stay paused until the epoch-zero echo releases the barrier on both peers.
-            recoveryTargetLoadIssued = false;
-            StopRecoveryRefreshTimeout();
-        }
-
-        private void StartRecoveryRefreshTimeout()
-        {
-            if (recoveryRefreshTimeoutCoroutine != null)
-                StopCoroutine(recoveryRefreshTimeoutCoroutine);
-            recoveryRefreshTimeoutCoroutine = StartCoroutine(ExpireStalledRecoveryRefresh());
-        }
-
-        private void StopRecoveryRefreshTimeout()
-        {
-            if (recoveryRefreshTimeoutCoroutine == null) return;
-            StopCoroutine(recoveryRefreshTimeoutCoroutine);
-            recoveryRefreshTimeoutCoroutine = null;
-        }
-
-        /// <summary>
-        /// Refresh epochs start at one in each room. Forget the previous room's local
-        /// completion before joining another room, or its first refresh looks finished.
-        /// </summary>
-        private void ResetLocalRecoveryRefreshState()
-        {
-            StopRecoveryRefreshTimeout();
-            if (recoveryLocalReloadCoroutine != null)
-            {
-                StopCoroutine(recoveryLocalReloadCoroutine);
-                recoveryLocalReloadCoroutine = null;
-            }
-
-            recoveryRefreshInProgress = false;
-            recoveryTargetLoadIssued = false;
-            recoveryLocalReloadIssued = false;
-            recoveryRefreshEpoch = 0;
-            recoveryLocalLoadCompletedEpoch = 0;
-            recoveryRefreshTargetScene = null;
-        }
-
-        private IEnumerator ExpireStalledRecoveryRefresh()
-        {
-            // A failed scene handshake must never leave both players permanently paused.
-            yield return new WaitForSecondsRealtime(PhotonSessionPolicy.ReconnectWindowMilliseconds / 1000f);
-            recoveryRefreshTimeoutCoroutine = null;
-            if (!recoveryRefreshInProgress || !PhotonNetwork.InRoom) yield break;
-
-            Debug.LogError($"Recovery scene refresh {recoveryRefreshEpoch} timed out; restoring local control without leaving the room.");
-            SetRecoveryInputPause(false);
-            recoveryRefreshInProgress = false;
-            recoveryTargetLoadIssued = false;
-            recoveryLocalReloadIssued = false;
-            if (PhotonNetwork.IsMasterClient)
-            {
-                PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable
-                {
-                    { PhotonSessionPolicy.RecoveryRefreshEpochKey, 0 },
-                    { PhotonSessionPolicy.RecoveryRefreshTargetKey, string.Empty },
-                    { PhotonSessionPolicy.RecoveryRefreshReadyKey, 0 }
-                });
-            }
-        }
-
-        /// <summary>Restores normal gameplay state after the local actor successfully rejoins.</summary>
-        private void CompleteRecovery()
-        {
-            reconnecting = false;
-            returningToLobby = false;
-            explicitLeaveRequested = false;
-            SetRecoveryPause(false);
-
-            if (reconnectCoroutine != null)
-            {
-                StopCoroutine(reconnectCoroutine);
-                reconnectCoroutine = null;
-            }
-        }
-
-        /// <summary>Retries Photon ReconnectAndRejoin for the configured 30-second reservation window.</summary>
-        private IEnumerator ReconnectAndRejoinWithinWindow()
-        {
-            reconnecting = true;
-            SetRecoveryPause(true);
-            float deadline = Time.realtimeSinceStartup + PhotonSessionPolicy.ReconnectWindowMilliseconds / 1000f;
-
-            while (Time.realtimeSinceStartup < deadline)
-            {
-                if (PhotonNetwork.InRoom)
-                {
-                    CompleteRecovery();
-                    yield break;
-                }
-
-                if (PhotonNetwork.NetworkClientState == ClientState.Disconnected)
-                {
-                    // Reapply the protocol version before every fresh transport connection.
-                    PhotonNetwork.GameVersion = Application.version;
-                    PhotonNetwork.ReconnectAndRejoin();
-                }
-
-                yield return new WaitForSecondsRealtime(1f);
-            }
-
-            reconnectCoroutine = null;
-            ExpireSessionAndReturnToLobby();
-        }
-
-        /// <summary>Pauses the connected peer while the other actor remains inactive in the room.</summary>
-        private IEnumerator WaitForRemotePlayerRecovery(int actorNumber)
-        {
-            waitingForActorNumber = actorNumber;
-            SetRecoveryPause(true);
-            float deadline = Time.realtimeSinceStartup + PhotonSessionPolicy.ReconnectWindowMilliseconds / 1000f;
-
-            while (PhotonNetwork.InRoom && Time.realtimeSinceStartup < deadline)
-            {
-                if (PhotonNetwork.CurrentRoom.Players.TryGetValue(actorNumber, out Player player) && !player.IsInactive)
-                {
-                    waitingForActorNumber = -1;
-                    remoteRecoveryCoroutine = null;
-                    SetRecoveryPause(false);
-                    yield break;
-                }
-
-                if (IsSessionExpired()) break;
-                yield return new WaitForSecondsRealtime(0.5f);
-            }
-
-            waitingForActorNumber = -1;
-            remoteRecoveryCoroutine = null;
-            ExpireSessionAndReturnToLobby();
-        }
-
-        /// <summary>Closes an unrecoverable session and routes this client back to the room-selection lobby.</summary>
-        private void ExpireSessionAndReturnToLobby()
-        {
-            reconnecting = false;
-            returningToLobby = true;
-            SetRecoveryPause(false);
-
-            if (PhotonNetwork.InRoom)
-            {
-                if (PhotonNetwork.IsMasterClient)
-                {
-                    // A timed-out or explicitly abandoned session no longer needs its recovery TTL.
-                    CloseSessionPermanently();
-                }
-
-                PhotonNetwork.LeaveRoom(false);
-                return;
-            }
-
-            if (SceneManager.GetActiveScene().name != "RoleSelection")
-                SceneManager.LoadScene("RoleSelection");
-
-            if (lobbyReconnectCoroutine == null)
-                lobbyReconnectCoroutine = StartCoroutine(ConnectToRoomSelectionWhenReady());
-        }
-
-        /// <summary>Waits for any in-progress disconnect before returning to private-code matchmaking.</summary>
-        private IEnumerator ConnectToRoomSelectionWhenReady()
-        {
-            while (!PhotonNetwork.IsConnectedAndReady)
-            {
-                if (PhotonNetwork.NetworkClientState == ClientState.Disconnected)
-                {
-                    PhotonNetwork.GameVersion = Application.version;
-                    PhotonSessionPolicy.EnsureStableUserIdentity();
-                    PhotonNetwork.ConnectUsingSettings();
-                }
-
-                yield return new WaitForSecondsRealtime(0.5f);
-            }
-
-            lobbyReconnectCoroutine = null;
-            returningToLobby = false;
-            explicitLeaveRequested = false;
-            if (SceneManager.GetActiveScene().name != "RoleSelection")
-                SceneManager.LoadScene("RoleSelection");
-
-            TryStartPendingRoomRequest();
-        }
-
-        /// <summary>Closes, hides, and deletes a finished room as soon as its final actor leaves.</summary>
-        private static void CloseSessionPermanently()
-        {
-            if (!PhotonNetwork.InRoom) return;
-
-            // EmptyRoomTtl is retained during real connection loss, but explicit/expired sessions
-            // set it to zero so an empty room is removed instead of lingering for sixty seconds.
-            PhotonNetwork.CurrentRoom.IsOpen = false;
-            PhotonNetwork.CurrentRoom.IsVisible = false;
-            PhotonNetwork.CurrentRoom.EmptyRoomTtl = 0;
-            PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable
-            {
-                { PhotonSessionPolicy.SessionStateKey, PhotonSessionPolicy.SessionExpired },
-                { PhotonSessionPolicy.ShowRoomKey, false }
-            });
-        }
-
-        /// <summary>Releases role reservations only after an actor leaves permanently rather than becoming inactive.</summary>
-        private static void ClearRoleSlotsForActor(int actorNumber)
-        {
-            if (!PhotonNetwork.InRoom || !PhotonNetwork.IsMasterClient) return;
-
-            foreach (string key in new[] { PhotonSessionPolicy.DrawerOwnerKey, PhotonSessionPolicy.RunnerOwnerKey })
-            {
-                if (!PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(key, out object owner) || (int)owner != actorNumber)
-                    continue;
-
-                PhotonNetwork.CurrentRoom.SetCustomProperties(
-                    new Hashtable { { key, 0 } },
-                    new Hashtable { { key, actorNumber } });
-            }
-
-            PhotonNetwork.CurrentRoom.SetCustomProperties(new Hashtable
-            {
-                { "Role_" + actorNumber, (int)PlayerRole.None },
-                { PhotonSessionPolicy.RunnerReadyActorKey, 0 },
-                { PhotonSessionPolicy.DrawerReadyActorKey, 0 },
-                { PhotonSessionPolicy.RoleSelectionPhaseKey, PhotonSessionPolicy.RoleSelectionPhaseRoles }
-            });
         }
 
         #region Pun Callbacks
@@ -1465,9 +681,7 @@ namespace Allan
                 ShowCurrentRoomCode();
             }
 
-
             UpdateRoomPlayerList(PhotonNetwork.CurrentRoom.Players);
-
 
             print("Room X" + PhotonNetwork.CurrentRoom.Name);
             Debug.Log("PUN Basics Tutorial/Launcher: OnJoinedRoom() called by PUN. Now this client is in a room.");
@@ -1502,7 +716,6 @@ namespace Allan
                 return;
             }
 
-
             if (SceneManager.GetActiveScene().name == "FinishGame")
             {
                 PhotonNetwork.LeaveLobby();
@@ -1528,8 +741,6 @@ namespace Allan
 
             }
             */
-
-
 
             //Hashtable roomProperties = currentRoom.CustomProperties;
 
@@ -1573,7 +784,6 @@ namespace Allan
             if (PhotonNetwork.IsMasterClient &&
                 SceneManager.GetActiveScene().name.StartsWith("Level_"))
                 StartCoroutine(BeginRecoverySceneRefreshNextFrame());
-
 
         }
 
@@ -1685,7 +895,7 @@ namespace Allan
             if (propertiesThatChanged.TryGetValue(PhotonSessionPolicy.RecoveryRefreshEpochKey, out object completed) &&
                 completed is int completedEpoch && completedEpoch == 0 && recoveryRefreshInProgress)
             {
-                // Epoch zero is published only after both gameplay-ready acknowledgements (or timeout).
+                // Epoch zero is published only after both gameplay-ready acknowledgements.
                 ResetLocalRecoveryRefreshState();
                 SetRecoveryInputPause(false);
             }
