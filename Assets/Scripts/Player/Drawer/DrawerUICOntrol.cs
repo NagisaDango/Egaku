@@ -61,7 +61,7 @@ public class DrawerUICOntrol : MonoBehaviour
     private void Update()
     {
         if (EgakuSettingsMenu.IsOpen) return;
-        if (!GameplayInput.DrawerUsesGamepad && Input.GetMouseButtonDown(0)) // Only the keyboard Drawer's mouse closes this panel.
+        if (!GameplayInput.DrawerUsesGamepad && GameplayInput.DrawPressed) // Only the keyboard Drawer's mouse closes this panel.
         {
             if (!IsClickInsidePanel(drawerPanel))
             {

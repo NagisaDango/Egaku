@@ -33,6 +33,7 @@ public static class InputDeviceRouter
         if (initialized)
         {
             InputUser.onChange -= OnUserChange;
+            EgakuInputBindings.BindingsChanged -= RefreshBindingOverrides;
             foreach (Slot slot in slots)
             {
                 if (slot.actions != null) slot.actions.Disable();
@@ -53,23 +54,18 @@ public static class InputDeviceRouter
     public static void Initialize()
     {
         if (initialized) return;
-        // The existing Runner prefab keeps the source asset reference; each role
-        // receives a private copy so InputUser can restrict it to its own devices.
-        GameObject runner = Resources.Load<GameObject>("Runner");
-        PlayerInput input = runner != null ? runner.GetComponent<PlayerInput>() : null;
-        if (input == null || input.actions == null)
-        {
-            Debug.LogError("InputDeviceRouter requires the Runner prefab's input action asset.");
-            return;
-        }
+        // Each role receives a private, override-aware copy so InputUser can
+        // restrict it to one physical device without affecting the other role.
         for (int i = 0; i < slots.Length; i++)
         {
-            slots[i].actions = UnityEngine.Object.Instantiate(input.actions);
+            slots[i].actions = EgakuInputBindings.CreateActionCopy();
+            if (slots[i].actions == null) return;
             slots[i].user = InputUser.CreateUserWithoutPairedDevices();
             slots[i].user.AssociateActionsWithUser(slots[i].actions);
             slots[i].actions.Enable();
         }
         InputUser.onChange += OnUserChange;
+        EgakuInputBindings.BindingsChanged += RefreshBindingOverrides;
         initialized = true;
     }
 
@@ -79,7 +75,8 @@ public static class InputDeviceRouter
     public static InputActionAsset CreateTemporaryActions(InputDevice device)
     {
         Initialize();
-        InputActionAsset copy = UnityEngine.Object.Instantiate(slots[0].actions);
+        InputActionAsset copy = EgakuInputBindings.CreateActionCopy();
+        if (copy == null) return null;
         InputDevice[] devices = device is Keyboard || device is Mouse
             ? new InputDevice[] { Keyboard.current, Mouse.current }
             : new[] { device };
@@ -88,6 +85,22 @@ public static class InputDeviceRouter
         copy.devices = new UnityEngine.InputSystem.Utilities.ReadOnlyArray<InputDevice>(devices);
         copy.bindingMask = InputBinding.MaskByGroup(device is Gamepad ? "Gamepad" : "Keyboard&Mouse");
         return copy;
+    }
+
+    public static void RefreshBindingOverrides()
+    {
+        if (!initialized) return;
+        foreach (Slot slot in slots)
+        {
+            if (slot.actions == null) continue;
+            DeviceKind kind = slot.kind;
+            Gamepad pad = slot.gamepad;
+            // Unpairing also clears held values before the updated paths are enabled.
+            Unpair(slot);
+            EgakuInputBindings.ApplyTo(slot.actions);
+            Pair(slot, kind, pad);
+        }
+        AssignmentsChanged?.Invoke();
     }
     public static bool BothClaimed => Ready(slots[0]) && Ready(slots[1]);
     public static bool IsReady(Role role) { Initialize(); return Ready(slots[(int)role]); }

@@ -48,6 +48,7 @@ public class Runner : MonoBehaviourPunCallbacks
     public int jumpForce;
     public int maxSpeed;
     [SerializeField] private RunnerMovementTuning movementTuning = new RunnerMovementTuning();
+    [SerializeField] private RunnerGrabTuning grabTuning = new RunnerGrabTuning();
 
     [Header("Hold Object")]
     [SerializeField] private FixedJoint2D fixedJoint2D;
@@ -56,6 +57,13 @@ public class Runner : MonoBehaviourPunCallbacks
     private bool holding;
     private HoldableObject holdingObject;
     private int holdingObjectID = -1;
+    // Every receiver caches its own pre-grab state; only the Runner owner enables the joint.
+    private Rigidbody2D heldBody;
+    private float heldOriginalMass;
+    // Restored independently on each RPC receiver; held gravity follows the Runner only on its authority.
+    private float heldOriginalGravity;
+    private string heldOriginalTag;
+    [SerializeField] private bool debugGrab;
 
     [Header("Appearance")]
     private GameObject runnerMouse;
@@ -115,6 +123,8 @@ public class Runner : MonoBehaviourPunCallbacks
     {
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<Collider2D>();
+        fixedJoint2D.enabled = false;
+        fixedJoint2D.connectedBody = null;
         LevelSetup LevelM = GameObject.Find("LevelSetup").GetComponent<LevelSetup>();
         if (LevelM != null)
             LevelM.SetUpCamera(this);
@@ -139,7 +149,7 @@ public class Runner : MonoBehaviourPunCallbacks
 
         if (photonView.IsMine)
             InitInput();
-        _RunnerMovement = new RunnerMovement(rb, col, movementTuning);
+        _RunnerMovement = new RunnerMovement(rb, col, movementTuning, grabTuning);
         if (respawnVisual == null)
             respawnVisual = new RunnerRespawnVisual(gameObject);
     }
@@ -160,6 +170,9 @@ public class Runner : MonoBehaviourPunCallbacks
         {
             // Recovery must not replay a buffered jump or held direction when local input resumes.
             ClearMovementInput();
+            // Release once when input is suspended; an edge received in a menu would
+            // otherwise be lost forever. Remote copies wait for the owner's RPC.
+            if (photonView.IsMine && holding) photonView.RPC("RPC_Release", RpcTarget.All);
             return;
         }
 
@@ -171,6 +184,8 @@ public class Runner : MonoBehaviourPunCallbacks
         // Online input may change devices mid-level; local co-op still pairs one
         // device per role. Clear buffered movement whenever that pairing changes.
         bool inputDeviceChanged = ConfigureRunnerInput();
+        if (holding && (heldBody == null || !GameplayInput.GrabHeld))
+            photonView.RPC("RPC_Release", RpcTarget.All);
 
         if (runnerMouse)
             RunnerMouseUpdate();
@@ -194,12 +209,9 @@ public class Runner : MonoBehaviourPunCallbacks
             else if (horizontalInput < -0.001f)
                 face.localScale = new Vector3(-1, 1, 1);
 
-            // A press that selects a new scheme can precede its action rebind in
-            // this frame; keep that first jump instead of requiring a second press.
-            bool firstPressOnNewDevice = inputDeviceChanged &&
-                (GameplayInput.RunnerUsesGamepad
-                    ? GameplayInput.PadFor(true) != null && GameplayInput.PadFor(true).buttonSouth.wasPressedThisFrame
-                    : Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame);
+            // The shared action context preserves a re-bound first press even when
+            // that press also changes the online Auto control scheme this frame.
+            bool firstPressOnNewDevice = inputDeviceChanged && GameplayInput.JumpPressed;
             if ((jumpAction != null && jumpAction.WasPressedThisFrame()) || firstPressOnNewDevice)
                 _RunnerMovement.QueueJump(Time.time);
             if (jumpAction != null && jumpAction.WasReleasedThisFrame())
@@ -214,24 +226,18 @@ public class Runner : MonoBehaviourPunCallbacks
 
         if (GameplayInput.GrabPressed && !holding)
         {
-            if (holdingObjectID != -1)
+            PhotonView candidate = holdingObjectID != -1 ? PhotonView.Find(holdingObjectID) : null;
+            // Wait for the object's legal owner to be this Runner before forming a
+            // physical pair. A just-finished stroke may still be transferring ownership.
+            if (candidate != null && candidate.IsMine && candidate.GetComponent<HoldableObject>() != null)
             {
-                photonView.RPC("RPC_SetHoldingEyes", RpcTarget.All);
-                holdGO = PhotonView.Find(holdingObjectID).gameObject;
-                holdingObject = holdGO.GetComponent<HoldableObject>();
-                if (holdGO.CompareTag("Wood") || holdingObject is WoodPen)
+                if (candidate.GetComponent<WoodPen>() != null)
                 {
                     photonView.RPC("RPC_HoldWood", RpcTarget.All, holdingObjectID);
                 }
-                else if (holdGO.CompareTag("Battery") || holdingObject is Battery)
+                else if (candidate.GetComponent<Battery>() != null)
                 {
                     photonView.RPC("RPC_HoldBattery", RpcTarget.All, holdingObjectID);
-                        print("Getting battery from gate");
-                        Battery battery = holdingObject as Battery;
-                        battery.gameObject.tag = "Holding";
-                        battery.DisconnectFromElectric();
-                        Vector3 temp = holdGO.transform.localPosition;
-                        holdGO.transform.localPosition = temp.normalized;
                 }
             }
         }
@@ -323,11 +329,11 @@ public class Runner : MonoBehaviourPunCallbacks
             return;
         }
 
-        // ValidateHold may set the wood jump bonus, so read extraJumpForce afterwards.
-        bool directAllowance = _RunnerMovement.HasBufferedJump(Time.fixedTime) &&
-                               holdingObject != null && holdingObject.ValidateHold();
+        // The motor samples support below Runner each tick. Grabbed objects touching
+        // ground elsewhere cannot grant a separate jump permission.
+        extraJumpForce = 0; // A coordinated pair launch no longer needs a support-dependent wood bonus.
         if (_RunnerMovement.FixedStep(horizontalInput, Time.fixedTime, maxSpeed,
-                jumpForce + extraJumpForce, directAllowance))
+                jumpForce + extraJumpForce, heldBody))
         {
             validHoldJump = false;
             // Keep the existing network-visible jump effects tied to an actual owner-side jump.
@@ -397,6 +403,8 @@ public class Runner : MonoBehaviourPunCallbacks
     private void InitInput()
     {
         playerInput = GetComponent<PlayerInput>();
+        EgakuInputBindings.BindingsChanged -= OnBindingOverridesChanged;
+        EgakuInputBindings.BindingsChanged += OnBindingOverridesChanged;
         if (PhotonNetwork.OfflineMode && Allan.GameManager.IsLocalMultiplayer)
         {
             // InputUser owns the local Runner action copy. Disable PlayerInput's
@@ -409,7 +417,26 @@ public class Runner : MonoBehaviourPunCallbacks
         }
         // PlayerInput owns a private action copy. Explicit pairing prevents a
         // local Drawer's device from also moving Runner.
+        EgakuInputBindings.ApplyTo(playerInput.actions);
         playerInput.neverAutoSwitchControlSchemes = true;
+        ConfigureRunnerInput(true);
+        moveAction = playerInput.actions.FindAction("Runner/Move");
+        jumpAction = playerInput.actions.FindAction("Runner/Jump");
+    }
+
+    private void OnBindingOverridesChanged()
+    {
+        if (!photonView.IsMine) return;
+        if (PhotonNetwork.OfflineMode && Allan.GameManager.IsLocalMultiplayer)
+        {
+            InputActionAsset actions = InputDeviceRouter.ActionsFor(InputDeviceRouter.Role.Runner);
+            moveAction = actions.FindAction("Runner/Move");
+            jumpAction = actions.FindAction("Runner/Jump");
+            return;
+        }
+
+        if (playerInput == null) return;
+        EgakuInputBindings.ApplyTo(playerInput.actions);
         ConfigureRunnerInput(true);
         moveAction = playerInput.actions.FindAction("Runner/Move");
         jumpAction = playerInput.actions.FindAction("Runner/Jump");
@@ -672,6 +699,7 @@ public class Runner : MonoBehaviourPunCallbacks
 
     private void OnDestroy()
     {
+        EgakuInputBindings.BindingsChanged -= OnBindingOverridesChanged;
         // A scene refresh may destroy the Runner halfway through the reveal. Dispose
         // its temporary material; the next scene's Runner starts with no lock state.
         respawnVisual?.End();
@@ -708,19 +736,7 @@ public class Runner : MonoBehaviourPunCallbacks
     [PunRPC]
     private void RPC_HoldWood(int viewID)
     {
-        if (viewID != -1)
-        {
-            if(holdGO == null)
-                holdGO = PhotonView.Find(viewID).gameObject;
-            //_RunnerMovement.SetJumpAllowance(false);
-            holdGO.tag = "Holding";
-            holdGO.transform.SetParent(this.transform);
-            Rigidbody2D holdingRb = holdGO.GetComponent<Rigidbody2D>();
-            holdGO.GetComponent<WoodPen>().holder = this;
-            holdingRb.mass = 1;
-            holding = true;
-            fixedJoint2D.connectedBody = holdingRb;
-        }
+        BeginHold(viewID);
     }
     private bool inBattery = false;
 
@@ -732,15 +748,42 @@ public class Runner : MonoBehaviourPunCallbacks
     [PunRPC]
     private void RPC_HoldBattery(int viewID)
     {
-        if (holdGO == null)
-            holdGO = PhotonView.Find(viewID).gameObject;
+        BeginHold(viewID);
+    }
+
+    private void BeginHold(int viewID)
+    {
+        PhotonView target = PhotonView.Find(viewID);
+        if (target == null || holding) return;
+        HoldableObject holdable = target.GetComponent<HoldableObject>();
+        Rigidbody2D body = target.GetComponent<Rigidbody2D>();
+        if (holdable == null || body == null) return;
+        holdGO = target.gameObject;
+        holdingObject = holdable;
+        heldBody = body;
+        heldOriginalMass = body.mass;
+        heldOriginalGravity = body.gravityScale;
+        heldOriginalTag = holdGO.tag;
+        holdingObjectID = viewID;
+        if (holdable is WoodPen wood) wood.holder = this;
+        if (holdable is Battery battery)
+        {
+            battery.holder = this;
+            // Restore the socket body before attaching the joint. Do not snap its
+            // transform after attachment; that creates a corrective impulse.
+            battery.DisconnectFromElectric();
+        }
         holdGO.tag = "Holding";
-        holdGO.transform.SetParent(this.transform);
-        Rigidbody2D holdingRb = holdGO.GetComponent<Rigidbody2D>();
-        //holdGO.GetComponent<WoodPen>().holder = this;
-        holdingRb.mass = 1;
+        // Preserve the existing parent contract for electric travel/local-space Photon poses.
+        holdGO.transform.SetParent(transform, true);
+        // Keep physical density continuous across grab/release. Reducing mass here
+        // magnifies water buoyancy and drag acceleration; the motor assists the pair instead.
         holding = true;
-        fixedJoint2D.connectedBody = holdingRb;
+        fixedJoint2D.enabled = false;
+        fixedJoint2D.connectedBody = body;
+        fixedJoint2D.enabled = photonView.IsMine && target.IsMine;
+        RPC_SetHoldingEyes();
+        TraceGrab("grab");
     }
 
     public void HoldingObjLost()
@@ -750,31 +793,55 @@ public class Runner : MonoBehaviourPunCallbacks
         holding = false;
         holdGO = null;
         holdingObject = null;
-        fixedJoint2D.connectedBody = rb;
+        heldBody = null;
+        holdingObjectID = -1;
+        fixedJoint2D.enabled = false;
+        fixedJoint2D.connectedBody = null;
+        ResetAppearance();
     }
 
     [PunRPC]
     private void RPC_Release()
     {
-        ResetAppearance();
-        // TODO: only setting to wood here cuz its the only one that can be hold, might want to change, have a buffer holding the original tag name
-        if (holdGO != null)
+        TraceGrab("release");
+        // Disable before clearing connectedBody: an enabled null joint attaches to the world.
+        fixedJoint2D.enabled = false;
+        fixedJoint2D.connectedBody = null;
+        GameObject released = holdGO;
+        Rigidbody2D releasedBody = heldBody;
+        HoldableObject releasedObject = holdingObject;
+        float originalMass = heldOriginalMass;
+        float originalGravity = heldOriginalGravity;
+        string originalTag = heldOriginalTag;
+        HoldingObjLost();
+        if (released != null && releasedObject != null)
         {
-            holdGO.transform.SetParent(null);
+            released.transform.SetParent(null, true);
+            releasedObject.ToggleCollider(true);
+            releasedObject.Reset();
+            if (releasedBody != null)
+            {
+                releasedBody.mass = originalMass;
+                releasedBody.gravityScale = originalGravity;
+            }
+            released.tag = originalTag;
         }
-        
-        if (holdingObject != null)
-        {
-            holdingObject.ToggleCollider(true);
-            holdingObject.Reset();
-            holdingObject = null;
+    }
 
-            fixedJoint2D.connectedBody = rb;
-        }
-        validHoldJump = false;
-        extraJumpForce = 0;
-        holding = false;
-        holdGO = null;
+    private void TraceGrab(string phase)
+    {
+        if (!debugGrab) return;
+        PhotonView target = holdGO != null ? holdGO.GetPhotonView() : null;
+        Debug.Log($"[Grab] {phase} time={PhotonNetwork.Time:F3} actor={actorNum} runnerView={photonView.ViewID} " +
+            $"target={(target != null ? target.ViewID : 0)} owner={(target != null ? target.OwnerActorNr : 0)} " +
+            $"localActor={(PhotonNetwork.LocalPlayer != null ? PhotonNetwork.LocalPlayer.ActorNumber : 0)} " +
+            $"controller={(target != null ? target.ControllerActorNr : 0)} " +
+            $"master={PhotonNetwork.IsMasterClient} simulated={(heldBody != null && heldBody.simulated)} " +
+            $"bodyType={(heldBody != null ? heldBody.bodyType.ToString() : "none")} " +
+            $"mass={(heldBody != null ? heldBody.mass : 0f)} position={transform.position} " +
+            $"heldPosition={(heldBody != null ? heldBody.position : Vector2.zero)} input={horizontalInput} " +
+            $"grounded={_RunnerMovement?.Grounded} targetSpeed={_RunnerMovement?.TargetSpeed} blocked={_RunnerMovement?.Blocked} " +
+            $"velocity={(rb != null ? rb.linearVelocity : Vector2.zero)}", this);
     }
     #endregion
 
@@ -787,7 +854,8 @@ public class Runner : MonoBehaviourPunCallbacks
     #region Collision / Trigger Detection
     private void OnCollisionStay2D(Collision2D other)
     {
-        if (other.gameObject.tag == "Wood" || other.gameObject.tag == "Battery")
+        if (!holding && (other.gameObject.tag == "Wood" || other.gameObject.tag == "Battery") &&
+            other.gameObject.GetComponent<HoldableObject>() != null && other.gameObject.GetPhotonView() != null)
         {
             holdingObjectID = other.gameObject.GetPhotonView().ViewID;
         }
@@ -796,7 +864,7 @@ public class Runner : MonoBehaviourPunCallbacks
 
     private void OnCollisionExit2D(Collision2D other)
     {
-        if(!holding)
+        if(!holding && other.gameObject.GetPhotonView() != null && other.gameObject.GetPhotonView().ViewID == holdingObjectID)
             holdingObjectID = -1;
     }
 
@@ -832,7 +900,8 @@ public class Runner : MonoBehaviourPunCallbacks
 
     private void OnTriggerExit2D(Collider2D other)
     {        
-        if (other.CompareTag("Battery"))
+        if (!holding && other.CompareTag("Battery") && other.GetComponent<PhotonView>() != null &&
+            other.GetComponent<PhotonView>().ViewID == holdingObjectID)
         {
             // TODO: Might cause error here since everytime passby would be set to -1, even when holding other object
             holdingObjectID = -1;

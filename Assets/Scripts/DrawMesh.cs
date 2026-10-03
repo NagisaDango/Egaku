@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Photon.Pun;
 using System.Collections;
 using System.Collections.Generic;
@@ -223,6 +223,27 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
 
         GetComponent<MeshFilter>().mesh = mesh;
         // lastMousePosition = mousePos; // Already set
+    }
+
+    // Use polygon coordinates, not Collider.bounds: the Drawer has simulation disabled
+    // and cannot supply physical bounds. Both copies derive the same local centre.
+    private void UpdateLocalMassCenter()
+    {
+        var polygon = col2d as PolygonCollider2D;
+        if (polygon == null) return;
+        bool found = false;
+        Vector2 min = Vector2.zero, max = Vector2.zero;
+        for (int path = 0; path < polygon.pathCount; path++)
+        {
+            foreach (Vector2 vertex in polygon.GetPath(path))
+            {
+                Vector2 local = rb2d.transform.InverseTransformPoint(
+                    polygon.transform.TransformPoint(vertex + polygon.offset));
+                if (!found) { min = max = local; found = true; }
+                else { min = Vector2.Min(min, local); max = Vector2.Max(max, local); }
+            }
+        }
+        if (found) rb2d.centerOfMass = (min + max) * 0.5f;
     }
 
     private void SetPenProperty(string penName)
@@ -565,7 +586,7 @@ public class DrawMesh : MonoBehaviourPunCallbacks, IOnPhotonViewOwnerChange
             GetComponent<MeshRenderer>().material = currProperty.material;
 
             //Debug.LogError("vertices" + mesh.vertices.Length + "triangle" + mesh.triangles.Length + "uv" + mesh.uv.Length);
-            rb2d.centerOfMass = col2d.bounds.center;
+            UpdateLocalMassCenter();
             if (currProperty.gravity) rb2d.bodyType = RigidbodyType2D.Dynamic;
             if (currProperty.mass > 0) rb2d.mass = currProperty.mass;
             //***!!! if currproperty is trigger just remove the collider for now.

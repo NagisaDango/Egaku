@@ -1028,10 +1028,10 @@ FixedJoint2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6516697053591408558}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 4
   m_EnableCollision: 0
-  m_ConnectedRigidBody: {fileID: 7988319569955487624}
+  m_ConnectedRigidBody: {fileID: 0}
   m_BreakForce: Infinity
   m_BreakTorque: Infinity
   m_BreakAction: 3
@@ -1069,10 +1069,23 @@ MonoBehaviour:
     jumpBufferTime: 0.1
     jumpReleaseMultiplier: 0.5
     fallGravityMultiplier: 1.5
+    blockedJumpRecoveryTime: 0.12
+    pushAcceleration: 35
+    pushMaxSpeed: 6
+    pushMaxForce: 1500
+  grabTuning:
+    enabled: 1
+    maxSpeed: 8
+    groundAcceleration: 60
+    groundBraking: 90
+    groundTurnAcceleration: 90
+    airControlMultiplier: 0.7
+    transitionTime: 0.1
   fixedJoint2D: {fileID: 6520781276632100566}
   batteryLayer:
     serializedVersion: 2
     m_Bits: 16384
+  debugGrab: 0
   face: {fileID: 6665149993856065429}
   leftEye: {fileID: 473712637998911065}
   rightEye: {fileID: 2174589979212135281}

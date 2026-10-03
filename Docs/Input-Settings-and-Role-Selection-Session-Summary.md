@@ -23,7 +23,14 @@
 - Runtime 只負責載入 Prefab、綁定數值、輸入及頁面行為，不動態建立主要視覺階層。
 - 已提供 Display、Audio、Controls、Keys 四頁。
 - 已提供解析度、螢幕模式、Master／BGM／SFX 音量、手柄游標速度、Drawer 畫筆游標大小及 Runner 位置游標大小。
-- Keys 頁目前只顯示 Runner／Drawer 的完整鍵位，不支援自訂重綁。
+- Keys 頁顯示 Runner／Drawer 的完整鍵位，並可分別修改鍵鼠主要／備用鍵及 Gamepad 綁定。
+- Move 與 Camera Move 依 Up／Down／Left／Right 展開；Runner 會同時顯示 WASD、方向鍵、Left Stick 及 D-pad。
+- Keys 表格使用 `Action / Keyboard / Controller` 三欄；同一裝置有主要與備用綁定時，兩個獨立 Button 會在同一欄以 `/` 分隔，只有一個綁定時 Button 會填滿該裝置欄。
+- Keys 頁支援上下左右二維導覽：左右切換同列綁定，上下移至相鄰列最接近的裝置欄位。
+- 重綁捕捉會忽略開啟捕捉的同一個 Submit、等待輸入最多 10 秒，按下原本的控制或逾時都視為不修改。
+- 同一角色及同一裝置類型內不允許重複綁定；衝突時保留原值並顯示原因。
+- Keys 修改先保存在設定介面的草稿中，只有 `Apply Settings` 才寫入本機；關閉介面會丟棄未套用的修改。
+- `Restore current page to default` 在 Keys 頁會還原目前顯示角色的鍵鼠及 Gamepad 預設值，仍須 Apply 才保存。
 - 所有頁面修改由 `Apply Settings` 一次保存；取消時回復開啟介面前的設定快照。
 - Display 修改有暫時預覽與逾時回復，避免保存無法使用的顯示模式。
 - 鍵盤以 Q／E、手柄以 LB／RB 切換頁面，切頁後會選取該頁第一個可操作項目。
@@ -75,6 +82,25 @@
 - 在本地雙人關卡中辨識開啟者所屬角色，只顯示該角色適用的角色設定。
 - 控制 Dropdown、Slider、Apply、Cancel、顯示模式安全預覽及裝置恢復／交換流程。
 - 處理 Tab 選中顏色、頁面第一個選項、自動捲動 Dropdown 及 Submit 防重複觸發。
+- 將 Keys 頁的動態列加入固定 UI Navigation，並在選取較下方鍵位時保持 ScrollRect 內容可見。
+
+### `Assets/Scripts/Input/EgakuInputBindings.cs`
+
+- 集中載入、保存及套用 Input System binding override JSON。
+- 以 `PlayerPrefs` 保存本機鍵位，不修改原始 `.inputactions` 預設值。
+- 為本地兩角色、線上輸入及 Runner 的 `PlayerInput` 動作副本套用相同 override。
+- 套用新 override 時保留各 Action Map 原本的啟用狀態，避免意外開啟停用中的輸入。
+
+### `Assets/Scripts/Input/KeyRebindController.cs`
+
+- 建立 Runner／Drawer Keys 頁的草稿與可操作列，控制捕捉、逾時、衝突檢查、還原及顯示文字。
+- 捕捉期間暫停設定介面的 UI Input Module，使 Enter、Space 或 Gamepad A 不會同時被 UI Submit 再次觸發。
+- 鍵盤 Escape 與 Gamepad B 沒有被硬編碼成捕捉取消鍵，因此仍可作為 gameplay binding。
+
+### `Assets/Scripts/Input/KeyBindingRow.cs`
+
+- 提供 authored row Prefab 的欄位引用與顯示／事件設定。
+- 視覺階層、狀態顏色及排版保留在 Prefab；Runtime 只複製 authored row 並填入行為與文字。
 
 ### `Assets/Scripts/Player/InputDeviceRouter.cs`
 
@@ -151,6 +177,12 @@
 
 - 保存設定介面的完整可編輯外觀、頁面階層、EventSystem、Input System UI Module 及固定按鈕事件。
 - 長期外觀調整、Tab 動畫與版面修改應優先在此 Prefab 完成。
+- Keys 頁包含 Runner／Drawer 兩個 authored ScrollRect 容器及 `KeyRebindController` 引用。
+
+### `Assets/Resources/UI/KeyBindingRow.prefab`
+
+- 保存一列鍵位的 Action、Keyboard 與 Controller 欄；兩個裝置欄各自包含主要鍵、備用鍵及 `/` 分隔視覺。
+- Button 的 Normal、Highlighted、Selected、Pressed 與 Disabled 顏色可直接在 Prefab 調整。
 
 ### `Assets/Resources/UI/LocalDeviceClaimView.prefab`
 
@@ -167,6 +199,7 @@
 
 - 擴充 Runner／Drawer 的鍵鼠與 Gamepad 動作，包括移動、跳躍、抓取、繪圖、筆刷、鏡頭、指標與 UI 導覽。
 - Binding Group 必須維持 `Keyboard&Mouse` 與 `Gamepad` 的一致名稱，`InputDeviceRouter` 依這些 Group 套用角色遮罩。
+- Runner Move 的 Left Stick／D-pad，以及 Drawer Camera Move 的 Left Stick，使用 2D Vector composite 分成四個方向；這讓每個方向可獨立重綁且仍輸出正確 Vector2。
 
 ## 維護注意事項
 
@@ -177,6 +210,9 @@
 - 切換或失去裝置時要清除持續按住狀態；Drawer 必須先結束正在畫的線。
 - 設定介面和角色選擇等需要長期調整外觀的 UI 應維持 Prefab authoring。新增視覺階層前應修改 Prefab，不要在 Runtime 動態建構。
 - `EgakuSettingsMenu` 會暫停場景 EventSystem。新增其他常駐 UI 時，要確認設定關閉後 EventSystem、選中物件與 Time Scale 都能正確恢復。
+- UI Navigation 的 Q／E、LB／RB、Submit 與 Cancel 維持固定，不會套用 gameplay binding override；Keys 頁只能修改遊戲操作。
+- 新增可重綁動作時，必須同時確認 gameplay 實際從 Input Action 讀取，並在 `KeyRebindController` 補上對應列。不要只新增顯示文字。
+- 連續狀態動作的 binding 更新或裝置切換必須先清除按住狀態；線上 Auto 模式目前會等待 Jump、Grab、Draw、Erase 放開後才切換裝置。
 - Ready 欄位 Image 目前以 CanvasRenderer Alpha 顯示或隱藏，Image Component 本身仍存在。若未來恢復滑鼠操作，需要重新設計 Column Button 的啟用狀態、射線命中及確認／取消流程。
 - `RoleSelection.unity` 在本次工作期間有大量使用者整理過的序列化變更。提交前應在 Unity Inspector 逐一確認場景引用，不要以文字工具重建或格式化整份 YAML。
 - `Assets/Scenes/Legacy/RoleSelection 1.unity` 是保留的舊場景副本，不應取代目前 Build Settings 中的正式 `RoleSelection.unity`。
@@ -186,29 +222,38 @@
 
 - Unity 腳本編譯已達零 Error。
 - 設定介面的鍵盤／手柄頁面切換、選項導覽、Dropdown、Slider、Apply 與 Cancel 曾在 Editor Play Mode 驗證。
+- Keys 頁已驗證鍵盤捕捉、按原鍵不修改、10 秒逾時、同角色重複鍵拒絕、未 Apply 丟棄、Apply 保存及 Restore 後保存。
+- Keys ScrollRect 已驗證選取最後一列時會自動捲動，捕捉中關閉設定不產生 Console 錯誤。
+- 已由使用者使用實體 Xbox Controller 驗證 Keys 頁手柄導覽與按鍵捕捉可用。
+- 使用一支測試後立即移除的虛擬 Gamepad 驗證 Runner Left Stick Up、Runner D-pad Right 與 Drawer Camera Left Stick Up 仍分別輸出 `(0,1)`、`(1,0)`、`(0,1)`。
+- 使用兩支測試後立即移除的虛擬 Gamepad 驗證鍵鼠＋手柄、角色交換、手柄＋手柄、斷線時回退鍵鼠，以及以新手柄重新認領；測試結束後已還原本地配置偏好。
+- 設定 Draft 已驗證即時預覽、Cancel 還原、Apply 寫入及模擬重新啟動後讀回；驗證結束後已還原原有 PlayerPrefs。
+- 線上固定鍵鼠與 Gamepad Preferred 已驗證會分別選用鍵鼠及目前實體 Xbox Controller，且 Runner、Drawer、設定 UI 使用同一裝置判定。Auto 模式的實體切換仍需在遊戲視窗取得焦點時手動驗證。
+- EditMode 測試為 40 Passed／1 Failed。唯一失敗是既有 `RoleSelectionHasBothButtonsAndTheNetworkDisplay` 仍查找已註釋的 Legacy `RolesManager.drawerButton`、`runnerButton`、`playerDisplayParent`，與本次 Keys 功能無關。
 - 本地裝置 Dropdown 已確認只顯示實際裝置，並會在插入／移除時刷新。
 - 線上角色選擇已完成單一 Editor Client 的 Runtime 結構、Prefab 引用及 Console smoke test。
 - 線上角色卡平滑移動、Ready 圖片及確認鍵取消準備已完成程式修正。
-- 尚未在本次最後狀態下完成兩個獨立 Photon Client 的全流程驗證。
-- 尚未完整覆蓋兩支實體 Gamepad、Gamepad 斷線／重接及所有裝置交換排列。
+- ClientA、ClientB 的 Windows Development Build 均已成功，皆為 0 build errors；輸出位於忽略版控的 `Builds/EgakuReleaseValidation`。
+- ClientA 已以獨立 Player 日誌完成啟動 smoke test；Unity 6000.5.1f1、D3D11、Input System 與首場景載入階段未記錄錯誤。自動化工具啟動的 GUI 無法取得可見視窗，因此本次仍未執行兩個獨立 Photon Client 的互動全流程。
+- 尚未以兩支實體 Gamepad 完整覆蓋斷線／重接及所有裝置交換排列；相同流程目前只以兩支虛擬 Gamepad 驗證。
 
 ## ToDo
 
 ### 高優先級
 
 - 使用兩支實體 Gamepad 驗證本地 Runner／Drawer 同時操作、兩邊角色交換、各自開啟設定及斷線恢復。
-- 驗證鍵鼠＋Gamepad 的兩種角色排列，包含 Player 1／Player 2 Dropdown 手動交換。
+- 在取得焦點的獨立 Player 中驗證線上 Auto 模式由鍵鼠切到手柄、再切回鍵鼠，以及 Gamepad Preferred 拔除手柄後回退鍵鼠。
 - 使用兩個 Development Build 驗證線上建立／加入房間、左右選角、準備／取消準備、雙方進入關卡選擇及回到角色選擇。
 - 在線上測試中分別覆蓋 Master 為 Runner、Master 為 Drawer、玩家離房、重連及 Master Client 切換。
 - 在提交前檢查 `RoleSelection.unity`、三個 UI Prefab、`PlayerDisplay.prefab` 及所有新增序列化引用。
 
 ### 中優先級
 
-- 實作 `Restore current page to default`；目前按鈕刻意設為不可操作。
-- 完成按鍵自訂重綁。目前 Keys 頁只顯示固定配置。
+- 使用實體 Gamepad 補驗 Keys 頁的四方向綁定捕捉、Trigger 捕捉、衝突提示及 Apply 後 gameplay；LB／RB 導覽與一般捕捉已通過。
 - 補上設定頁切換動畫，例如翻頁動畫；行為狀態應繼續留在 `EgakuSettingsMenu`，動畫與 Animator 參數放在 Prefab。
 - 視需要恢復線上角色選擇的滑鼠操作。需同時處理 Column Button 啟用、卡片遮擋、一次點擊只改變一次狀態，以及再次點擊取消準備。
 - 補充更明確的裝置斷線與交換提示文字。
+- 將 `RoleSelectionHasBothButtonsAndTheNetworkDisplay` 更新為驗證目前的 `OnlineRoleSelectionView`／`OnlineSelection.prefab`，移除對 Legacy Button 欄位的假設。
 
 ### 後續清理
 

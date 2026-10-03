@@ -11,8 +11,6 @@ public class Battery : MonoBehaviourPun, HoldableObject
     [SerializeField] private Vector2 originalPos;
     private Collider2D col;
     private Rigidbody2D rb;
-    private bool simulatedStatus;
-    private Vector2 lastContactPoint;
     private float ogMass;
     private RigidbodyType2D ogType;
     private bool ogSimulated;
@@ -20,7 +18,8 @@ public class Battery : MonoBehaviourPun, HoldableObject
     [SerializeField] private IElectricControl controlObj; 
     public float distance = 10f; // Define a max distance for visualization
     public LayerMask playerLayer; // Assign this in the Inspector
-    private bool ownerTransfered = false;
+    // Set on both RPC receivers so destruction can clear each Runner's held state.
+    [NonSerialized] public Runner holder;
 
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -29,37 +28,16 @@ public class Battery : MonoBehaviourPun, HoldableObject
         originalPos = transform.position;
         col = GetComponent<Collider2D>();
         rb = GetComponent<Rigidbody2D>();
-        simulatedStatus = rb.simulated;
         ogMass = rb.mass;
-        
-        if (!PhotonNetwork.OfflineMode && !GameManager.Instance.devSpawn && 
-             (RolesManager.PlayerRole)(int)PhotonNetwork.CurrentRoom.CustomProperties["Role_" + PhotonNetwork.LocalPlayer.ActorNumber] != RolesManager.PlayerRole.Runner)
-        {
-        }
-        else
-        {
-            Debug.Log($"This player ActorNum is {PhotonNetwork.LocalPlayer.ActorNumber}. Runner is {Runner.Instance.actorNum}");
-            ownerTransfered = true;
-        }
+        // TransferToRunner owns scene-object authority. Cache authored body type,
+        // not the temporary simulation-disabled state while ownership is pending.
         ogType = rb.bodyType;
-        ogSimulated = rb.simulated;
+        ogSimulated = true;
     }
 
     
     void Update()
     {
-        if (!ownerTransfered)
-        {
-            if (Runner.Instance != null)
-            {            
-                this.rb.simulated = false;
-                rb.bodyType = RigidbodyType2D.Kinematic;
-                photonView.TransferOwnership(Runner.Instance.actorNum);
-                ogType = rb.bodyType;
-                ogSimulated = rb.simulated;
-                ownerTransfered = true;
-            }
-        }
         
         // Your actual CircleCast logic
         RaycastHit2D hit = Physics2D.CircleCast(
@@ -165,10 +143,10 @@ public class Battery : MonoBehaviourPun, HoldableObject
     public void DisconnectFromElectric()
     {
         Debug.Log(("Out from electric"));
-        if(controlObj != null)
+        if(controlObj != null && photonView.IsMine)
             controlObj.BatteryOut();
         rb.bodyType = ogType;
-        rb.simulated = ogSimulated;
+        ToggleRbSimulated();
         col.isTrigger = false;
         controlObj = null;
     }
@@ -189,19 +167,16 @@ public class Battery : MonoBehaviourPun, HoldableObject
         }
     }
 
-    private void OnCollisionStay2D(Collision2D other)
-    {
-        lastContactPoint = other.contacts[0].point;
-    }
-    
     public void Reset()
     {
+        // Reset doubles as an Editor message; only a live gameplay release restores physics.
+        if (!Application.isPlaying || rb == null) return;
+        holder = null;
         this.gameObject.tag = "Battery";
         this.transform.SetParent(null);
         ToggleRbSimulated();
         rb.mass = ogMass;
         rb.bodyType = ogType;
-        lastContactPoint = Vector2.negativeInfinity;
     }
 
     public void ToggleCollider(bool status)
@@ -212,42 +187,24 @@ public class Battery : MonoBehaviourPun, HoldableObject
 
     public void ToggleRbSimulated(bool status)
     {
-        rb.simulated = status;
+        rb.simulated = status && TransferToRunner.IsRunnerAuthority(photonView);
     }
 
     public void ToggleRbSimulated()
     {
-        rb.simulated = ogSimulated;
+        rb.simulated = ogSimulated && TransferToRunner.IsRunnerAuthority(photonView);
     }
 
-    //TODO: Right now can infinite jump
     public bool ValidateHold()
     {
-        ContactFilter2D filter = new ContactFilter2D();
-        filter.useLayerMask = true;
-        filter.layerMask = LayerMask.GetMask("Draw", "Platform");
-        List<ContactPoint2D> contactPoints = new List<ContactPoint2D>();
+        // Only current contacts with an external surface qualify, never a cached
+        // point that can raycast into this same battery while it is being carried.
+        return holder != null && GrabPhysics.HasExternalSupport(rb, holder.GetComponent<Rigidbody2D>());
+    }
 
-        if (col.GetContacts(filter, contactPoints) > 0)
-        {
-            foreach (ContactPoint2D point in contactPoints)
-            {
-                if (point.normal.y > 0.2f)
-                {
-                    return true;
-                }
-            }
-        }        
-        if (lastContactPoint != Vector2.negativeInfinity)
-        {
-            RaycastHit2D hit = Physics2D.Raycast(lastContactPoint, Vector2.up, 0.5f, LayerMask.GetMask( "Battery"));
-            if (hit.collider != null)
-            {
-                print("Layer " + hit.collider.gameObject.name);
-                return true;
-            }
-        }
-        return false;
+    private void OnDestroy()
+    {
+        if (holder != null) holder.HoldingObjLost();
     }
     
     

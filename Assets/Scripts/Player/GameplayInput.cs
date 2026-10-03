@@ -2,6 +2,7 @@ using Allan;
 using Photon.Pun;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Utilities;
 
 /// <summary>
 /// Routes the local physical devices to roles. In an offline two-player room each
@@ -10,6 +11,8 @@ using UnityEngine.InputSystem;
 /// </summary>
 public static class GameplayInput
 {
+    private static readonly string[] continuousOnlineActions =
+        { "Runner/Jump", "Runner/Grab", "Drawer/Draw", "Drawer/Erase" };
     private static readonly Gamepad[] pointerDevices = new Gamepad[2];
     private static readonly Vector2[] gamepadPointers = new Vector2[2];
     private static readonly int[] pointerFrames = { -1, -1 };
@@ -19,6 +22,28 @@ public static class GameplayInput
     private static int deviceFrame = -1;
     private static bool onlineGamepadActive;
     private static GameManager deviceManager;
+    private static InputActionAsset onlineActions;
+    private static bool onlineActionsUseGamepad;
+    private static bool onlineActionsConfigured;
+    // The control scheme alone cannot identify a second physical Gamepad.
+    private static Gamepad configuredOnlineGamepad;
+    private static bool bindingEventsSubscribed;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetForNewSession()
+    {
+        if (bindingEventsSubscribed)
+            EgakuInputBindings.BindingsChanged -= RefreshOnlineBindingOverrides;
+        if (onlineActions != null) Object.Destroy(onlineActions);
+        onlineActions = null;
+        onlineActionsConfigured = false;
+        configuredOnlineGamepad = null;
+        bindingEventsSubscribed = false;
+        onlineGamepad = null;
+        onlineGamepadActive = false;
+        deviceFrame = -1;
+        deviceManager = null;
+    }
 
     private static bool OnlineUsesGamepad
     {
@@ -65,17 +90,10 @@ public static class GameplayInput
         if (!Application.isFocused || PhotonNetwork.OfflineMode) return;
 
         Mouse mouse = Mouse.current;
-        // Do not switch in the middle of a stroke or on its release frame. This
-        // lets Drawer finish the stroke with the device and coordinates that began it.
-        if (onlineGamepadActive &&
-            (pad.rightTrigger.isPressed || pad.rightTrigger.wasReleasedThisFrame ||
-             pad.leftTrigger.isPressed || pad.leftTrigger.wasReleasedThisFrame ||
-             pad.buttonSouth.isPressed || pad.buttonSouth.wasReleasedThisFrame)) return;
-        if (!onlineGamepadActive &&
-            ((mouse != null && (mouse.leftButton.isPressed || mouse.leftButton.wasReleasedThisFrame)) ||
-             (Keyboard.current != null &&
-              (Keyboard.current.spaceKey.isPressed || Keyboard.current.spaceKey.wasReleasedThisFrame ||
-               Keyboard.current.leftShiftKey.isPressed || Keyboard.current.leftShiftKey.wasReleasedThisFrame)))) return;
+        // Keep the current device through a held or just-released gameplay action.
+        // The action copy includes binding overrides, so rebinding Draw/Grab/Jump does
+        // not reintroduce a mid-stroke or mid-grab device switch.
+        if (OnlineActionInProgress(onlineGamepadActive)) return;
 
         bool keyboardActivity = Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame;
         bool mouseActivity = mouse != null &&
@@ -133,7 +151,7 @@ public static class GameplayInput
     public static Vector2 PointerScreenPosition(bool runner)
     {
         if (!(runner ? RunnerUsesGamepad : DrawerUsesGamepad))
-            return LocalAction(runner, "PointerPosition")?.ReadValue<Vector2>() ?? (Vector2)Input.mousePosition;
+            return RoleAction(runner, "PointerPosition")?.ReadValue<Vector2>() ?? (Vector2)Input.mousePosition;
 
         // Multiple gameplay components may read the pointer in one frame. Advance
         // it once so camera bounds, drawing, and the visible cursor agree exactly.
@@ -150,7 +168,7 @@ public static class GameplayInput
             pointerFrames[index] = Time.frameCount;
             if (pad != null && Application.isFocused)
             {
-                Vector2 motion = LocalAction(runner, "PointerMove")?.ReadValue<Vector2>() ?? pad.rightStick.ReadValue();
+                Vector2 motion = RoleAction(runner, "PointerMove")?.ReadValue<Vector2>() ?? Vector2.zero;
                 gamepadPointers[index] += motion * (EgakuSettings.GamepadPointerSpeed * Time.unscaledDeltaTime);
             }
             gamepadPointers[index].x = Mathf.Clamp(gamepadPointers[index].x, 0f, Mathf.Max(0f, Screen.width - 1f));
@@ -184,47 +202,112 @@ public static class GameplayInput
             if (active != null) return onlineGamepad; // Ambiguous simultaneous input.
             active = candidate;
         }
-        bool strokeHeld = onlineGamepad != null &&
-            (onlineGamepad.rightTrigger.isPressed || onlineGamepad.leftTrigger.isPressed ||
-             onlineGamepad.buttonSouth.isPressed);
+        // Once the online action copy is available, use its overridden bindings to
+        // decide whether it is safe to follow activity from a different controller.
+        bool strokeHeld = OnlineActionInProgress(true, false);
+        if (onlineActions == null)
+            strokeHeld = onlineGamepad != null &&
+                (onlineGamepad.rightTrigger.isPressed || onlineGamepad.leftTrigger.isPressed ||
+                 onlineGamepad.buttonSouth.isPressed);
         if (active != null && !strokeHeld) onlineGamepad = active;
         return onlineGamepad;
     }
 
-    private static InputAction LocalAction(bool runner, string action)
+    private static bool OnlineActionInProgress(bool useGamepad, bool includeReleaseFrame = true)
     {
-        if (!PhotonNetwork.OfflineMode || !GameManager.IsLocalMultiplayer) return null;
-        return InputDeviceRouter.ActionsFor(runner ? InputDeviceRouter.Role.Runner : InputDeviceRouter.Role.Drawer)
-            .FindAction((runner ? "Runner/" : "Drawer/") + action);
+        if (onlineActions == null || !onlineActionsConfigured || onlineActionsUseGamepad != useGamepad)
+            return false;
+
+        // These actions can own continuous world state. Waiting through their release
+        // frame keeps the same device responsible for completing that state transition.
+        foreach (string path in continuousOnlineActions)
+        {
+            InputAction action = onlineActions.FindAction(path, false);
+            if (action != null && (action.IsPressed() || (includeReleaseFrame && action.WasReleasedThisFrame())))
+                return true;
+        }
+        return false;
     }
 
-    public static bool GrabPressed => LocalAction(true, "Grab")?.WasPressedThisFrame() ?? (RunnerUsesGamepad
-        ? PadFor(true) != null && PadFor(true).leftTrigger.wasPressedThisFrame
-        : Input.GetKeyDown(KeyCode.LeftShift));
+    private static InputAction RoleAction(bool runner, string action)
+    {
+        if (PhotonNetwork.OfflineMode && GameManager.IsLocalMultiplayer)
+            return InputDeviceRouter.ActionsFor(runner ? InputDeviceRouter.Role.Runner : InputDeviceRouter.Role.Drawer)
+                .FindAction((runner ? "Runner/" : "Drawer/") + action);
 
-    public static bool GrabReleased => LocalAction(true, "Grab")?.WasReleasedThisFrame() ?? (RunnerUsesGamepad
-        ? PadFor(true) == null || PadFor(true).leftTrigger.wasReleasedThisFrame
-        : Input.GetKeyUp(KeyCode.LeftShift));
+        EnsureOnlineActions(runner ? RunnerUsesGamepad : DrawerUsesGamepad);
+        return onlineActions?.FindAction((runner ? "Runner/" : "Drawer/") + action);
+    }
 
-    public static bool WirePressed => LocalAction(true, "Wire")?.WasPressedThisFrame() ?? (RunnerUsesGamepad
-        ? PadFor(true) != null && PadFor(true).buttonWest.wasPressedThisFrame
-        : Input.GetKeyDown(KeyCode.E));
+    private static void EnsureOnlineActions(bool useGamepad)
+    {
+        if (onlineActions == null)
+        {
+            onlineActions = EgakuInputBindings.CreateActionCopy();
+            if (onlineActions == null) return;
+            if (!bindingEventsSubscribed)
+            {
+                EgakuInputBindings.BindingsChanged += RefreshOnlineBindingOverrides;
+                bindingEventsSubscribed = true;
+            }
+        }
+        Gamepad selectedPad = useGamepad ? AvailableOnlineGamepad() : null;
+        if (onlineActionsConfigured && onlineActionsUseGamepad == useGamepad && configuredOnlineGamepad == selectedPad) return;
 
-    public static bool DrawPressed => (LocalAction(false, "Draw")?.WasPressedThisFrame() ?? (DrawerUsesGamepad
-        ? PadFor(false) != null && PadFor(false).rightTrigger.wasPressedThisFrame && !GamepadDrawerPointer.CapturesDraw
-        : Input.GetMouseButtonDown(0))) && !GamepadDrawerPointer.CapturesDraw;
+        onlineActions.Disable();
+        onlineActionsUseGamepad = useGamepad;
+        configuredOnlineGamepad = selectedPad;
+        onlineActions.bindingMask = InputBinding.MaskByGroup(useGamepad ? "Gamepad" : "Keyboard&Mouse");
+        if (useGamepad)
+        {
+            Gamepad pad = selectedPad;
+            onlineActions.devices = pad != null
+                ? new ReadOnlyArray<InputDevice>(new InputDevice[] { pad })
+                : new ReadOnlyArray<InputDevice>(System.Array.Empty<InputDevice>());
+        }
+        else
+        {
+            var devices = new System.Collections.Generic.List<InputDevice>(2);
+            if (Keyboard.current != null) devices.Add(Keyboard.current);
+            if (Mouse.current != null) devices.Add(Mouse.current);
+            onlineActions.devices = new ReadOnlyArray<InputDevice>(devices.ToArray());
+        }
+        onlineActions.Enable();
+        onlineActionsConfigured = true;
+    }
 
-    public static bool DrawHeld => (LocalAction(false, "Draw")?.IsPressed() ?? (DrawerUsesGamepad
-        ? PadFor(false) != null && PadFor(false).rightTrigger.isPressed && !GamepadDrawerPointer.CapturesDraw
-        : Input.GetMouseButton(0))) && !GamepadDrawerPointer.CapturesDraw;
+    private static void RefreshOnlineBindingOverrides()
+    {
+        if (onlineActions == null) return;
+        bool useGamepad = onlineActionsUseGamepad;
+        onlineActionsConfigured = false;
+        EgakuInputBindings.ApplyTo(onlineActions);
+        EnsureOnlineActions(useGamepad);
+    }
 
-    public static bool DrawReleased => (LocalAction(false, "Draw")?.WasReleasedThisFrame() ?? (DrawerUsesGamepad
-        ? PadFor(false) != null && PadFor(false).rightTrigger.wasReleasedThisFrame && !GamepadDrawerPointer.CapturesDraw
-        : Input.GetMouseButtonUp(0))) && !GamepadDrawerPointer.CapturesDraw;
+    public static bool JumpPressed => RoleAction(true, "Jump")?.WasPressedThisFrame() == true;
+    public static bool JumpReleased => RoleAction(true, "Jump")?.WasReleasedThisFrame() == true;
 
-    public static bool EraserPressed => (LocalAction(false, "Erase")?.WasPressedThisFrame() ?? (DrawerUsesGamepad
-        ? PadFor(false) != null && !PadFor(false).rightTrigger.isPressed && PadFor(false).buttonWest.wasPressedThisFrame
-        : Input.GetMouseButtonDown(1))) && (!DrawerUsesGamepad || !DrawHeld);
+    public static bool GrabPressed => RoleAction(true, "Grab")?.WasPressedThisFrame() == true;
+
+    public static bool GrabReleased => RoleAction(true, "Grab")?.WasReleasedThisFrame() == true;
+    // Level state must recover even if the release edge occurred while input was suspended.
+    public static bool GrabHeld => RoleAction(true, "Grab")?.IsPressed() == true;
+
+    public static bool WirePressed => RoleAction(true, "Wire")?.WasPressedThisFrame() == true;
+
+    public static bool PointerClickPressed => RoleAction(false, "Draw")?.WasPressedThisFrame() == true;
+    public static bool PointerClickReleased => RoleAction(false, "Draw")?.WasReleasedThisFrame() == true;
+
+    public static bool DrawPressed => PointerClickPressed && !GamepadDrawerPointer.CapturesDraw;
+
+    public static bool DrawHeld => (RoleAction(false, "Draw")?.IsPressed() == true) &&
+                                   !GamepadDrawerPointer.CapturesDraw;
+
+    public static bool DrawReleased => PointerClickReleased && !GamepadDrawerPointer.CapturesDraw;
+
+    public static bool EraserPressed => RoleAction(false, "Erase")?.WasPressedThisFrame() == true &&
+                                        (!DrawerUsesGamepad || !DrawHeld);
 
     public static int BrushStep
     {
@@ -233,31 +316,22 @@ public static class GameplayInput
             if (PhotonNetwork.OfflineMode && GameManager.IsLocalMultiplayer)
             {
                 if (DrawerUsesGamepad)
-                    return (LocalAction(false, "BrushNext")?.WasPressedThisFrame() == true ? 1 : 0) -
-                           (LocalAction(false, "BrushPrevious")?.WasPressedThisFrame() == true ? 1 : 0);
-                float localScroll = LocalAction(false, "BrushScroll")?.ReadValue<float>() ?? 0f;
+                    return (RoleAction(false, "BrushNext")?.WasPressedThisFrame() == true ? 1 : 0) -
+                           (RoleAction(false, "BrushPrevious")?.WasPressedThisFrame() == true ? 1 : 0);
+                float localScroll = RoleAction(false, "BrushScroll")?.ReadValue<float>() ?? 0f;
                 return localScroll > 0f ? 1 : localScroll < 0f ? -1 : 0;
             }
             if (DrawerUsesGamepad)
-                return PadFor(false) == null ? 0 :
-                    (PadFor(false).rightShoulder.wasPressedThisFrame ? -1 : 0) +
-                    (PadFor(false).leftShoulder.wasPressedThisFrame ? 1 : 0);
-            float scroll = Input.GetAxis("Mouse ScrollWheel");
+                return (RoleAction(false, "BrushNext")?.WasPressedThisFrame() == true ? 1 : 0) -
+                       (RoleAction(false, "BrushPrevious")?.WasPressedThisFrame() == true ? 1 : 0);
+            float scroll = RoleAction(false, "BrushScroll")?.ReadValue<float>() ?? 0f;
             return scroll > 0f ? 1 : scroll < 0f ? -1 : 0;
         }
     }
 
-    public static bool CameraTogglePressed => LocalAction(false, "CameraToggle")?.WasPressedThisFrame() ?? (DrawerUsesGamepad
-        ? PadFor(false) != null && PadFor(false).buttonNorth.wasPressedThisFrame
-        : Input.GetKeyDown(KeyCode.Q));
+    public static bool CameraTogglePressed => RoleAction(false, "CameraToggle")?.WasPressedThisFrame() == true;
 
-    public static bool PenPanelPressed => LocalAction(false, "PenPanel")?.WasPressedThisFrame() ?? (DrawerUsesGamepad
-        ? PadFor(false) != null && PadFor(false).selectButton.wasPressedThisFrame
-        : Input.GetKeyDown(KeyCode.Tab));
+    public static bool PenPanelPressed => RoleAction(false, "PenPanel")?.WasPressedThisFrame() == true;
 
-    public static Vector2 CameraMove => LocalAction(false, "CameraMove")?.ReadValue<Vector2>() ?? (DrawerUsesGamepad
-        ? PadFor(false) != null ? PadFor(false).leftStick.ReadValue() : Vector2.zero
-        : new Vector2(
-            (Input.GetKey(KeyCode.D) ? 1f : 0f) - (Input.GetKey(KeyCode.A) ? 1f : 0f),
-            (Input.GetKey(KeyCode.W) ? 1f : 0f) - (Input.GetKey(KeyCode.S) ? 1f : 0f)));
+    public static Vector2 CameraMove => RoleAction(false, "CameraMove")?.ReadValue<Vector2>() ?? Vector2.zero;
 }

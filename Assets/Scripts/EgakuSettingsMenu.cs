@@ -81,6 +81,7 @@ public sealed class EgakuSettingsMenu : MonoBehaviour
     [SerializeField] private Button keysRoleButton;
     [SerializeField] private GameObject runnerKeys;
     [SerializeField] private GameObject drawerKeys;
+    [SerializeField] private KeyRebindController keyRebindController;
     [SerializeField] private Button backButton;
     [SerializeField] private Button applyButton;
     [SerializeField] private Button restoreDefaultButton;
@@ -142,6 +143,9 @@ public sealed class EgakuSettingsMenu : MonoBehaviour
         InputDeviceRouter.AssignmentsChanged += OnAssignmentsChanged;
         menuEventSystem = GetComponentInChildren<EventSystem>(true);
         menuInputModule = menuEventSystem != null ? menuEventSystem.GetComponent<InputSystemUIInputModule>() : null;
+        if (keyRebindController != null)
+            keyRebindController.Initialize(menuEventSystem, note,
+                enabled => { if (menuInputModule != null) menuInputModule.enabled = enabled; });
         if (menuEventSystem != null) menuEventSystem.enabled = false;
         if (restoreDefaultButton != null) restoreDefaultButton.interactable = false;
         ConfigureStaticNavigation();
@@ -154,6 +158,7 @@ public sealed class EgakuSettingsMenu : MonoBehaviour
         SceneManager.activeSceneChanged -= OnSceneChanged;
         InputDeviceRouter.DeviceLost -= OnLocalDeviceLost;
         InputDeviceRouter.AssignmentsChanged -= OnAssignmentsChanged;
+        if (keyRebindController != null) keyRebindController.EndSession(false);
         if (instance == this)
         {
             Close(true);
@@ -191,6 +196,12 @@ public sealed class EgakuSettingsMenu : MonoBehaviour
             }
         }
         if (Time.unscaledTime < ignoreInputUntil) return;
+
+        if (keyRebindController != null && keyRebindController.BlocksMenuInput)
+        {
+            keyRebindController.Tick();
+            return;
+        }
 
         if (recoveryOnly)
         {
@@ -269,14 +280,15 @@ public sealed class EgakuSettingsMenu : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (!open || !IsDropdownEdit(editing)) return;
-        if (finishDropdownAfterFrame)
+        if (!open) return;
+        if (IsDropdownEdit(editing) && finishDropdownAfterFrame)
         {
             finishDropdownAfterFrame = false;
             FinishEdit();
             return;
         }
-        EnsureSelectedDropdownItemVisible();
+        if (IsDropdownEdit(editing) || page == 3)
+            EnsureSelectedDropdownItemVisible();
     }
 
     private void Open(InputDevice device)
@@ -299,6 +311,7 @@ public sealed class EgakuSettingsMenu : MonoBehaviour
         draftCommitted = false;
         BuildResolutionList();
         CaptureDraft();
+        if (keyRebindController != null) keyRebindController.BeginSession();
 
         if (gameplayScene)
             foreach (Drawer drawer in FindObjectsByType<Drawer>())
@@ -385,6 +398,7 @@ public sealed class EgakuSettingsMenu : MonoBehaviour
             EgakuSettings.PreviewControls(openingSnapshot.pointerSpeed,
                 openingSnapshot.brushCursorSize, openingSnapshot.runnerCursorSize);
         }
+        if (keyRebindController != null) keyRebindController.EndSession(false);
 
         open = false;
         editing = EditKind.None;
@@ -517,7 +531,9 @@ public sealed class EgakuSettingsMenu : MonoBehaviour
         {
             applyButton.gameObject.SetActive(true);
             restoreDefaultButton.gameObject.SetActive(true);
-            restoreDefaultButton.interactable = false;
+            restoreDefaultButton.interactable = page == 3;
+            if (page == 3)
+                SetButtonCaption(restoreDefaultButton, "Restore current role bindings to default");
             switch (page)
             {
                 case 0: BuildDisplayPage(); break;
@@ -525,6 +541,7 @@ public sealed class EgakuSettingsMenu : MonoBehaviour
                 case 2: BuildControlsPage(); break;
                 case 3: BuildKeysPage(); break;
             }
+            if (restoreDefaultButton.interactable) AddEntry(restoreDefaultButton);
             AddEntry(applyButton);
             SetButtonCaption(applyButton, displayPreview ? "Keep Display Settings" : "Apply Settings");
             UpdateHelpText();
@@ -591,7 +608,7 @@ public sealed class EgakuSettingsMenu : MonoBehaviour
 
     private void BuildKeysPage()
     {
-        keysRoleButton.gameObject.SetActive(roleForKeys == 0);
+        if (keysRoleButton != null) keysRoleButton.gameObject.SetActive(roleForKeys == 0);
         if (roleForKeys == 0)
         {
             SetButtonCaption(keysRoleButton,
@@ -601,6 +618,11 @@ public sealed class EgakuSettingsMenu : MonoBehaviour
         bool drawer = roleForKeys == 2 || (roleForKeys == 0 && keyPreviewDrawer);
         runnerKeys.SetActive(!drawer);
         drawerKeys.SetActive(drawer);
+        if (keyRebindController != null)
+        {
+            keyRebindController.ShowRole(drawer);
+            foreach (Button bindingButton in keyRebindController.VisibleButtons) AddEntry(bindingButton);
+        }
     }
 
     private void AddEntry(Button button)
@@ -632,6 +654,17 @@ public sealed class EgakuSettingsMenu : MonoBehaviour
             navigation.selectOnRight = null;
             entries[i].navigation = navigation;
         }
+
+        if (page == 3 && !recoveryOnly && keyRebindController != null)
+        {
+            // Keys is a two-dimensional table. Keep the generic navigation for the
+            // role/apply/restore rows, then give each binding explicit row and column links.
+            Button above = roleForKeys == 0 && keysRoleButton != null && keysRoleButton.gameObject.activeInHierarchy
+                ? keysRoleButton : applyButton;
+            Button below = restoreDefaultButton != null && restoreDefaultButton.interactable
+                ? restoreDefaultButton : applyButton;
+            keyRebindController.ConfigureGridNavigation(above, below);
+        }
     }
 
     private void SelectFirstEntry()
@@ -643,6 +676,13 @@ public sealed class EgakuSettingsMenu : MonoBehaviour
     private void UpdateHelpText()
     {
         if (displayPreview || recoveryOnly || awaitingDevice) return;
+        if (page == 3)
+        {
+            note.text = openedByGamepad
+                ? "D-pad/stick: navigate  |  A: rebind  |  LB/RB: page  |  capture waits 10 seconds"
+                : "Arrow keys: navigate  |  Enter/Space: rebind  |  Q/E: page  |  capture waits 10 seconds";
+            return;
+        }
         note.text = openedByGamepad
             ? "D-pad or stick: choose  |  A: edit/confirm  |  B: cancel  |  LB/RB: page"
             : "Arrows: choose/change  |  Enter/Space: edit/confirm  |  Esc: cancel  |  Q/E: page";
@@ -1046,6 +1086,7 @@ public sealed class EgakuSettingsMenu : MonoBehaviour
         EgakuSettings.ApplyAll(draft.master, draft.music, draft.effects, draft.pointerSpeed,
             draft.brushCursorSize, draft.runnerCursorSize, draft.onlineDevice,
             size.x, size.y, draft.screenMode);
+        if (keyRebindController != null) keyRebindController.EndSession(true);
         draftCommitted = true;
         Close();
     }
@@ -1092,6 +1133,11 @@ public sealed class EgakuSettingsMenu : MonoBehaviour
     {
         keyPreviewDrawer = !keyPreviewDrawer;
         BuildPage(true);
+    }
+    public void RestoreCurrentPageToDefault()
+    {
+        if (page != 3 || keyRebindController == null) return;
+        keyRebindController.ResetVisibleRole();
     }
     public void CloseFromButton() => Close();
 }

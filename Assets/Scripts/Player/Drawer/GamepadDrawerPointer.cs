@@ -61,7 +61,7 @@ public sealed class GamepadDrawerPointer : MonoBehaviour
         if (hovered != null && pointer.delta != Vector2.zero)
             ExecuteEvents.Execute(hovered, pointer, ExecuteEvents.pointerMoveHandler);
 
-        if (pad.rightTrigger.wasPressedThisFrame && handler != null)
+        if (GameplayInput.PointerClickPressed && handler != null)
         {
             pressed = handler;
             capturesDraw = true;
@@ -69,7 +69,7 @@ public sealed class GamepadDrawerPointer : MonoBehaviour
             pointer.pointerPress = pressed;
             ExecuteEvents.Execute(pressed, pointer, ExecuteEvents.pointerDownHandler);
         }
-        if (pad.rightTrigger.wasReleasedThisFrame)
+        if (GameplayInput.PointerClickReleased)
         {
             if (pressed != null)
             {
