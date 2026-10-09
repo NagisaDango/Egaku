@@ -48,6 +48,67 @@ public class Drawer : MonoBehaviourPun
     public PenProperty.PenType sliderPenType;
     public float time = 0.2f;
 
+    // Only the owning Drawer publishes HUD snapshots. Remote budgets may still contain
+    // prefab defaults, so received display values never overwrite gameplay ink counters.
+    private bool hasRemoteInkHud;
+    private int remoteInkRemaining, remoteInkMaximum;
+    private Color remoteInkColor;
+    private bool hasSentInkHud;
+    private int sentInkRemaining, sentInkMaximum;
+    private PenProperty.PenType sentInkPen;
+    private Color sentInkColor;
+    private float nextInkHudSend, lastInkHudSend;
+
+    public bool TryGetInkHud(out int remaining, out int maximum, out Color color)
+    {
+        if (!photonView.IsMine)
+        {
+            remaining = remoteInkRemaining;
+            maximum = remoteInkMaximum;
+            color = remoteInkColor;
+            return hasRemoteInkHud;
+        }
+        var pen = GetPenProperty(sliderPenType);
+        maximum = pen != null ? pen.maxStrokes : 0;
+        remaining = maximum < 0 ? -1 : maximum - Mathf.Clamp(pen != null ? pen.currentStrokes : 0, 0, maximum);
+        color = pen != null && pen.material != null ? pen.material.color : Color.white;
+        return pen != null;
+    }
+
+    private void LateUpdate()
+    {
+        if (!SceneReady || !photonView.IsMine || !PhotonNetwork.InRoom || PhotonNetwork.OfflineMode ||
+            photonView.ViewID == 0 || Time.unscaledTime < nextInkHudSend) return;
+        if (!TryGetInkHud(out int remaining, out int maximum, out Color color)) return;
+        nextInkHudSend = Time.unscaledTime + 0.1f;
+        // At most ten snapshots per second while changing; a two-second heartbeat
+        // restores presentation after a late remote spawn without buffered room history.
+        if (hasSentInkHud && remaining == sentInkRemaining && maximum == sentInkMaximum &&
+            sliderPenType == sentInkPen && color == sentInkColor && Time.unscaledTime - lastInkHudSend < 2f) return;
+        photonView.RPC(nameof(RPC_UpdateInkHud), RpcTarget.Others, (int)sliderPenType,
+            remaining, maximum, color.r, color.g, color.b);
+        hasSentInkHud = true;
+        sentInkRemaining = remaining;
+        sentInkMaximum = maximum;
+        sentInkPen = sliderPenType;
+        sentInkColor = color;
+        lastInkHudSend = Time.unscaledTime;
+    }
+
+    [PunRPC]
+    private void RPC_UpdateInkHud(int penType, int remaining, int maximum, float r, float g, float b, PhotonMessageInfo info)
+    {
+        // HUD authority follows the Drawer view owner, regardless of which role is Master.
+        // Cache even before SceneReady so initialization cannot discard the first snapshot.
+        if (photonView.IsMine || info.Sender == null || info.Sender != photonView.Owner ||
+            GetPenProperty((PenProperty.PenType)penType) == null) return;
+        sliderPenType = (PenProperty.PenType)penType;
+        remoteInkMaximum = maximum;
+        remoteInkRemaining = maximum < 0 ? -1 : Mathf.Clamp(remaining, 0, maximum);
+        remoteInkColor = new Color(r, g, b, 1f);
+        hasRemoteInkHud = true;
+    }
+
     // The Master Client serializes erase results so a drag crossing the same object
     // cannot refund ink or destroy the network object more than once.
     private readonly HashSet<int> processedEraseViewIds = new HashSet<int>();
@@ -470,6 +531,18 @@ public class Drawer : MonoBehaviourPun
         {
             eraserMode = false;
         }
+        // Clicking a pen in the palette previously changed only the drawing tool,
+        // unlike wheel/gamepad switching. Refresh its HUD and retire the old pen's refund animation.
+        var selectedPen = FindPenProperty(penType);
+        if (selectedPen != null && inkSlider != null)
+        {
+            StopAllCoroutines();
+            ClearCoroutineQueue();
+            Color color = selectedPen.material != null ? selectedPen.material.color : Color.white;
+            ChangeSliderColor(color.r, color.g, color.b, (int)selectedPen.penType);
+            UpdateSlider(selectedPen.maxStrokes < 0 ? 1f : selectedPen.maxStrokes > 0 ?
+                Mathf.Clamp01(1f - selectedPen.currentStrokes / (float)selectedPen.maxStrokes) : 0f);
+        }
     }
     private void SetPenProperties(PenProperty.PenType penType)
     {
@@ -685,7 +758,8 @@ public class Drawer : MonoBehaviourPun
         //ParticleAttractor eraseEffect = PhotonNetwork.Instantiate("EraseEffect", new Vector3(centerPos.x, centerPos.y, 0), Quaternion.identity).GetComponent<ParticleAttractor>();
     }
 
-    private PenProperty GetPenProperty(PenProperty.PenType penType)
+    // The scene HUD reads the same budget as drawing, erasing and ink pickups; it never mutates the counters.
+    public PenProperty GetPenProperty(PenProperty.PenType penType)
     {
         switch (penType)
         {
@@ -699,7 +773,37 @@ public class Drawer : MonoBehaviourPun
                 return electricPen;
         }
         return null;
+    }
 
+    public void AddInkToPen(PenProperty.PenType penType, int amount)
+    {
+        if (!CanAddInkToPen(penType, amount)) return;
+        PenProperty pen = GetPenProperty(penType);
+        // currentStrokes counts spent ink. Increasing both counters leaves remaining
+        // ink unchanged. Preserve spent ink so erasing existing strokes still refunds it.
+        pen.maxStrokes += (int)Math.Min((long)amount, int.MaxValue - (long)pen.maxStrokes);
+        if (photonView.IsMine && sliderPenType == penType && inkSlider != null)
+        {
+            UpdateSlider(Mathf.Clamp01(1f - pen.currentStrokes * 1f / pen.maxStrokes));
+            // An earlier erase animation may still run. Refresh from live counters
+            // after it completes instead of leaving its old target on the ink bar.
+            EnqueueCoroutine(RefreshSuppliedInkSlider(penType));
+        }
+    }
+
+    public bool CanAddInkToPen(PenProperty.PenType penType, int amount)
+    {
+        PenProperty pen = GetPenProperty(penType);
+        // Negative budgets retain the existing unlimited/disabled convention.
+        return amount > 0 && pen != null && pen.maxStrokes >= 0 && pen.maxStrokes < int.MaxValue;
+    }
+
+    private IEnumerator RefreshSuppliedInkSlider(PenProperty.PenType penType)
+    {
+        PenProperty pen = GetPenProperty(penType);
+        if (sliderPenType == penType && inkSlider != null && pen != null && pen.maxStrokes > 0)
+            UpdateSlider(Mathf.Clamp01(1f - pen.currentStrokes * 1f / pen.maxStrokes));
+        yield break;
     }
 
     private void SpawnParticles(string erasingTagName, Vector3 centerPos)

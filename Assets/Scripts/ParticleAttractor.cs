@@ -9,16 +9,17 @@ public class ParticleAttractor : MonoBehaviour
     private static Vector3 djj = Vector3.zero;
     private ParticleSystem ps;
     private ParticleSystem.Particle[] particles;
+    // Each locally spawned effect follows its own scene UI; cached references expire on scene unload.
+    private Slider inkSlider;
+    private Camera gameplayCamera;
     public float disappearDistance = 0.1f; // Distance threshold for disappearing
 
     void Start()
     {
-        if (djj == Vector3.zero || target == null)
-        {
-            SetTarget();
-        }
         ps = GetComponent<ParticleSystem>();
+        if (ps == null) return;
         particles = new ParticleSystem.Particle[ps.main.maxParticles];
+        SetTarget();
     }
 
     public void SetMaterial()
@@ -26,25 +27,36 @@ public class ParticleAttractor : MonoBehaviour
         
     }
 
-    void SetTarget()
+    bool SetTarget()
     {
-        //print($"Setting Target cause: djj not set: {djj == Vector3.zero} or target not set: {target == null}" );
-        target = GameObject.Find("GameCanvas/Panel/Slider").transform;
-        //Vector3 xjj = Camera.main.ScreenToWorldPoint(target.position);
-        float h = target.GetComponent<RectTransform>().rect.height;
-        Vector3 xjj = target.position - new Vector3(0, h/2,0) + target.gameObject.GetComponent<UnityEngine.UI.Slider>().value * new Vector3(0, h, 0);
-        djj = Camera.main.ScreenToWorldPoint(xjj);
-
-        //print(xjj +"-----"+djj);
-        //djj = Camera.main.ScreenToWorldPoint(target.position);
+        if (inkSlider == null || gameplayCamera == null)
+        {
+            var context = GameplaySceneContext.FindInScene(gameObject.scene);
+            if (context == null) return false;
+            inkSlider = context.inkSlider;
+            gameplayCamera = context.gameplayCamera;
+        }
+        // Loading, leaving or waiting for the first Drawer HUD snapshot must not throw
+        // or pull particles toward a stale target from the preceding scene.
+        if (inkSlider == null || gameplayCamera == null || !inkSlider.gameObject.activeInHierarchy) return false;
+        target = inkSlider.transform;
+        var rect = (RectTransform)target;
+        float fill = inkSlider.normalizedValue;
+        if (inkSlider.direction == Slider.Direction.TopToBottom) fill = 1f - fill;
+        var uiPoint = rect.TransformPoint(new Vector3(rect.rect.center.x,
+            Mathf.Lerp(rect.rect.yMin, rect.rect.yMax, fill), 0f));
+        var canvas = inkSlider.GetComponentInParent<Canvas>();
+        var uiCamera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+        Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(uiCamera, uiPoint);
+        // TransformPoint includes the authored slider scale. Project the screen target
+        // onto this effect's world plane instead of using UI z as camera depth.
+        float depth = Vector3.Dot(transform.position - gameplayCamera.transform.position, gameplayCamera.transform.forward);
+        djj = gameplayCamera.ScreenToWorldPoint(new Vector3(screenPoint.x, screenPoint.y, depth));
+        return true;
     }
     void LateUpdate()
     {
-        if (djj == Vector3.zero || target == null)
-        {
-            //SetTarget();
-        }
-        SetTarget();
+        if (ps == null || particles == null || !SetTarget()) return;
 
         int numParticlesAlive = ps.GetParticles(particles);
 

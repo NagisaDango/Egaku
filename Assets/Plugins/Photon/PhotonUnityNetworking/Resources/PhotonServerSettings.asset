@@ -107,6 +107,9 @@ MonoBehaviour:
   - RPC_RequestSelfDestroy
   - RPC_DestroyAfterMasterAuthorization
   - RPC_BeginRespawnReveal
+  - RPC_ApplyCollect
+  - RPC_RequestCollect
+  - RPC_UpdateInkHud
   DisableAutoOpenWizard: 1
   ShowSettings: 1
   DevRegionSetOnce: 1

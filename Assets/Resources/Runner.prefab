@@ -1070,6 +1070,7 @@ MonoBehaviour:
     jumpReleaseMultiplier: 0.5
     fallGravityMultiplier: 1.5
     blockedJumpRecoveryTime: 0.12
+    pushAssistEnabled: 0
     pushAcceleration: 35
     pushMaxSpeed: 6
     pushMaxForce: 1500

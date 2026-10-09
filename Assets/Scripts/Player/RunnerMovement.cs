@@ -17,6 +17,9 @@ public sealed class RunnerMovementTuning
     [Min(1f)] public float fallGravityMultiplier = 1.5f;
     // Allow a failed takeoff to recover only after the solver has had time to separate contacts.
     [Min(0.02f)] public float blockedJumpRecoveryTime = 0.12f;
+    // Default to collision-only pushing. Keep the previous owner-side force assist
+    // opt-in for comparisons without changing wood mass, grabbing, or network authority.
+    public bool pushAssistEnabled = false;
     [Min(0f)] public float pushAcceleration = 35f;
     [Min(0f)] public float pushMaxSpeed = 6f;
     [Min(0f)] public float pushMaxForce = 1500f;
@@ -39,7 +42,7 @@ public sealed class RunnerGrabTuning
 public sealed class RunnerMovement
 {
     // Drawn polygon segments can briefly exceed 60 degrees near a curved ramp's ends.
-    private const float MinimumGroundNormalY = 0.4f;
+    private const float MinimumGroundNormalY = 0.65f;
     private const int CloudJumpBonus = 10;
 
     private readonly Rigidbody2D rb;
@@ -247,7 +250,7 @@ public sealed class RunnerMovement
         // Runner's 5x gravity to wet wood amplifies its water forces through the joint.
         if (heldBody != null && heldBody.simulated)
             heldBody.gravityScale = GrabPhysics.InBuoyancy(heldBody) ? loadGravity : rb.gravityScale;
-        if (heldBody == null && grounded)
+        if (tuning.pushAssistEnabled && heldBody == null && grounded)
             GrabPhysics.PushWood(rb, input, tuning.pushAcceleration, tuning.pushMaxSpeed, tuning.pushMaxForce);
         return jumped;
     }

@@ -44,7 +44,7 @@ MonoBehaviour:
   - id: 4
     sceneName: Level_4
     thumbnail: {fileID: -4178046375966092550, guid: ad1fece2cf3752849be3298b63d5a0f9, type: 3}
-    wood: 300
+    wood: 200
     cloud: -1
     steel: -1
     electric: -1
@@ -52,22 +52,22 @@ MonoBehaviour:
     sceneName: Level_5
     thumbnail: {fileID: 4130640169021434097, guid: 9b255b2c6c31f3342ba2c855e8ec88ef, type: 3}
     wood: 300
-    cloud: 150
-    steel: 100
+    cloud: -1
+    steel: -1
     electric: -1
   - id: 6
     sceneName: Level_6
     thumbnail: {fileID: 3465286685962602723, guid: a7b48f15ebac02840a1fb4b0cdd48f06, type: 3}
     wood: 300
-    cloud: 150
+    cloud: -1
     steel: -1
     electric: -1
   - id: 7
     sceneName: Level_7
     thumbnail: {fileID: 7028616704906629411, guid: 195b37134dc7439488330da6a95456dd, type: 3}
-    wood: -1
-    cloud: 150
-    steel: 100
+    wood: 100
+    cloud: -1
+    steel: -1
     electric: -1
   - id: 8
     sceneName: Level_8
