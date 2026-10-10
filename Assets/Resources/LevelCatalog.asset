@@ -86,10 +86,10 @@ MonoBehaviour:
   - id: 10
     sceneName: Level_10
     thumbnail: {fileID: -5099292496197868168, guid: 334c3df436d44544d9bfd3c4bdf764de, type: 3}
-    wood: -1
+    wood: 100
     cloud: -1
     steel: -1
-    electric: 80
+    electric: -1
   - id: 11
     sceneName: Level_11
     thumbnail: {fileID: -2966200626249415253, guid: 5e8444d20fb138b44bbd521c426ba45c, type: 3}

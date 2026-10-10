@@ -17,6 +17,7 @@ TagManager:
   - Final
   - Battery
   - Bound
+  - Water
   layers:
   - Default
   - TransparentFX
@@ -57,5 +58,9 @@ TagManager:
   - name: Fog
     uniqueID: 2014065691
     locked: 0
+  - name: Draw
+    uniqueID: 1721803261
+    locked: 0
   m_RenderingLayers:
   - Default
+  m_MigratedRenderPipelines: []
