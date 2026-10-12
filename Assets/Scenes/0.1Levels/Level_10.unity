@@ -4648,7 +4648,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3164096097611541025, guid: 4b27dcd1e35692c48a82c8077c673ad2, type: 3}
       propertyPath: m_ConnectedAnchor.y
-      value: 2.3158815
+      value: 2.2958815
       objectReference: {fileID: 0}
     - target: {fileID: 3164096097611541025, guid: 4b27dcd1e35692c48a82c8077c673ad2, type: 3}
       propertyPath: m_TranslationLimits.m_LowerTranslation
@@ -4668,7 +4668,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5295218329080301342, guid: 4b27dcd1e35692c48a82c8077c673ad2, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 6.16
+      value: 6.14
       objectReference: {fileID: 0}
     - target: {fileID: 5295218329080301342, guid: 4b27dcd1e35692c48a82c8077c673ad2, type: 3}
       propertyPath: m_LocalPosition.z

@@ -18,6 +18,7 @@ TagManager:
   - Battery
   - Bound
   - Water
+  - Bullet
   layers:
   - Default
   - TransparentFX
@@ -52,6 +53,12 @@ TagManager:
   - 
   - 
   m_SortingLayers:
+  - name: Background
+    uniqueID: 2764602323
+    locked: 0
+  - name: DrawProhibit
+    uniqueID: 685334471
+    locked: 0
   - name: Default
     uniqueID: 0
     locked: 0

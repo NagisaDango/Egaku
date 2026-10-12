@@ -236,7 +236,10 @@ public class Runner : MonoBehaviourPunCallbacks
                 MoveAlongElectric();
         }
 
-        if (GameplayInput.GrabPressed && !holding)
+        // Holding the key arms a grab before contact, and keeps trying while a
+        // contacted object's ownership transfers. RpcTarget.All runs BeginHold
+        // locally immediately, so !holding prevents repeated successful RPCs.
+        if (GameplayInput.GrabHeld && !holding)
         {
             PhotonView candidate = holdingObjectID != -1 ? PhotonView.Find(holdingObjectID) : null;
             // Wait for the object's legal owner to be this Runner before forming a

@@ -96,25 +96,25 @@ MonoBehaviour:
     wood: 300
     cloud: -1
     steel: -1
-    electric: 80
+    electric: -1
   - id: 12
     sceneName: Level_12
     thumbnail: {fileID: -1540426309290004842, guid: 0b35709a183b7804bbafc3840315615a, type: 3}
     wood: 300
-    cloud: 150
+    cloud: -1
     steel: -1
     electric: -1
   - id: 13
     sceneName: Level_13
     thumbnail: {fileID: 8389134475083476877, guid: 8fe411e963ff472459bc9a71fffa6c12, type: 3}
-    wood: 300
-    cloud: -1
+    wood: -1
+    cloud: 150
     steel: -1
     electric: -1
   - id: 14
     sceneName: Level_14
     thumbnail: {fileID: -6270953770400647376, guid: ce6f87fa632bdec43bfb3f567863b248, type: 3}
-    wood: 300
+    wood: -1
     cloud: 150
     steel: -1
     electric: -1
